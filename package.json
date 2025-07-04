@@ -19,5 +19,8 @@
     "vite": "^7.0.0",
     "vite-plugin-html-mpa": "^1.0.4",
     "vite-plugin-mpa": "^1.2.0"
+  },
+  "dependencies": {
+    "toastify-js": "^1.12.0"
   }
 }
