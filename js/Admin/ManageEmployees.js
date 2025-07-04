@@ -1,4 +1,6 @@
 import { userService } from "../Services/UserServices.js";
+import { departmentService } from "../Services/DepartemenServices.js";
+import { authService } from "../Services/AuthServices.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
   feather.replace();
@@ -18,21 +20,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   const editEmployeeForm = document.getElementById("editEmployeeForm");
   const editErrorMessageDiv = document.getElementById("editErrorMessage");
   const editSuccessMessageDiv = document.getElementById("editSuccessMessage");
-
+  
   const editEmployeeId = document.getElementById("editEmployeeId");
   const editName = document.getElementById("editName");
   const editEmail = document.getElementById("editEmail");
-  const editRole = document.getElementById("editRole");
   const editPosition = document.getElementById("editPosition");
   const editDepartment = document.getElementById("editDepartment");
   const editBaseSalary = document.getElementById("editBaseSalary");
   const editAddress = document.getElementById("editAddress");
-  const editPhoto = document.getElementById("editPhoto");
+
+
 
   let currentPage = 1;
   const itemsPerPage = 10;
   let currentSearch = "";
   let currentRoleFilter = "";
+  let allDepartments = [];
 
   const authToken = localStorage.getItem("authToken");
   if (!authToken) {
@@ -50,14 +53,67 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (type === "success") {
       employeeListSuccess.textContent = message;
       employeeListSuccess.classList.remove("hidden");
+      employeeListSuccess.classList.remove("text-red-600");
+      employeeListSuccess.classList.add("text-green-600");
     } else {
       employeeListError.textContent = message;
       employeeListError.classList.remove("hidden");
+      employeeListError.classList.remove("text-green-600");
+      employeeListError.classList.add("text-red-600");
     }
     setTimeout(() => {
       employeeListSuccess.classList.add("hidden");
       employeeListError.classList.add("hidden");
     }, 3000);
+  };
+
+  const showModalMessage = (message, type = "success", targetErrorDiv, targetSuccessDiv) => {
+    targetErrorDiv.classList.add("hidden");
+    targetSuccessDiv.classList.add("hidden");
+    targetErrorDiv.textContent = "";
+    targetSuccessDiv.textContent = "";
+
+    if (type === "success") {
+      targetSuccessDiv.textContent = message;
+      targetSuccessDiv.classList.remove("hidden");
+      targetSuccessDiv.classList.remove("text-red-600");
+      targetSuccessDiv.classList.add("text-green-600");
+    } else {
+      targetErrorDiv.textContent = message;
+      targetErrorDiv.classList.remove("hidden");
+      targetErrorDiv.classList.remove("text-green-600");
+      targetErrorDiv.classList.add("text-red-600");
+    }
+    setTimeout(() => {
+      targetErrorDiv.classList.add("hidden");
+      targetSuccessDiv.classList.add("hidden");
+    }, 3000);
+  };
+
+  const loadDepartmentsToEditModal = async () => {
+    try {
+      const departments = await departmentService.getAllDepartments(authToken);
+      allDepartments = departments;
+      
+      editDepartment.innerHTML = '<option value="">Pilih Departemen</option>';
+
+      if (Array.isArray(allDepartments)) {
+        allDepartments.forEach(dept => {
+          const option = document.createElement("option");
+          option.value = dept.name;
+          option.textContent = dept.name;
+          editDepartment.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.error("Gagal memuat daftar departemen untuk modal edit:", error);
+      editErrorMessageDiv.textContent = 'Gagal memuat daftar departemen. Silakan coba lagi.';
+      editErrorMessageDiv.classList.remove("hidden");
+      
+      if (error.status === 401 || error.message.includes('token autentikasi')) {
+        authService.logout();
+      }
+    }
   };
 
   const fetchEmployees = async () => {
@@ -73,7 +129,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderEmployees(data.data);
         updatePagination(data.total, data.page, data.limit);
       } else {
-        employeeTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Tidak ada data karyawan.</td></tr>';
+        employeeTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-gray-500">Tidak ada data karyawan.</td></tr>'; 
         paginationInfo.textContent = "Menampilkan 0 dari 0 karyawan";
         prevPageBtn.disabled = true;
         nextPageBtn.disabled = true;
@@ -98,7 +154,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     employees.forEach((employee) => {
       const row = document.createElement("tr");
       row.className = "border-b border-gray-100";
+      const photoUrl = employee.photo || "https://placehold.co/32x32/E2E8F0/4A5568?text=ME"; 
+      
       row.innerHTML = `
+                <td class="px-4 py-3">
+                    <img src="${photoUrl}" alt="${employee.name}" class="profile-thumb">
+                </td>
                 <td class="px-4 py-3">${employee.name}</td>
                 <td class="px-4 py-3">${employee.email}</td>
                 <td class="px-4 py-3 capitalize">${employee.role}</td>
@@ -109,7 +170,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <button class="edit-btn text-blue-600 hover:text-blue-800 mr-2" title="Edit" data-id="${employee.id}">
                         <i data-feather="edit" class="w-5 h-5"></i>
                     </button>
-                    <button class="delete-btn text-red-600 hover:text-red-800" title="Hapus" data-id="${employee.id}">
+                    <button class="delete-btn text-red-600 hover:text-red-800" title="Hapus" data-id="${employee.id}" data-name="${employee.name}">
                         <i data-feather="trash-2" class="w-5 h-5"></i>
                     </button>
                 </td>
@@ -122,7 +183,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id));
     });
     document.querySelectorAll(".delete-btn").forEach((button) => {
-      button.addEventListener("click", (e) => handleDelete(e.currentTarget.dataset.id));
+      button.addEventListener("click", (e) => handleDelete(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
     });
   };
 
@@ -141,19 +202,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     editErrorMessageDiv.textContent = "";
     editSuccessMessageDiv.textContent = "";
 
+    if (allDepartments.length === 0) {
+        await loadDepartmentsToEditModal();
+    }
+
     try {
       const employee = await userService.getUserByID(employeeId, authToken);
       if (employee) {
         editEmployeeId.value = employee.id;
         editName.value = employee.name;
         editEmail.value = employee.email;
-        editRole.value = employee.role;
         editPosition.value = employee.position || "";
         editDepartment.value = employee.department || "";
         editBaseSalary.value = employee.base_salary || 0;
         editAddress.value = employee.address || "";
-        editPhoto.value = employee.photo || "";
-
         editEmployeeModal.classList.remove("hidden");
       } else {
         showGlobalMessage("Data karyawan tidak ditemukan.", "error");
@@ -188,11 +250,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const employeeId = editEmployeeId.value;
       const formData = new FormData(editEmployeeForm);
-      const updatedData = Object.fromEntries(formData.entries());
+      const updatedData = {};
+      for (const [key, value] of formData.entries()) {
+          updatedData[key] = value;
+      }
 
       delete updatedData.id;
+      delete updatedData.password; 
+      delete updatedData.role; 
+      delete updatedData.photo_file;
 
-      delete updatedData.password;
 
       updatedData.base_salary = parseFloat(updatedData.base_salary);
       if (isNaN(updatedData.base_salary)) {
@@ -202,7 +269,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       try {
-        const response = await userService.updateUser(employeeId, updatedData, authToken);
+        const dataToUpdate = {
+            name: updatedData.name,
+            email: updatedData.email,
+            position: updatedData.position,
+            department: updatedData.department,
+            base_salary: updatedData.base_salary,
+            address: updatedData.address,
+        };
+
+        const response = await userService.updateUser(employeeId, dataToUpdate, authToken);
         console.log("Karyawan berhasil diupdate:", response);
 
         editSuccessMessageDiv.textContent = "Karyawan berhasil diupdate!";
@@ -210,14 +286,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         setTimeout(() => {
           closeEditModal();
-          fetchEmployees();
+          fetchEmployees(); 
         }, 1500);
       } catch (error) {
         console.error("Gagal mengupdate karyawan:", error);
         let errorMessage = "Terjadi kesalahan saat mengupdate karyawan. Silakan coba lagi.";
         if (error.details) {
           if (Array.isArray(error.details)) {
-            errorMessage = error.details.map((err) => `${err.field || "Error"}: ${err.message}`).join("<br>");
+            errorMessage = error.details.map((err) => `${err.Field || "Error"}: ${err.Msg}`).join("<br>");
           } else if (typeof error.details === "string") {
             errorMessage = error.details;
           }
@@ -230,15 +306,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  const handleDelete = async (employeeId) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus karyawan ini?")) {
+  const handleDelete = async (employeeId, employeeName) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus karyawan "${employeeName}"? Tindakan ini tidak dapat dibatalkan.`)) {
       return;
     }
 
     try {
       const response = await userService.deleteUser(employeeId, authToken);
       console.log("Karyawan berhasil dihapus:", response);
-      showGlobalMessage("Karyawan berhasil dihapus!", "success");
+      showGlobalMessage(`Karyawan "${employeeName}" berhasil dihapus!`, "success");
       fetchEmployees();
     } catch (error) {
       console.error("Gagal menghapus karyawan:", error);
@@ -279,6 +355,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       }, 500);
     });
   }
+
+
+
 
   const sidebarToggle = document.getElementById("sidebarToggle");
   const mobileSidebar = document.getElementById("mobileSidebar");

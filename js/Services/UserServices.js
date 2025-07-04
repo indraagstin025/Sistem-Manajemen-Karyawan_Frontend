@@ -1,6 +1,7 @@
-// js/Services/UserServices.js
+// src/Services/UserServices.js
 
 const API_BASE_URL = 'http://localhost:3000/api/v1'; 
+
 export const userService = {
     /**
      * Mendaftarkan user baru (karyawan/admin).
@@ -24,9 +25,9 @@ export const userService = {
             const data = await response.json();
 
             if (!response.ok) {
-                const error = new Error(data.error || 'Gagal mendaftarkan karyawan.');
+                const error = new Error(data.message || data.error || 'Terjadi kesalahan saat mendaftarkan user.');
                 error.status = response.status;
-                error.details = data.details || data.errors;
+                error.details = data.details || data.errors; 
                 throw error;
             }
 
@@ -128,7 +129,7 @@ export const userService = {
             const response = await fetch(`${API_BASE_URL}/users/${id}`, { 
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json', // Tetap application/json untuk update data non-file
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(userData),
@@ -177,6 +178,43 @@ export const userService = {
             return data;
         } catch (error) {
             console.error(`Error di userService.deleteUser (${id}):`, error);
+            throw error;
+        }
+    },
+
+    /**
+     * Mengunggah foto profil untuk user tertentu.
+     * @param {string} id - ID user yang akan diupdate fotonya.
+     * @param {File} photoFile - Objek File dari input type="file".
+     * @param {string} token - Token autentikasi user.
+     * @returns {Promise<Object>} Respon dari API (berhasil/gagal) dengan URL foto baru.
+     */
+    uploadProfilePhoto: async (id, photoFile, token) => {
+        try {
+            const formData = new FormData();
+            formData.append('photo', photoFile); // 'photo' harus sesuai dengan nama field di backend (c.FormFile("photo"))
+
+            const response = await fetch(`${API_BASE_URL}/users/${id}/upload-photo`, {
+                method: 'POST', // Menggunakan POST untuk upload file
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    // Penting: Jangan set Content-Type untuk FormData, browser akan mengaturnya secara otomatis
+                },
+                body: formData, // Kirim FormData langsung
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const error = new Error(data.message || data.error || 'Gagal mengunggah foto profil.');
+                error.status = response.status;
+                error.details = data.details || data.errors;
+                throw error;
+            }
+
+            return data;
+        } catch (error) {
+            console.error(`Error di userService.uploadProfilePhoto (${id}):`, error);
             throw error;
         }
     },

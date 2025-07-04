@@ -1,5 +1,11 @@
 import { defineConfig } from 'vite'
+import mpa from 'vite-plugin-html-mpa'
 
 export default defineConfig({
-  root: '.', // Tetap root di folder utama
+  plugins: [
+    mpa({
+      scanDir: 'src/pages', // folder tempat semua HTML kamu
+      filename: 'index.html' // default page
+    })
+  ]
 })
