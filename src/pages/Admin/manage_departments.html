@@ -62,7 +62,7 @@
 <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
 
     <div class="flex min-h-screen">
-        <aside class="hidden md:flex flex-col w-64 bg-white shadow-xl border-r border-gray-200 py-6">
+        <aside class="flex flex-col w-64 bg-white shadow-xl border-r border-gray-200 py-6 fixed h-full z-30">
             <div class="flex items-center justify-center h-16 mb-8">
                 <a href="/src/pages/Admin/admin_dashboard.html" class="text-3xl font-extrabold text-teal-600">HR-System</a>
             </div>
@@ -102,7 +102,7 @@
             </nav>
         </aside>
 
-        <div class="flex flex-col flex-grow">
+        <div class="flex flex-col flex-grow ml-64">
             <header class="h-16 bg-white shadow-md flex items-center justify-between px-6 border-b border-gray-200 z-10">
                 <div class="flex items-center">
                     <button class="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 mr-4" id="sidebarToggle">
@@ -178,7 +178,7 @@
     </div>
 
     <!-- Edit Department Modal -->
-    <div id="editDepartmentModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div id="editDepartmentModal" class="modal fixed inset-0 z-50 items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-auto overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold text-gray-900">Edit Departemen</h3>
