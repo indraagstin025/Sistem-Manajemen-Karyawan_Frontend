@@ -1,7 +1,6 @@
 // js/Services/UserServices.js
 
-const API_BASE_URL = 'http://localhost:3000/api/v1'; // Pastikan ini sesuai dengan URL dasar API backend Anda
-
+const API_BASE_URL = 'http://localhost:3000/api/v1'; 
 export const userService = {
     /**
      * Mendaftarkan user baru (karyawan/admin).
@@ -91,7 +90,7 @@ export const userService = {
      * @returns {Promise<Object>} Objek user.
      * @throws {Error} Jika respons API bukan 2xx.
      */
-    getUserByID: async (id, token) => { // <<< --- PASTIKAN FUNGSI INI ADA DAN TIDAK ADA TYPO
+    getUserByID: async (id, token) => { 
         try {
             const response = await fetch(`${API_BASE_URL}/users/${id}`, { 
                 method: 'GET',

@@ -55,30 +55,30 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-feather.replace(); // Menginisialisasi Feather Icons
+feather.replace(); 
 
 const togglePassword = document.getElementById("togglePassword");
 const password = document.getElementById("password");
 
 if (togglePassword && password) {
-  // Memastikan elemen ada sebelum menambahkan event listener
+  
   togglePassword.addEventListener("click", function (e) {
-    // Toggle type atribut
+    
     const type = password.getAttribute("type") === "password" ? "text" : "password";
     password.setAttribute("type", type);
-    // Toggle ikon
+    
     const icon = this.querySelector("i");
     if (type === "password") {
       icon.setAttribute("data-feather", "eye-off");
     } else {
       icon.setAttribute("data-feather", "eye");
     }
-    feather.replace(); // Perbarui ikon
+    feather.replace(); 
   });
 }
 
-feather.replace(); // Initialize Feather Icons
-// Mobile sidebar logic (Anda bisa tempatkan ini di sebuah file JS terpisah jika digunakan di banyak halaman)
+feather.replace(); 
+
 const sidebarToggle = document.getElementById("sidebarToggle");
 const mobileSidebar = document.getElementById("mobileSidebar");
 const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
