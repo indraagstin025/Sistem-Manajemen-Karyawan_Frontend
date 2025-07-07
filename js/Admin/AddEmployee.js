@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   feather.replace();
   initializeFormValidation();
 
+
   const addEmployeeForm = document.getElementById("addEmployeeForm");
   const departmentSelect = document.getElementById("department");
   const cancelButton = document.getElementById("cancelButton");
@@ -17,6 +18,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   const mobileSidebar = document.getElementById("mobileSidebar");
   const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
   const closeSidebar = document.getElementById("closeSidebar");
+  const passwordInput = document.getElementById("password");
+  const togglePasswordButton = document.getElementById("togglePassword");
+
+  if (togglePasswordButton && passwordInput) {
+    togglePasswordButton.addEventListener("click", () => {
+      
+      const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+      passwordInput.setAttribute("type", type);
+
+      const icon = togglePasswordButton.querySelector("i");
+      if (type === "password") {
+        icon.setAttribute("data-feather", "eye-off");
+      } else {
+        icon.setAttribute("data-feather", "eye");
+      }
+      feather.replace(); 
+    });
+  }
+  
 
   /**
    * Menampilkan notifikasi modal di tengah layar tanpa ikon.

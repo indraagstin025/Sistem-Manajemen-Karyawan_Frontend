@@ -1,21 +1,23 @@
-// src/Services/DepartmentService.js
+// src/Services/DepartemenServices.js
 
-// Sesuaikan URL base API Anda
 const API_BASE_URL = 'http://localhost:3000/api/v1';
+
+// Buat satu fungsi helper untuk mengambil token agar konsisten
+const getToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
+    }
+    return token;
+};
 
 export const departmentService = {
     /**
      * Mengambil daftar semua departemen dari backend.
-     * Membutuhkan token autentikasi.
-     * @returns {Promise<Array<Object>>} Array objek departemen (misal: [{ id: '...', name: 'Teknik' }])
      */
     getAllDepartments: async () => {
         try {
-            const authToken = localStorage.getItem('authToken');
-
-            if (!authToken) {
-                throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
-            }
+            const authToken = getToken(); // Panggil helper
 
             const response = await fetch(`${API_BASE_URL}/departments`, {
                 method: 'GET',
@@ -24,17 +26,11 @@ export const departmentService = {
                     'Authorization': `Bearer ${authToken}`,
                 },
             });
-
+            // ... (sisa logika tetap sama)
             const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || 'Gagal mengambil daftar departemen.');
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
-
+            if (!response.ok) throw new Error(data.error || 'Gagal mengambil daftar departemen.');
             return data;
+
         } catch (error) {
             console.error('Error di departmentService.getAllDepartments:', error);
             throw error;
@@ -43,14 +39,12 @@ export const departmentService = {
 
     /**
      * Menambahkan departemen baru ke backend.
-     * Membutuhkan token autentikasi admin.
-     * @param {Object} departmentData - Objek data departemen (misal: { name: 'Nama Departemen' }).
-     * @param {string} authToken - Token autentikasi admin.
-     * @returns {Promise<Object>} Respon dari API (berhasil/gagal).
      */
-    createDepartment: async (departmentData, authToken) => {
+    createDepartment: async (departmentData) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/departments`, { // Endpoint POST untuk admin
+            const authToken = getToken(); // Panggil helper
+
+            const response = await fetch(`${API_BASE_URL}/admin/departments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -58,17 +52,11 @@ export const departmentService = {
                 },
                 body: JSON.stringify(departmentData),
             });
-
+            // ... (sisa logika tetap sama)
             const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || 'Gagal menambahkan departemen.');
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
-
+            if (!response.ok) throw new Error(data.error || 'Gagal menambahkan departemen.');
             return data;
+            
         } catch (error) {
             console.error('Error di departmentService.createDepartment:', error);
             throw error;
@@ -77,31 +65,20 @@ export const departmentService = {
 
     /**
      * Mengambil detail departemen berdasarkan ID.
-     * Membutuhkan token autentikasi.
-     * @param {string} id - ID departemen (MongoDB ObjectID string).
-     * @param {string} authToken - Token autentikasi.
-     * @returns {Promise<Object>} Objek departemen.
-     * @throws {Error} Jika respons API bukan 2xx.
      */
-    getDepartmentByID: async (id, authToken) => {
+    getDepartmentByID: async (id) => {
         try {
-            if (!authToken) {
-                throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
-            }
+            const authToken = getToken(); // Panggil helper
+
             const response = await fetch(`${API_BASE_URL}/departments/${id}`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                },
+                headers: { 'Authorization': `Bearer ${authToken}` },
             });
+            // ... (sisa logika tetap sama)
             const data = await response.json();
-            if (!response.ok) {
-                const error = new Error(data.error || `Gagal mendapatkan detail departemen dengan ID ${id}.`);
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
+            if (!response.ok) throw new Error(data.error || `Gagal mendapatkan detail departemen.`);
             return data;
+
         } catch (error) {
             console.error(`Error di departmentService.getDepartmentByID (${id}):`, error);
             throw error;
@@ -110,18 +87,11 @@ export const departmentService = {
 
     /**
      * Mengupdate data departemen.
-     * Membutuhkan token autentikasi admin.
-     * @param {string} id - ID departemen yang akan diupdate.
-     * @param {Object} departmentData - Objek data departemen yang akan diupdate (misal: { name: 'Nama Baru' }).
-     * @param {string} authToken - Token autentikasi admin.
-     * @returns {Promise<Object>} Respon dari API.
-     * @throws {Error} Jika respons API bukan 2xx.
      */
-    updateDepartment: async (id, departmentData, authToken) => {
+    updateDepartment: async (id, departmentData) => {
         try {
-            if (!authToken) {
-                throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
-            }
+            const authToken = getToken(); // Panggil helper
+
             const response = await fetch(`${API_BASE_URL}/admin/departments/${id}`, {
                 method: 'PUT',
                 headers: {
@@ -130,14 +100,11 @@ export const departmentService = {
                 },
                 body: JSON.stringify(departmentData),
             });
+            // ... (sisa logika tetap sama)
             const data = await response.json();
-            if (!response.ok) {
-                const error = new Error(data.error || `Gagal mengupdate departemen dengan ID ${id}.`);
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
+            if (!response.ok) throw new Error(data.error || `Gagal mengupdate departemen.`);
             return data;
+
         } catch (error) {
             console.error(`Error di departmentService.updateDepartment (${id}):`, error);
             throw error;
@@ -146,31 +113,20 @@ export const departmentService = {
 
     /**
      * Menghapus departemen.
-     * Membutuhkan token autentikasi admin.
-     * @param {string} id - ID departemen yang akan dihapus.
-     * @param {string} authToken - Token autentikasi admin.
-     * @returns {Promise<Object>} Respon dari API.
-     * @throws {Error} Jika respons API bukan 2xx.
      */
-    deleteDepartment: async (id, authToken) => {
+    deleteDepartment: async (id) => {
         try {
-            if (!authToken) {
-                throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
-            }
+            const authToken = getToken(); // Panggil helper
+            
             const response = await fetch(`${API_BASE_URL}/admin/departments/${id}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                },
+                headers: { 'Authorization': `Bearer ${authToken}` },
             });
+            // ... (sisa logika tetap sama)
             const data = await response.json();
-            if (!response.ok) {
-                const error = new Error(data.error || `Gagal menghapus departemen dengan ID ${id}.`);
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
+            if (!response.ok) throw new Error(data.error || `Gagal menghapus departemen.`);
             return data;
+
         } catch (error) {
             console.error(`Error di departmentService.deleteDepartment (${id}):`, error);
             throw error;

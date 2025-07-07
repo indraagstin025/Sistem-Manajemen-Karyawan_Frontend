@@ -37,14 +37,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currentRoleFilter = "";
   let allDepartments = [];
 
-  const authToken = localStorage.getItem("authToken");
-  if (!authToken) {
-    showGlobalMessage("Anda tidak terautentikasi. Silakan login ulang.", "error");
-    setTimeout(() => (window.location.href = "/src/pages/login.html"), 2000);
-    return;
-  }
 
-  const showGlobalMessage = (message, type = "success") => {
+    const showGlobalMessage = (message, type = "success") => {
     employeeListSuccess.classList.add("hidden");
     employeeListError.classList.add("hidden");
     employeeListSuccess.textContent = "";
@@ -67,6 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 3000);
   };
 
+  
   const showModalMessage = (message, type = "success", targetErrorDiv, targetSuccessDiv) => {
     targetErrorDiv.classList.add("hidden");
     targetSuccessDiv.classList.add("hidden");
@@ -89,6 +84,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       targetSuccessDiv.classList.add("hidden");
     }, 3000);
   };
+
+  const authToken = localStorage.getItem("token"); 
+  if (!authToken) {
+    showGlobalMessage("Anda tidak terautentikasi. Silakan login ulang.", "error");
+    setTimeout(() => (window.location.href = "/src/pages/login.html"), 2000);
+    return;
+  }
+
+
+
 
   const loadDepartmentsToEditModal = async () => {
     try {

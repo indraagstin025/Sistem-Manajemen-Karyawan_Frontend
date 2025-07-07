@@ -1,52 +1,40 @@
 // src/js/Services/AuthServices.js
 
-const API_BASE_URL = 'http://localhost:3000/api/v1'; // Pastikan URL ini benar
+const API_BASE_URL = 'http://localhost:3000/api/v1';
 
 export const authService = {
-    /**
-     * Mengirim permintaan login ke backend.
-     * @param {string} email
-     * @param {string} password
-     * @returns {Promise<Object>} Respon dari API (berhasil/gagal)
-     */
-    login: async (email, password) => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
+  login: async (email, password) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-            const data = await response.json();
-            
-            if (!response.ok) {
-                const error = new Error(data.error || 'Terjadi kesalahan saat login.');
-                error.status = response.status;
-                error.details = data.details || data.errors; 
-                throw error;
-            }
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Terjadi kesalahan saat login.');
+      }
 
-            return data; 
-        } catch (error) {
-            console.error('Error di authService.login:', error);
-            throw error; 
-        }
-    },
+      if (data.token && data.user) {
+        // MENYIMPAN dengan kunci 'token'
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      return data;
 
-    /**
-     * Melakukan proses logout.
-     * Menghapus token dan data user dari local storage dan mengarahkan ke halaman login.
-     */
-    logout: () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('isFirstLogin'); 
-        
-        window.location.href = '/src/pages/login.html'; 
-    },
+    } catch (error) {
+      console.error('Error di authService.login:', error);
+      throw error;
+    }
+  },
+
+  logout: () => {
+    // MENGHAPUS dengan kunci 'token'
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/src/pages/login.html';
+  },
 
     /**
      * Mengubah password user yang sedang login.
@@ -87,42 +75,36 @@ export const authService = {
     }
 };
 
-// Pastikan dashboardService tidak lagi memiliki changePassword
 export const dashboardService = {
-    /**
-     * Mengambil statistik dashboard dari backend.
-     * Membutuhkan token autentikasi admin.
-     * @returns {Promise<Object>} Data statistik dashboard
-     */
-    getDashboardStats: async () => {
-        try {
-            const authToken = localStorage.getItem('authToken');
+  getDashboardStats: async () => {
+    try {
+      // ======================================================
+      // PERUBAHAN UTAMA DI SINI
+      // Ganti 'authToken' menjadi 'token' agar konsisten
+      // ======================================================
+      const authToken = localStorage.getItem('token');
 
-            if (!authToken) {
-                throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
-            }
+      if (!authToken) {
+        throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
+      }
 
-            const response = await fetch(`${API_BASE_URL}/admin/dashboard-stats`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-            });
+      const response = await fetch(`${API_BASE_URL}/admin/dashboard-stats`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || 'Gagal mengambil statistik dashboard.');
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
-
-            return data;
-        } catch (error) {
-            console.error('Error di dashboardService.getDashboardStats:', error);
-            throw error;
-        }
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal mengambil statistik dashboard.');
+      }
+      return data;
+      
+    } catch (error) {
+      console.error('Error di dashboardService.getDashboardStats:', error);
+      throw error;
     }
+  }
 };

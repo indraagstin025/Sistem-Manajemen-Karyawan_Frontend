@@ -74,7 +74,7 @@ export function initializeFormValidation() {
     const errorDiv = document.getElementById("passwordError");
     if (this.value.length < 6) {
       validationState.password = false;
-      errorDiv.textContent = "Password minimal 6 karakter.";
+      errorDiv.textContent = "Password minimal 8 karakter dan harus menggunakan Campuran Huruf Besar.";
       errorDiv.classList.remove("hidden");
     } else {
       validationState.password = true;

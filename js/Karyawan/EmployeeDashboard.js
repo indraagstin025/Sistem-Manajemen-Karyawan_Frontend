@@ -1,189 +1,204 @@
-// src/js/Karyawan/EmployeeDashboard.js
-
 import { userService } from "../Services/UserServices.js";
 import { authService } from "../Services/AuthServices.js";
+import Toastify from 'toastify-js'; // Tambahkan ini
+import 'toastify-js/src/toastify.css'; // Tambahkan ini
 
-document.addEventListener("DOMContentLoaded", async () => {
-  feather.replace(); // Initialize Feather icons
+document.addEventListener("DOMContentLoaded", () => {
+  // Panggil Feather Icons untuk merender ikon
+  feather.replace();
 
-  // Existing elements
-  const employeeDashboardError = document.getElementById("employeeDashboardError");
-  const employeeDashboardSuccess = document.getElementById("employeeDashboardSuccess");
-
-  // User Profile Card elements (assuming they are dynamically filled)
+  // --- Seleksi Elemen DOM ---
+  // Hapus seleksi elemen pesan lama karena kita akan pakai Toastify
+  // const employeeDashboardError = document.getElementById("employeeDashboardError");
+  // const employeeDashboardSuccess = document.getElementById("employeeDashboardSuccess");
   const profilePhoto = document.getElementById("profilePhoto");
   const employeeName = document.getElementById("employeeName");
   const employeePosition = document.getElementById("employeePosition");
   const employeeDepartment = document.getElementById("employeeDepartment");
   const todayAttendanceStatus = document.getElementById("todayAttendanceStatus");
   const remainingLeave = document.getElementById("remainingLeave");
-  const employeeActivityList = document.getElementById("employeeActivityList");
+  const userAvatarNav = document.getElementById("userAvatar"); // Avatar di header
+  const dropdownMenu = document.getElementById("dropdownMenu"); // Dropdown menu itu sendiri
+  const userDropdownContainer = document.getElementById("userDropdown"); // Container yang membungkus avatar dan dropdown
+  const logoutButtons = document.querySelectorAll(".logout-button, #dropdownLogoutButton"); // Target semua tombol logout (sidebar dan dropdown)
+  // Tambahkan seleksi tombol logout di sidebar jika ada ID unik
+  const sidebarLogoutButton = document.getElementById("logoutButton"); // Asumsi ada ID 'logoutButton' di sidebar
+  const mobileSidebarLogoutButton = document.getElementById("mobileLogoutButton"); // Asumsi ada ID 'mobileLogoutButton' di sidebar mobile
 
-  // NEW: Elemen untuk dropdown user di navbar
-  const userDropdownContainer = document.getElementById("userDropdown"); // Kontainer untuk avatar dan dropdown
-  const userAvatarNav = document.getElementById("userAvatar"); // Avatar yang bisa diklik
-  const dropdownMenu = document.getElementById("dropdownMenu"); // Menu dropdown itu sendiri
-  const dropdownLogoutButton = document.getElementById("dropdownLogoutButton"); // Tombol logout di dropdown
-
-  // Mobile sidebar elements
-  const sidebarToggle = document.getElementById("sidebarToggle");
-  const mobileSidebar = document.getElementById("mobileSidebar");
-  const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
-  const closeSidebar = document.getElementById("closeSidebar");
-  const mobileLogoutButton = document.getElementById("mobileLogoutButton");
-
-  // --- Utility Functions (Keep as is or adapt from previous versions) ---
-  const showGlobalMessage = (message, type = "success") => {
-    employeeDashboardSuccess.classList.add("hidden");
-    employeeDashboardError.classList.add("hidden");
-    employeeDashboardSuccess.textContent = "";
-    employeeDashboardError.textContent = "";
-
+  // --- Fungsi Utilitas (Ganti showGlobalMessage dengan showToast) ---
+  const showToast = (message, type = "success") => {
+    let backgroundColor;
     if (type === "success") {
-      employeeDashboardSuccess.textContent = message;
-      employeeDashboardSuccess.classList.remove("hidden");
-      employeeDashboardSuccess.classList.remove("text-red-600");
-      employeeDashboardSuccess.classList.add("text-green-600");
+      backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)"; // Tailwind green-500 ke green-700
+    } else if (type === "error") {
+      backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)"; // Tailwind red-500 ke red-700
     } else {
-      employeeDashboardError.textContent = message;
-      employeeDashboardError.classList.remove("hidden");
-      employeeDashboardError.classList.remove("text-green-600");
-      employeeDashboardError.classList.add("text-red-600");
+      backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)"; // Tailwind blue-500 ke blue-700
     }
-    setTimeout(() => {
-      employeeDashboardSuccess.classList.add("hidden");
-      employeeDashboardError.classList.add("hidden");
-    }, 3000);
+
+    Toastify({
+      text: message,
+      duration: 3000,
+      close: true,
+      gravity: "top",
+      position: "right",
+      stopOnFocus: true,
+      style: {
+        background: backgroundColor,
+        borderRadius: "8px",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        padding: "12px 20px"
+      },
+    }).showToast();
   };
 
-  // showModalMessage function is no longer needed in Dashboard since modal is moved
-  // const showModalMessage = (message, type = "success", targetErrorDiv, targetSuccessDiv) => {
-  //     // ... (removed)
-  // };
+  // --- Logika Utama ---
 
-  // --- User Authentication and Data Loading (Example, adjust based on your actual services) ---
-  const authToken = localStorage.getItem("authToken");
-  if (!authToken) {
-    showGlobalMessage("Anda tidak terautentikasi. Silakan login ulang.", "error");
-    setTimeout(() => (window.location.href = "/src/pages/login.html"), 2000);
-    return;
-  }
-
-  // Example function to fetch employee data (replace with your actual API calls)
   const fetchEmployeeData = async () => {
     try {
-      const userId = localStorage.getItem("userId");
-      const userRole = localStorage.getItem("userRole");
-
-      if (!userId || userRole !== 'karyawan') {
-        showGlobalMessage("Data pengguna tidak lengkap atau peran tidak sesuai.", "error");
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error"); // Ganti showGlobalMessage
+        setTimeout(() => authService.logout(), 2000);
         return;
       }
+
+      // 1. Ambil objek 'user' dari localStorage
+      const userString = localStorage.getItem("user");
+      if (!userString) {
+        throw new Error("Data pengguna tidak ditemukan di sesi.");
+      }
       
-      const employee = await userService.getUserByID(userId, authToken);
-      console.log("Data Karyawan:", employee);
+      // 2. Parse string JSON menjadi objek, tambahkan try-catch untuk parsing
+      let user;
+      try {
+          user = JSON.parse(userString);
+      } catch (e) {
+          console.error("Error parsing user from localStorage:", e);
+          throw new Error("Data pengguna di sesi rusak.");
+      }
+      
+      // 3. Cek peran dari objek yang sudah di-parse
+      if (user.role !== 'karyawan') {
+        throw new Error("Peran tidak sesuai untuk mengakses halaman ini.");
+      }
+      
+      // 4. Gunakan 'user.id' dari objek untuk mengambil data detail
+      const employeeData = await userService.getUserByID(user.id, token);
+      
+      if (employeeData) {
+        // Tampilkan data ke elemen HTML
+        profilePhoto.src = employeeData.photo || "https://via.placeholder.com/80/4A5568/E2E8F0?text=ME";
+        employeeName.textContent = employeeData.name;
+        employeePosition.textContent = employeeData.position || "-";
+        employeeDepartment.textContent = employeeData.department || "-";
+        
+        // Update avatar di navigasi juga
+        if (userAvatarNav) {
+            userAvatarNav.src = employeeData.photo || "https://via.placeholder.com/80/4A5568/E2E8F0?text=ME";
+            userAvatarNav.alt = employeeData.name;
+        }
 
-      // For now, using mock data if actual data is not fetched (REMOVE THIS IN PRODUCTION)
-      const mockEmployeeData = {
-        name: "Nama Karyawan",
-        position: "Software Engineer",
-        department: "IT",
-        photo: "https://via.placeholder.com/80/4A5568/E2E8F0?text=NP", // Example profile picture
-        attendanceStatus: "Hadir",
-        remainingLeaveDays: 12,
-      };
-
-      profilePhoto.src = employee.photo || mockEmployeeData.photo;
-      employeeName.textContent = employee.name || mockEmployeeData.name;
-      employeePosition.textContent = employee.position || mockEmployeeData.position;
-      employeeDepartment.textContent = employee.department || mockEmployeeData.department;
-      todayAttendanceStatus.textContent = mockEmployeeData.attendanceStatus;
-      remainingLeave.textContent = `${mockEmployeeData.remainingLeaveDays} Hari`;
-      userAvatarNav.src = employee.photo || mockEmployeeData.photo; // Update navbar avatar too
-      userAvatarNav.alt = employee.name || mockEmployeeData.name;
+        // Catatan: Data untuk status absensi dan sisa cuti perlu endpoint API sendiri
+        todayAttendanceStatus.textContent = "Belum ada data"; // Ini perlu di-fetch dari API
+        remainingLeave.textContent = `12 Hari`; // Contoh data statis, ini juga perlu di-fetch
+      }
 
     } catch (error) {
       console.error("Error fetching employee data:", error);
-      showGlobalMessage("Gagal memuat data profil. Silakan coba lagi.", "error");
-      // Handle unauthorized or token expiry
-      if (error.status === 401 || error.message.includes('token')) {
-        authService.logout();
+      showToast(error.message || "Gagal memuat data profil.", "error"); // Ganti showGlobalMessage
+      // Jika error terkait sesi/token, otomatis logout setelah 2 detik
+      if (error.message.includes('token') || error.message.includes('sesi') || error.message.includes('Peran tidak sesuai') || error.message.includes('Data pengguna di sesi rusak')) {
+        setTimeout(() => authService.logout(), 2000);
       }
     }
   };
 
-  fetchEmployeeData(); // Load initial employee data
+  const setupUIEventListeners = () => {
+    // Logika Dropdown User
+    if (userAvatarNav && dropdownMenu && userDropdownContainer) {
+      userAvatarNav.addEventListener("click", () => dropdownMenu.classList.toggle("active"));
+      document.addEventListener("click", (event) => {
+        if (!userDropdownContainer.contains(event.target)) {
+          dropdownMenu.classList.remove("active");
+        }
+      });
+    }
 
-  // --- Dropdown User Navbar Logic ---
-  if (userAvatarNav && dropdownMenu && userDropdownContainer) {
-    // Toggle dropdown visibility
-    userAvatarNav.addEventListener("click", (event) => {
-      event.stopPropagation(); // Prevent click from immediately closing dropdown
-      dropdownMenu.classList.toggle("active"); // Toggle 'active' class
+    // Logika Logout - Konsolidasi semua tombol logout
+    // Pastikan ID atau kelas ini ada di HTML Anda
+    const allLogoutButtons = document.querySelectorAll(".logout-button, #dropdownLogoutButton, #logoutButton, #mobileLogoutButton");
+
+    allLogoutButtons.forEach(button => {
+        button.addEventListener("click", (event) => {
+            event.preventDefault(); // Mencegah navigasi default link/button
+            // Tampilkan konfirmasi logout
+            showLogoutConfirmation();
+        });
     });
 
-    // Close dropdown when clicking outside
-    document.addEventListener("click", (event) => {
-      if (!userDropdownContainer.contains(event.target)) {
-        dropdownMenu.classList.remove("active");
-      }
-    });
+    // Logika Sidebar Mobile (jika ada)
+    const sidebarToggle = document.getElementById("sidebarToggle");
+    const mobileSidebar = document.getElementById("mobileSidebar");
+    const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
+    const closeSidebar = document.getElementById("closeSidebar");
 
-    // Prevent dropdown from closing when clicking inside it
-    dropdownMenu.addEventListener("click", (event) => {
-      event.stopPropagation();
-    });
-  }
-
-
-  // --- Change Password Modal Logic (REMOVED from this file) ---
-  // All modal-related elements and logic have been removed from here.
-
-  // --- Logout Logic ---
-  const handleLogout = async (event) => {
-    event.preventDefault();
-    try {
-      authService.logout(); // This service should handle token clearing and redirection
-    } catch (error) {
-      console.error("Logout failed:", error);
-      showGlobalMessage("Gagal logout. Silakan coba lagi.", "error");
+    if (sidebarToggle && mobileSidebar && mobileSidebarPanel && closeSidebar) {
+        const showMobileSidebar = () => {
+            mobileSidebar.classList.remove("hidden");
+            setTimeout(() => {
+                mobileSidebar.classList.add("opacity-100");
+                mobileSidebarPanel.classList.remove("-translate-x-full");
+            }, 10);
+        };
+        const hideMobileSidebar = () => {
+            mobileSidebar.classList.remove("opacity-100");
+            mobileSidebarPanel.classList.add("-translate-x-full");
+            setTimeout(() => mobileSidebar.classList.add("hidden"), 300);
+        };
+        sidebarToggle.addEventListener("click", showMobileSidebar);
+        closeSidebar.addEventListener("click", hideMobileSidebar);
+        mobileSidebar.addEventListener("click", (event) => {
+            if (event.target === mobileSidebar) hideMobileSidebar();
+        });
     }
   };
 
-  if (document.getElementById("logoutButton")) {
-    document.getElementById("logoutButton").addEventListener("click", handleLogout);
-  }
-  if (dropdownLogoutButton) {
-    dropdownLogoutButton.addEventListener("click", handleLogout);
-  }
-  if (mobileLogoutButton) {
-    mobileLogoutButton.addEventListener("click", handleLogout);
-  }
+  // Fungsi untuk menampilkan konfirmasi logout menggunakan Toastify (Baru)
+  const showLogoutConfirmation = () => {
+    const toastNode = document.createElement("div");
+    toastNode.className = "flex flex-col items-center p-2";
+    toastNode.innerHTML = `
+      <p class="font-semibold text-white text-base mb-4">Anda yakin ingin keluar?</p>
+      <div class="flex space-x-3">
+        <button id="confirmLogoutBtn" class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700">Ya, Keluar</button>
+        <button id="cancelLogoutBtn" class="px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-md hover:bg-gray-600">Batal</button>
+      </div>
+    `;
+    const toast = Toastify({ 
+        node: toastNode, 
+        duration: -1, // Durasi tak terbatas sampai ditutup manual
+        gravity: "top", 
+        position: "center", 
+        close: true, // Ada tombol close otomatis
+        style: { 
+            background: "linear-gradient(to right, #4f46e5, #7c3aed)", 
+            borderRadius: "12px",
+            padding: "1rem" // Tambah padding biar lebih bagus
+        } 
+    }).showToast();
 
-  // --- Mobile Sidebar Logic ---
-  if (sidebarToggle && mobileSidebar && mobileSidebarPanel && closeSidebar) {
-    sidebarToggle.addEventListener("click", () => {
-      mobileSidebar.classList.remove("hidden");
-      setTimeout(() => {
-        mobileSidebar.classList.add("opacity-100");
-        mobileSidebarPanel.classList.remove("-translate-x-full");
-      }, 10);
+    // Event listener untuk tombol di dalam toast
+    toastNode.querySelector("#confirmLogoutBtn").addEventListener("click", () => {
+        authService.logout(); // Panggil logout dari authService
+        toast.hideToast(); // Sembunyikan toast setelah konfirmasi
     });
-
-    const hideMobileSidebar = () => {
-      mobileSidebar.classList.remove("opacity-100");
-      mobileSidebarPanel.classList.add("-translate-x-full");
-      setTimeout(() => {
-        mobileSidebar.classList.add("hidden");
-      }, 300);
-    };
-
-    closeSidebar.addEventListener("click", hideMobileSidebar);
-
-    mobileSidebar.addEventListener("click", (event) => {
-      if (event.target === mobileSidebar) {
-        hideMobileSidebar();
-      }
+    toastNode.querySelector("#cancelLogoutBtn").addEventListener("click", () => {
+        toast.hideToast(); // Sembunyikan toast
     });
-  }
+  };
+  
+  // --- Inisialisasi Halaman ---
+  setupUIEventListeners();
+  fetchEmployeeData();
 });
