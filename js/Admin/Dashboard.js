@@ -6,7 +6,6 @@ import "toastify-js/src/toastify.css";
 document.addEventListener("DOMContentLoaded", () => {
   feather.replace();
 
-  // --- Seleksi Elemen DOM ---
   const totalKaryawanEl = document.getElementById("totalKaryawan");
   const karyawanAktifEl = document.getElementById("karyawanAktif");
   const karyawanCutiEl = document.getElementById("karyawanCuti");
@@ -38,7 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let modalQrRefreshInterval;
   let modalQrCountdownInterval;
   let isRefreshingQrCode = false;
-let hasScheduledRefresh = false;
+  let hasScheduledRefresh = false;
+  let lastQrGenerationRequestTime = 0;
 
 
   // --- Fungsi Utilitas untuk Toastify ---
@@ -111,6 +111,7 @@ const displayModalQRCode = (qrData, isAutoRefresh = false) => {
 
 
 const startModalQRCodeCountdown = (expiresAt) => {
+  // Hapus interval lama jika ada untuk memastikan kebersihan
   if (modalQrCountdownInterval) {
     clearInterval(modalQrCountdownInterval);
   }
@@ -118,26 +119,40 @@ const startModalQRCodeCountdown = (expiresAt) => {
   modalQrCountdownInterval = setInterval(() => {
     const now = new Date();
     const timeLeftMs = expiresAt.getTime() - now.getTime();
-    const secondsLeft = Math.floor(timeLeftMs / 1000);
+    const secondsLeft = Math.round(timeLeftMs / 1000);
 
-    modalQrExpiresAtEl.textContent = `QR Code kedaluwarsa dalam ${secondsLeft} detik`;
-
-    // Logika refresh hanya sekali saat < 2 detik
-    if (timeLeftMs < 2000 && !hasScheduledRefresh) {
-      hasScheduledRefresh = true;
-      console.log(`[${new Date().toISOString()}] ⚠️ Countdown mendekati 0, memicu auto-refresh QR`);
-      handleGenerateModalQRCode(true);
-    }
-
-    // Jika waktu habis, bersihkan countdown
+    // Cek jika waktu sudah benar-benar habis atau belum
     if (timeLeftMs <= 0) {
+      // --- LOGIKA BARU DITEMPATKAN DI SINI ---
+      
+      // 1. Hentikan interval ini agar tidak berjalan lagi.
       clearInterval(modalQrCountdownInterval);
-      modalQrExpiresAtEl.textContent = "QR Code telah kedaluwarsa.";
+      
+      // 2. Beri tahu pengguna bahwa QR sedang diperbarui.
+      modalQrExpiresAtEl.textContent = "Kedaluwarsa, membuat QR baru...";
+      
+      // 3. Panggil fungsi untuk men-generate QR code baru secara otomatis.
+      handleGenerateModalQRCode(true);
+
+    } else {
+      // Selama waktu masih ada, terus perbarui countdown.
+      modalQrExpiresAtEl.textContent = `QR Code kedaluwarsa dalam ${secondsLeft} detik`;
     }
   }, 1000);
-  };
+};
 
 const handleGenerateModalQRCode = async (isAutoRefresh = false) => {
+  // --- KUNCI BERBASIS WAKTU (COOLDOWN) ---
+  const now = Date.now();
+  // Tolak permintaan jika ada permintaan lain dalam 5 detik terakhir (5000 ms)
+  if (now - lastQrGenerationRequestTime < 5000) {
+    console.warn(`[${new Date().toISOString()}] ⛔ Abort: Permintaan refresh diabaikan karena masih dalam periode cooldown.`);
+    return; // Hentikan eksekusi sepenuhnya
+  }
+  // Catat waktu permintaan ini
+  lastQrGenerationRequestTime = now;
+
+  // --- Sisa kode Anda tetap sama ---
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] 🔄 Mulai generate QR | autoRefresh: ${isAutoRefresh}`);
 
@@ -147,12 +162,6 @@ const handleGenerateModalQRCode = async (isAutoRefresh = false) => {
   }
 
   isRefreshingQrCode = true;
-  hasScheduledRefresh = false;
-
-  modalQrPlaceholderEl.textContent = "Memuat QR Code...";
-  modalQrPlaceholderEl.classList.remove("hidden");
-  modalQrImageEl.classList.add("hidden", "opacity-0", "scale-95");
-  modalQrExpiresAtEl.textContent = "";
 
   if (modalQrRefreshInterval) {
     clearTimeout(modalQrRefreshInterval);
@@ -171,14 +180,12 @@ const handleGenerateModalQRCode = async (isAutoRefresh = false) => {
     displayModalQRCode(data, isAutoRefresh);
 
     const expiresAt = new Date(data.expires_at);
-    const now = new Date();
-    const actualDuration = expiresAt.getTime() - now.getTime();
-
+    const nowDate = new Date();
+    const actualDuration = expiresAt.getTime() - nowDate.getTime();
 
     if (!isAutoRefresh) {
       showToast("QR Code berhasil dibuat!", "success");
     }
-
   } catch (error) {
     console.error(`[${timestamp}] ❌ Gagal generate QR:`, error);
     modalQrPlaceholderEl.textContent = "Gagal membuat QR. Coba lagi.";
