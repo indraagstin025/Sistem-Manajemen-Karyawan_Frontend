@@ -36,6 +36,22 @@ export const authService = {
     window.location.href = '/src/pages/login.html';
   },
 
+
+   /**
+   * Mengambil data user yang sedang login dari localStorage.
+   * @returns {Object|null} Objek user jika ada, null jika tidak.
+   */
+  getCurrentUser: () => { // <--- TAMBAHKAN FUNGSI INI
+    try {
+      const userString = localStorage.getItem('user');
+      return userString ? JSON.parse(userString) : null;
+    } catch (e) {
+      console.error("Error parsing user from localStorage:", e);
+      return null;
+    }
+  },
+
+
     /**
      * Mengubah password user yang sedang login.
      * @param {string} oldPassword - Password lama user.

@@ -86,7 +86,7 @@ const AttendanceService = {
             throw new Error('Tidak ada token autentikasi ditemukan. Silakan login kembali.');
         }
 
-        const response = await fetch(`${API_BASE_URL}/attendance/scan-qrcode`, { // Perhatikan endpoint, sebelumnya '/attendance/scan'
+        const response = await fetch(`${API_BASE_URL}/attendance/scan`, { // Perhatikan endpoint, sebelumnya '/attendance/scan'
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

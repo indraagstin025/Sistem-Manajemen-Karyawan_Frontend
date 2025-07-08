@@ -3,12 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard Admin - HR-System</title>
+    <title>Daftar Kehadiran - HR-System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/style/input.css" />
 
     <style>
@@ -83,7 +82,7 @@
         <nav class="flex flex-col flex-grow px-4">
           <a
             href="/src/pages/Admin/admin_dashboard.html"
-            class="flex items-center px-4 py-3 mt-2 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95"
+            class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200"
           >
             <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
           </a>
@@ -102,7 +101,7 @@
           <button type="button" id="generate-qr-menu-btn" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="qr-code" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
           </button>
-          <a href="/src/pages/Admin/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+          <a href="/src/pages/Admin/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95">
             <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Laporan Absensi</span>
           </a>
           <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
@@ -122,7 +121,7 @@
             <button class="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 mr-4" id="sidebarToggle">
               <i data-feather="menu" class="w-6 h-6"></i>
             </button>
-            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Daftar Kehadiran</h1>
           </div>
           <div class="flex items-center space-x-4">
             <div class="relative group" id="userDropdown">
@@ -142,31 +141,42 @@
         </header>
 
         <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-teal-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Total Karyawan</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="totalKaryawan">0</p>
+          <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h3 class="font-semibold text-gray-800 mb-4 text-xl">Daftar Kehadiran Hari Ini</h3>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Nama Karyawan
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Departemen
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Posisi
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Check-in
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Check-out
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="attendance-list-body" class="bg-white divide-y divide-gray-200">
+                  <tr>
+                    <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">Memuat data kehadiran...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Karyawan Aktif</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="karyawanAktif">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-orange-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Karyawan Cuti</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="karyawanCuti">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-purple-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Total Departemen</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="totalDepartemen">0</p>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
-              <h3 class="font-semibold text-gray-800 mb-4 text-xl">Distribusi Karyawan</h3>
-              <div class="h-80">
-                <canvas id="departmentChart"></canvas>
-              </div>
+            <div id="attendance-empty-state" class="text-center text-gray-500 py-8 hidden">
+              <i data-feather="info" class="w-10 h-10 mx-auto mb-3 text-gray-400"></i>
+              <p>Belum ada data kehadiran untuk hari ini.</p>
             </div>
           </div>
         </main>
@@ -234,6 +244,6 @@
       </div>
     </div>
 
-    <script type="module" src="/js/Admin/Dashboard.js"></script>
+    <script type="module" src="/js/Admin/AttendanceList.js"></script>
   </body>
 </html>
