@@ -21,6 +21,7 @@
     "vite-plugin-mpa": "^1.2.0"
   },
   "dependencies": {
+    "sweetalert2": "^11.22.2",
     "toastify-js": "^1.12.0"
   }
 }

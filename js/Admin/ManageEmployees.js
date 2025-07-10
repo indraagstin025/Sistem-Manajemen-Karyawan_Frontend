@@ -1,6 +1,8 @@
 import { userService } from "../Services/UserServices.js";
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
+import Swal from 'sweetalert2';
+
 
 document.addEventListener("DOMContentLoaded", async () => {
   feather.replace();
@@ -311,27 +313,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  const handleDelete = async (employeeId, employeeName) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus karyawan "${employeeName}"? Tindakan ini tidak dapat dibatalkan.`)) {
-      return;
-    }
+const handleDelete = async (employeeId, employeeName) => {
+  Swal.fire({
+    title: `Hapus ${employeeName}?`,
+    text: "Tindakan ini tidak dapat dibatalkan!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Ya, hapus!",
+    cancelButtonText: "Batal"
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        const response = await userService.deleteUser(employeeId, authToken);
+        console.log("Karyawan berhasil dihapus:", response);
 
-    try {
-      const response = await userService.deleteUser(employeeId, authToken);
-      console.log("Karyawan berhasil dihapus:", response);
-      showGlobalMessage(`Karyawan "${employeeName}" berhasil dihapus!`, "success");
-      fetchEmployees();
-    } catch (error) {
-      console.error("Gagal menghapus karyawan:", error);
-      let errorMessage = "Terjadi kesalahan saat menghapus karyawan. Silakan coba lagi.";
-      if (error.status === 401 || error.status === 403) {
-        errorMessage = "Anda tidak memiliki izin untuk menghapus karyawan ini.";
-      } else if (error.message) {
-        errorMessage = error.message;
+        Swal.fire({
+          title: "Terhapus!",
+          text: `Karyawan "${employeeName}" berhasil dihapus.`,
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false
+        });
+
+        fetchEmployees();
+      } catch (error) {
+        console.error("Gagal menghapus karyawan:", error);
+        let errorMessage = "Terjadi kesalahan saat menghapus karyawan. Silakan coba lagi.";
+        if (error.status === 401 || error.status === 403) {
+          errorMessage = "Anda tidak memiliki izin untuk menghapus karyawan ini.";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        Swal.fire({
+          title: "Gagal",
+          text: errorMessage,
+          icon: "error",
+          confirmButtonText: "OK"
+        });
       }
-      showGlobalMessage(errorMessage, "error");
     }
-  };
+  });
+};
+
 
   if (prevPageBtn) {
     prevPageBtn.addEventListener("click", () => {
