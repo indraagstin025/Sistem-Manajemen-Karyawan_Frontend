@@ -108,54 +108,6 @@
             }
         });
 
-        // Form submission validation
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
-            let hasError = false;
-
-            // Reset previous errors
-            emailError.classList.add('hidden');
-            passwordError.classList.add('hidden');
-            errorMessage.classList.add('hidden');
-            emailInput.classList.remove('border-red-500');
-            passwordInput.classList.remove('border-red-500');
-
-            // Validate email
-            if (!email) {
-                emailError.textContent = 'Email wajib diisi';
-                emailError.classList.remove('hidden');
-                emailInput.classList.add('border-red-500');
-                hasError = true;
-            } else if (!validateEmail(email)) {
-                emailError.textContent = 'Format email tidak valid';
-                emailError.classList.remove('hidden');
-                emailInput.classList.add('border-red-500');
-                hasError = true;
-            }
-
-            // Validate password
-            if (!password) {
-                passwordError.textContent = 'Password wajib diisi';
-                passwordError.classList.remove('hidden');
-                passwordInput.classList.add('border-red-500');
-                hasError = true;
-            } else if (password.length < 6) {
-                passwordError.textContent = 'Password minimal 6 karakter';
-                passwordError.classList.remove('hidden');
-                passwordInput.classList.add('border-red-500');
-                hasError = true;
-            }
-
-            if (!hasError) {
-                // If validation passes, you can proceed with login logic
-                // This is where you'd typically call your login API
-                console.log('Form validation passed');
-            }
-        });
-
         // Password toggle functionality
         const togglePassword = document.getElementById('togglePassword');
 
