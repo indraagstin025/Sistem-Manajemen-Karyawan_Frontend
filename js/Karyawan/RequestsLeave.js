@@ -2,7 +2,7 @@
 
 import { authService } from '../Services/AuthServices.js';
 import { userService } from "../Services/UserServices.js";
-import { LeaveRequestService } from '../Services/LeaveRequestsServices.js'; // Kita akan buat ini
+import { LeaveRequestService } from '../Services/LeaveRequestsServices.js'; // Menggunakan export const
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
@@ -81,95 +81,95 @@ document.addEventListener("DOMContentLoaded", async () => {
     // --- Fungsi untuk memuat data profil karyawan (untuk avatar di header) ---
     const fetchEmployeeProfileDataForHeader = async () => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                return null;
-            }
+            // Tidak perlu mendapatkan 'token' secara terpisah lagi di sini
             let user = authService.getCurrentUser();
-            if (!user) {
+            if (!user || !user.id) { 
                 return null;
             }
-            const employeeData = await userService.getUserByID(user.id, token);
+            // Parameter 'token' dihapus karena sudah di-handle oleh interceptor apiClient
+            const employeeData = await userService.getUserByID(user.id); 
             if (employeeData && userAvatarNav) {
-                userAvatarNav.src = employeeData.photo || "https://placehold.co/40x40/E2E8F0/4A5568?text=ME";
+                // Ganti placehold.co dengan via.placeholder.com atau URL lokal yang valid
+                userAvatarNav.src = employeeData.photo || "https://via.placeholder.com/40x40/E2E8F0/4A5568?text=ME";
                 userAvatarNav.alt = employeeData.name;
             }
             return employeeData;
         } catch (error) {
             console.error("Error fetching employee profile data for header:", error);
+            // Tangani error Unauthorized/Forbidden dari interceptor
+            if (error.status === 401 || error.status === 403) {
+                showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
+                setTimeout(() => authService.logout(), 2000);
+            } else {
+                showToast(error.message || "Gagal memuat data profil header.", "error");
+            }
             return null;
         }
     };
 
     // --- Fungsi untuk memuat dan menampilkan riwayat pengajuan cuti/izin ---
-const loadLeaveHistory = async () => {
-    leaveHistoryTableBody.innerHTML = `
-        <tr>
-            <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat pengajuan...</td>
-        </tr>
-    `;
-    leaveHistoryMessage.classList.add('hidden');
-    paginationControls.classList.add('hidden');
-
-    try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
-            setTimeout(() => authService.logout(), 2000);
-            return;
-        }
-
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser || currentUser.role !== 'karyawan') {
-            showToast("Akses ditolak. Anda tidak memiliki izin untuk melihat halaman ini.", "error");
-            setTimeout(() => authService.logout(), 2000);
-            return;
-        }
-        
-        let fetchedData = await LeaveRequestService.getMyLeaveRequests(); // Panggil service
-
-        // >>>>>> TAMBAHKAN BLOK INI <<<<<<
-        // Pastikan fetchedData adalah array. Jika bukan, set menjadi array kosong.
-        if (!Array.isArray(fetchedData)) {
-            console.warn("Peringatan: API /leave-requests/my-requests tidak mengembalikan array. Menerima:", fetchedData);
-            fetchedData = []; // Set menjadi array kosong untuk mencegah error sort
-            showToast("Peringatan: Format data riwayat pengajuan tidak valid dari server.", "info"); // Informasikan user
-        }
-        // >>>>>> AKHIR BLOK TAMBAHAN <<<<<<
-
-        allLeaveRequestsData = fetchedData; // Assign ke variabel global
-        allLeaveRequestsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Baris 132
-
-        if (allLeaveRequestsData.length === 0) {
-            leaveHistoryTableBody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Tidak ada riwayat pengajuan cuti/izin.</td>
-                </tr>
-            `;
-            leaveHistoryMessage.textContent = 'Anda belum memiliki riwayat pengajuan cuti atau izin.';
-            leaveHistoryMessage.classList.remove('hidden');
-            leaveHistoryMessage.classList.add('info');
-        } else {
-            renderLeaveHistoryTable(allLeaveRequestsData, currentPage, itemsPerPage);
-            updatePaginationControls(allLeaveRequestsData.length, currentPage, itemsPerPage);
-            if (allLeaveRequestsData.length > itemsPerPage) {
-                paginationControls.classList.remove('hidden');
-            }
-        }
-
-    } catch (error) {
-        console.error("Error loading leave history:", error); // Baris 152
+    const loadLeaveHistory = async () => {
         leaveHistoryTableBody.innerHTML = `
             <tr>
-                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-red-500">Gagal memuat riwayat pengajuan: ${error.message}</td>
+                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat pengajuan...</td>
             </tr>
         `;
-        showToast(error.message || "Gagal memuat riwayat pengajuan.", "error");
-        if (error.message.includes('token') || error.message.includes('sesi') || error.message.includes('Akses ditolak')) {
-            setTimeout(() => authService.logout(), 2000);
+        leaveHistoryMessage.classList.add('hidden');
+        paginationControls.classList.add('hidden');
+
+        try {
+            // Pengecekan user dan token yang lebih ringkas
+            const currentUser = authService.getCurrentUser();
+            if (!currentUser || currentUser.role !== 'karyawan') {
+                showToast("Akses ditolak. Anda tidak memiliki izin untuk melihat halaman ini.", "error");
+                setTimeout(() => authService.logout(), 2000);
+                return;
+            }
+            
+            // Parameter 'token' dihapus karena sudah di-handle oleh interceptor apiClient
+            let fetchedData = await LeaveRequestService.getMyLeaveRequests(); 
+
+            // Pastikan fetchedData adalah array. Jika bukan, set menjadi array kosong.
+            if (!Array.isArray(fetchedData)) {
+                console.warn("Peringatan: API /leave-requests/my-requests tidak mengembalikan array. Menerima:", fetchedData);
+                fetchedData = []; // Set menjadi array kosong untuk mencegah error sort
+                showToast("Peringatan: Format data riwayat pengajuan tidak valid dari server.", "info"); 
+            }
+
+            allLeaveRequestsData = fetchedData;
+            allLeaveRequestsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Urutkan dari terbaru
+
+            if (allLeaveRequestsData.length === 0) {
+                leaveHistoryTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Tidak ada riwayat pengajuan cuti/izin.</td>
+                    </tr>
+                `;
+                leaveHistoryMessage.textContent = 'Anda belum memiliki riwayat pengajuan cuti atau izin.';
+                leaveHistoryMessage.classList.remove('hidden');
+                leaveHistoryMessage.classList.add('info');
+            } else {
+                renderLeaveHistoryTable(allLeaveRequestsData, currentPage, itemsPerPage);
+                updatePaginationControls(allLeaveRequestsData.length, currentPage, itemsPerPage);
+                if (allLeaveRequestsData.length > itemsPerPage) {
+                    paginationControls.classList.remove('hidden');
+                }
+            }
+
+        } catch (error) {
+            console.error("Error loading leave history:", error);
+            leaveHistoryTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-red-500">Gagal memuat riwayat pengajuan: ${error.message}</td>
+                </tr>
+            `;
+            showToast(error.message || "Gagal memuat riwayat pengajuan.", "error");
+            // Perbarui kondisi error untuk redirect logout (gunakan error.status dari interceptor)
+            if (error.status === 401 || error.status === 403) {
+                setTimeout(() => authService.logout(), 2000);
+            }
         }
-    }
-};
+    };
 
     // --- Fungsi untuk merender tabel riwayat pengajuan per halaman ---
     const renderLeaveHistoryTable = (data, page, limit) => {
@@ -298,15 +298,12 @@ const loadLeaveHistory = async () => {
         }
 
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                showToast("Sesi tidak valid. Harap login kembali.", "error");
-                setTimeout(() => authService.logout(), 2000);
-                return;
-            }
+            // Token tidak perlu lagi di sini. Interceptor akan menanganinya
+            // const token = localStorage.getItem("token"); 
+            // if (!token) { showToast("Sesi tidak valid. Harap login kembali...", "error"); setTimeout(() => authService.logout(), 2000); return; }
 
-            // Panggil service untuk mengirim pengajuan
-            const response = await LeaveRequestService.createLeaveRequest(formData, token);
+            // Panggil service untuk mengirim pengajuan (parameter token dihapus)
+            const response = await LeaveRequestService.createLeaveRequest(formData); 
             
             showToast(response.message || "Pengajuan berhasil dikirim!", "success");
             formMessage.textContent = "Pengajuan berhasil dikirim dan menunggu persetujuan admin.";
@@ -329,6 +326,10 @@ const loadLeaveHistory = async () => {
             formMessage.classList.remove("hidden");
             formMessage.classList.remove("success");
             formMessage.classList.add("error");
+            // Perbarui kondisi error untuk redirect logout (gunakan error.status dari interceptor)
+            if (error.status === 401 || error.status === 403) {
+                setTimeout(() => authService.logout(), 2000);
+            }
         }
     });
 
@@ -391,16 +392,17 @@ const loadLeaveHistory = async () => {
             }
 
             const currentUser = authService.getCurrentUser();
-            if (!currentUser || !currentUser.id || !localStorage.getItem('token')) {
+            if (!currentUser || !currentUser.id) { // Tidak perlu lagi cek localStorage.getItem('token')
                 showToast("Sesi tidak valid. Harap login kembali.", "error");
                 setTimeout(() => authService.logout(), 2000);
                 return;
             }
-            const token = localStorage.getItem('token');
+            // const token = localStorage.getItem('token'); // <<-- Hapus ini, tidak lagi diperlukan
 
             try {
-                const response = await authService.changePassword(oldPassword, newPassword, token);
-                changePasswordSuccessMessage.textContent = response.message || "Password berhasil diubah!";
+                // Parameter 'token' dihapus
+                await authService.changePassword(oldPassword, newPassword); 
+                changePasswordSuccessMessage.textContent = "Password berhasil diubah!";
                 changePasswordSuccessMessage.classList.remove("hidden");
                 showToast("Password berhasil diubah!", "success");
 
@@ -418,6 +420,7 @@ const loadLeaveHistory = async () => {
             }
         });
     }
+
 
     // --- Event Listeners UI Umum ---
     if (userDropdownContainer) {
@@ -492,6 +495,6 @@ const loadLeaveHistory = async () => {
     };
 
     // --- Inisialisasi Halaman ---
-    fetchEmployeeProfileDataForHeader();
+    fetchEmployeeProfileDataForHeader(); // Muat data profil untuk avatar di header
     loadLeaveHistory(); // Muat riwayat pengajuan saat halaman dimuat
 });

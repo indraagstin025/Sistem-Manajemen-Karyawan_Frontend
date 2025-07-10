@@ -1,47 +1,41 @@
 // src/js/Services/AuthServices.js
 
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+import apiClient from './apiClient'; // <<-- IMPORT apiClient dari file terpisah
+
+
 
 export const authService = {
   login: async (email, password) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Terjadi kesalahan saat login.');
+      // Menggunakan apiClient yang sudah dikonfigurasi dari './apiClient'
+      const response = await apiClient.post('/auth/login', { email, password }); 
+      
+      if (response.data.token && response.data.user) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
       }
-
-      if (data.token && data.user) {
-        // MENYIMPAN dengan kunci 'token'
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-      return data;
+      return response.data; 
 
     } catch (error) {
       console.error('Error di authService.login:', error);
-      throw error;
+      throw error; // Error sudah diproses oleh interceptor, ini hanya re-throw
     }
   },
 
   logout: () => {
-    // MENGHAPUS dengan kunci 'token'
+    // Interceptor response Anda di apiClient.js sudah memiliki logika logout
+    // untuk status 401/403. Namun, fungsi logout manual ini tetap berguna
+    // untuk kasus di mana user memang ingin keluar.
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/src/pages/login.html';
+    window.location.href = '/src/pages/login.html'; // Redirect ke halaman login
   },
 
-
-   /**
+  /**
    * Mengambil data user yang sedang login dari localStorage.
    * @returns {Object|null} Objek user jika ada, null jika tidak.
    */
-  getCurrentUser: () => { // <--- TAMBAHKAN FUNGSI INI
+  getCurrentUser: () => {
     try {
       const userString = localStorage.getItem('user');
       return userString ? JSON.parse(userString) : null;
@@ -51,73 +45,35 @@ export const authService = {
     }
   },
 
+  /**
+   * Mengubah password user yang sedang login.
+   * @param {string} oldPassword - Password lama user.
+   * @param {string} newPassword - Password baru user.
+   * @returns {Promise<Object>} Respon dari API (berhasil/gagal).
+   */
+  changePassword: async (oldPassword, newPassword) => { 
+    try {
+      // apiClient akan otomatis menambahkan Authorization header melalui interceptor request
+      const response = await apiClient.post('/users/change-password', {
+        old_password: oldPassword,
+        new_password: newPassword
+      });
+      return response.data;
 
-    /**
-     * Mengubah password user yang sedang login.
-     * @param {string} oldPassword - Password lama user.
-     * @param {string} newPassword - Password baru user.
-     * @param {string} authToken - Token autentikasi user.
-     * @returns {Promise<Object>} Respon dari API (berhasil/gagal).
-     */
-    changePassword: async (oldPassword, newPassword, authToken) => {
-        try {
-            if (!authToken) {
-                throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
-            }
-
-            const response = await fetch(`${API_BASE_URL}/users/change-password`, {
-                method: 'POST', // Endpoint ini adalah POST di backend Anda
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || 'Gagal mengubah password.');
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
-
-            return data;
-        } catch (error) {
-            console.error('Error di authService.changePassword:', error);
-            throw error;
-        }
+    } catch (error) {
+      console.error('Error di authService.changePassword:', error);
+      throw error;
     }
+  }
 };
 
 export const dashboardService = {
   getDashboardStats: async () => {
     try {
-      // ======================================================
-      // PERUBAHAN UTAMA DI SINI
-      // Ganti 'authToken' menjadi 'token' agar konsisten
-      // ======================================================
-      const authToken = localStorage.getItem('token');
+      // apiClient akan otomatis menambahkan Authorization header melalui interceptor request
+      const response = await apiClient.get('/admin/dashboard-stats'); 
+      return response.data;
 
-      if (!authToken) {
-        throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/admin/dashboard-stats`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Gagal mengambil statistik dashboard.');
-      }
-      return data;
-      
     } catch (error) {
       console.error('Error di dashboardService.getDashboardStats:', error);
       throw error;

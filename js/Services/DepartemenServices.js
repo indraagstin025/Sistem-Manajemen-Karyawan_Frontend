@@ -1,15 +1,10 @@
-// src/Services/DepartemenServices.js
+// src/js/Services/DepartemenServices.js
 
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+import apiClient from './apiClient'; // Import apiClient yang sudah dibuat
 
-// Buat satu fungsi helper untuk mengambil token agar konsisten
-const getToken = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        throw new Error('Tidak ada token autentikasi ditemukan. Silakan login.');
-    }
-    return token;
-};
+// Hapus API_BASE_URL dan getToken karena apiClient dan interceptor menanganinya
+// const API_BASE_URL = 'http://localhost:3000/api/v1';
+// const getToken = () => { /* ... */ };
 
 export const departmentService = {
     /**
@@ -17,23 +12,13 @@ export const departmentService = {
      */
     getAllDepartments: async () => {
         try {
-            const authToken = getToken(); // Panggil helper
-
-            const response = await fetch(`${API_BASE_URL}/departments`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-            });
-            // ... (sisa logika tetap sama)
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Gagal mengambil daftar departemen.');
-            return data;
+            // apiClient otomatis menambahkan Authorization header dan menangani response.json()
+            const response = await apiClient.get('/departments');
+            return response.data; // Axios otomatis mengembalikan data respons
 
         } catch (error) {
             console.error('Error di departmentService.getAllDepartments:', error);
-            throw error;
+            throw error; // Interceptor sudah menangani error respons
         }
     },
 
@@ -42,20 +27,9 @@ export const departmentService = {
      */
     createDepartment: async (departmentData) => {
         try {
-            const authToken = getToken(); // Panggil helper
-
-            const response = await fetch(`${API_BASE_URL}/admin/departments`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-                body: JSON.stringify(departmentData),
-            });
-            // ... (sisa logika tetap sama)
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Gagal menambahkan departemen.');
-            return data;
+            // apiClient otomatis menambahkan Authorization header dan Content-Type
+            const response = await apiClient.post('/admin/departments', departmentData);
+            return response.data;
             
         } catch (error) {
             console.error('Error di departmentService.createDepartment:', error);
@@ -68,16 +42,9 @@ export const departmentService = {
      */
     getDepartmentByID: async (id) => {
         try {
-            const authToken = getToken(); // Panggil helper
-
-            const response = await fetch(`${API_BASE_URL}/departments/${id}`, {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${authToken}` },
-            });
-            // ... (sisa logika tetap sama)
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || `Gagal mendapatkan detail departemen.`);
-            return data;
+            // apiClient otomatis menambahkan Authorization header
+            const response = await apiClient.get(`/departments/${id}`);
+            return response.data;
 
         } catch (error) {
             console.error(`Error di departmentService.getDepartmentByID (${id}):`, error);
@@ -90,20 +57,9 @@ export const departmentService = {
      */
     updateDepartment: async (id, departmentData) => {
         try {
-            const authToken = getToken(); // Panggil helper
-
-            const response = await fetch(`${API_BASE_URL}/admin/departments/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
-                },
-                body: JSON.stringify(departmentData),
-            });
-            // ... (sisa logika tetap sama)
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || `Gagal mengupdate departemen.`);
-            return data;
+            // apiClient otomatis menambahkan Authorization header
+            const response = await apiClient.put(`/admin/departments/${id}`, departmentData);
+            return response.data;
 
         } catch (error) {
             console.error(`Error di departmentService.updateDepartment (${id}):`, error);
@@ -116,16 +72,9 @@ export const departmentService = {
      */
     deleteDepartment: async (id) => {
         try {
-            const authToken = getToken(); // Panggil helper
-            
-            const response = await fetch(`${API_BASE_URL}/admin/departments/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${authToken}` },
-            });
-            // ... (sisa logika tetap sama)
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || `Gagal menghapus departemen.`);
-            return data;
+            // apiClient otomatis menambahkan Authorization header
+            const response = await apiClient.delete(`/admin/departments/${id}`);
+            return response.data;
 
         } catch (error) {
             console.error(`Error di departmentService.deleteDepartment (${id}):`, error);

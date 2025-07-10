@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
     const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage");
 
-    // Elemen Paginasi (jika ingin diimplementasikan nanti)
+    // Elemen Paginasi
     const paginationControls = document.getElementById('paginationControls');
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
@@ -77,22 +77,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     // --- Fungsi untuk memuat data profil karyawan (untuk avatar di header) ---
     const fetchEmployeeProfileDataForHeader = async () => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                return null; // Akan ditangani di loadAttendanceHistory
-            }
+            // Tidak perlu mendapatkan 'token' secara terpisah lagi di sini
             let user = authService.getCurrentUser();
-            if (!user) {
+            if (!user || !user.id) { // Pastikan user ada dan memiliki ID
+                // Jika tidak ada user atau ID, ini akan ditangani oleh loadAttendanceHistory
+                // atau redirect oleh interceptor jika token expired
                 return null;
             }
-            const employeeData = await userService.getUserByID(user.id, token);
+            // Parameter 'token' dihapus karena sudah di-handle oleh interceptor apiClient
+            const employeeData = await userService.getUserByID(user.id); 
             if (employeeData && userAvatarNav) {
-                userAvatarNav.src = employeeData.photo || "https://placehold.co/40x40/E2E8F0/4A5568?text=ME";
+                // Ganti placehold.co dengan via.placeholder.com atau URL lokal yang valid
+               userAvatarNav.src = employeeData.photo || "https://via.placeholder.com/40x40/E2E8F0/4A5568?text=ME";
                 userAvatarNav.alt = employeeData.name;
             }
             return employeeData;
         } catch (error) {
             console.error("Error fetching employee profile data for header:", error);
+            // Tangani error Unauthorized/Forbidden dari interceptor
+            if (error.status === 401 || error.status === 403) {
+                showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
+                setTimeout(() => authService.logout(), 2000);
+            } else {
+                showToast(error.message || "Gagal memuat data profil header.", "error");
+            }
             return null;
         }
     };
@@ -109,13 +117,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         paginationControls.classList.add('hidden'); // Sembunyikan paginasi saat memuat
 
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
-                setTimeout(() => authService.logout(), 2000);
-                return;
-            }
-
+            // Pengecekan user dan token yang lebih ringkas
             const currentUser = authService.getCurrentUser();
             if (!currentUser || currentUser.role !== 'karyawan') {
                 showToast("Akses ditolak. Anda tidak memiliki izin untuk melihat halaman ini.", "error");
@@ -123,8 +125,21 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            allAttendanceData = await AttendanceService.getMyHistory(); // Ambil semua data
+            // allAttendanceData = await AttendanceService.getMyHistory(); // Ini sudah benar
+            // allAttendanceData.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // >>>>>> KODE UNTUK MENGATASI ERROR NULL/SORT (SAMA SEPERTI REQUEST_LEAVE.JS) <<<<<<
+            let fetchedData = await AttendanceService.getMyHistory(); 
+            // Pastikan fetchedData adalah array. Jika bukan, set menjadi array kosong.
+            if (!Array.isArray(fetchedData)) {
+                console.warn("Peringatan: API /attendance/my-history tidak mengembalikan array. Menerima:", fetchedData);
+                fetchedData = []; // Set menjadi array kosong untuk mencegah error sort
+                showToast("Peringatan: Format data riwayat absensi tidak valid dari server.", "info"); 
+            }
+            allAttendanceData = fetchedData;
             allAttendanceData.sort((a, b) => new Date(b.date) - new Date(a.date)); // Urutkan dari terbaru
+            // >>>>>> AKHIR KODE UNTUK MENGATASI ERROR NULL/SORT <<<<<<
+
 
             if (allAttendanceData.length === 0) {
                 attendanceHistoryTableBody.innerHTML = `
@@ -151,80 +166,70 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </tr>
             `;
             showToast(error.message || "Gagal memuat riwayat absensi.", "error");
-            if (error.message.includes('token') || error.message.includes('sesi') || error.message.includes('Akses ditolak')) {
+            // Perbarui kondisi error untuk redirect logout (gunakan error.status dari interceptor)
+            if (error.status === 401 || error.status === 403) {
                 setTimeout(() => authService.logout(), 2000);
             }
         }
     };
 
     // --- Fungsi untuk merender tabel absensi per halaman ---
-// --- Fungsi untuk merender tabel absensi per halaman ---
-const renderAttendanceTable = (data, page, limit) => {
-    attendanceHistoryTableBody.innerHTML = ''; // Kosongkan tabel
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedItems = data.slice(startIndex, endIndex);
+    const renderAttendanceTable = (data, page, limit) => {
+        attendanceHistoryTableBody.innerHTML = ''; // Kosongkan tabel
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedItems = data.slice(startIndex, endIndex);
 
-    paginatedItems.forEach(attendance => {
-        const row = attendanceHistoryTableBody.insertRow();
-        
-        // Format tanggal (contoh: 01 Januari 2023)
-        const date = new Date(attendance.date + 'T00:00:00'); // Tambahkan T00:00:00 agar tidak terpengaruh zona waktu
-        const formattedDate = date.toLocaleDateString('id-ID', {
+        paginatedItems.forEach(attendance => {
+            const row = attendanceHistoryTableBody.insertRow();
+            
+        const date = new Date(attendance.date + 'T00:00:00'); 
+        const formattedDate = date.toLocaleDateString('id-ID', { // <-- PASTIKAN BARIS INI ADA DAN TIDAK DIKOMENTARI
             year: 'numeric',
             month: 'long',
             day: 'numeric'
         });
 
-        let statusDisplayText = attendance.status || '-'; // Default display status
-        let statusClass = 'text-gray-700'; // Default text color
+        let statusDisplayText = attendance.status || '-';
+        let statusClass = 'text-gray-700';
 
-        // Tentukan warna dan teks tampilan berdasarkan status
-        switch (attendance.status) {
-            case 'Hadir':
-                statusClass = 'text-green-600 font-semibold';
-                break;
-            case 'Telat':
-                statusClass = 'text-orange-600 font-semibold';
-                // Anda bisa menambahkan detail telat di sini jika ada field durasi/waktu telat
-                break;
-            case 'Izin':
-                statusClass = 'text-purple-600 font-semibold'; // Warna yang lebih sesuai untuk izin
-                if (attendance.note) {
-                    statusDisplayText = `Izin (${attendance.note})`;
-                }
-                break;
-            case 'Sakit':
-                statusClass = 'text-red-600 font-semibold';
-                if (attendance.note) {
-                    statusDisplayText = `Sakit (${attendance.note})`;
-                }
-                break;
-            case 'Cuti':
-                statusClass = 'text-blue-600 font-semibold'; // Warna yang lebih sesuai untuk cuti
-                if (attendance.note) {
-                    statusDisplayText = `Cuti (${attendance.note})`;
-                }
-                break;
-            case 'Alpha':
-                statusClass = 'text-gray-500 font-semibold';
-                if (attendance.note) { // Mungkin ada catatan kenapa alpha
-                    statusDisplayText = `Alpha (${attendance.note})`;
-                }
-                break;
-            default:
-                statusClass = 'text-gray-900'; // Default jika status tidak dikenal
-        }
 
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_out || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.note || '-'}</td>
-        `;
-    });
-};
+            switch (attendance.status) {
+                case 'Hadir':
+                    statusClass = 'text-green-600 font-semibold';
+                    break;
+                case 'Telat':
+                    statusClass = 'text-orange-600 font-semibold';
+                    break;
+                case 'Izin':
+                    statusClass = 'text-purple-600 font-semibold';
+                    if (attendance.note) { statusDisplayText = `Izin (${attendance.note})`; }
+                    break;
+                case 'Sakit':
+                    statusClass = 'text-red-600 font-semibold';
+                    if (attendance.note) { statusDisplayText = `Sakit (${attendance.note})`; }
+                    break;
+                case 'Cuti':
+                    statusClass = 'text-blue-600 font-semibold';
+                    if (attendance.note) { statusDisplayText = `Cuti (${attendance.note})`; }
+                    break;
+                case 'Alpha':
+                    statusClass = 'text-gray-500 font-semibold';
+                    if (attendance.note) { statusDisplayText = `Alpha (${attendance.note})`; }
+                    break;
+                default:
+                    statusClass = 'text-gray-900';
+            }
+
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_out || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.note || '-'}</td>
+            `;
+        });
+    };
 
     // --- Fungsi untuk memperbarui kontrol paginasi ---
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {
@@ -322,16 +327,17 @@ const renderAttendanceTable = (data, page, limit) => {
             }
 
             const currentUser = authService.getCurrentUser();
-            if (!currentUser || !currentUser.id || !localStorage.getItem('token')) {
+            if (!currentUser || !currentUser.id) { // Tidak perlu lagi cek localStorage.getItem('token')
                 showToast("Sesi tidak valid. Harap login kembali.", "error");
                 setTimeout(() => authService.logout(), 2000);
                 return;
             }
-            const token = localStorage.getItem('token');
+            // const token = localStorage.getItem('token'); // <<-- Hapus ini, tidak lagi diperlukan
 
             try {
-                const response = await authService.changePassword(oldPassword, newPassword, token);
-                changePasswordSuccessMessage.textContent = response.message || "Password berhasil diubah!";
+                // Parameter 'token' dihapus
+                await authService.changePassword(oldPassword, newPassword); 
+                changePasswordSuccessMessage.textContent = "Password berhasil diubah!";
                 changePasswordSuccessMessage.classList.remove("hidden");
                 showToast("Password berhasil diubah!", "success");
 
@@ -351,7 +357,7 @@ const renderAttendanceTable = (data, page, limit) => {
     }
 
 
-    // --- Event Listeners UI Umum (disalin dari EmployeeDashboard.js) ---
+    // --- Event Listeners UI Umum ---
     if (userDropdownContainer) {
         userDropdownContainer.addEventListener("click", () => {
             dropdownMenu.classList.toggle("active");

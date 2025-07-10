@@ -1,8 +1,15 @@
-// File: js/Services/AttendanceServices.js
+// src/js/Services/AttendanceServices.js
 
-const API_BASE_URL = 'http://localhost:3000/api/v1'; // Sesuaikan jika port berbeda
+import apiClient from './apiClient'; // Import apiClient yang sudah dibuat
 
-const getToken = () => localStorage.getItem('token');
+// Hapus API_BASE_URL, getToken, dan getUser karena apiClient dan interceptor menanganinya
+// const API_BASE_URL = 'http://localhost:3000/api/v1';
+// const getToken = () => localStorage.getItem('token');
+// const getUser = () => { /* ... */ };
+
+// Fungsi pembantu lokal untuk mendapatkan objek user dari localStorage
+// Tetap pertahankan ini karena tidak semua request memerlukan token,
+// tapi beberapa mungkin memerlukan user ID secara langsung (misal: scanQR)
 const getUser = () => {
     try {
         const userString = localStorage.getItem('user');
@@ -13,35 +20,22 @@ const getUser = () => {
     }
 };
 
+
 const AttendanceService = {
     /**
      * @description Generate QR Code for today (Admin only)
      * @returns {Promise<Object>} Respon dari API yang berisi qr_code_image, expires_at, qr_code_value
      */
     generateQR: async () => {
-        const token = getToken();
-        if (!token) {
-            throw new Error('Tidak ada token autentikasi ditemukan. Silakan login kembali.');
+        try {
+            // apiClient otomatis menambahkan Authorization header dan menangani response.json()
+            const response = await apiClient.get('/attendance/generate-qr');
+            return response.data; // Axios otomatis mengembalikan data respons
+
+        } catch (error) {
+            console.error('Error di AttendanceService.generateQR:', error);
+            throw error; // Interceptor sudah menangani error respons
         }
-
-        // Backend Anda sekarang menggunakan GET method untuk generate-qr, bukan POST
-        // Dan tidak lagi memerlukan body/payload untuk tanggal
-        const response = await fetch(`${API_BASE_URL}/attendance/generate-qr`, {
-            method: 'GET', // <-- Perubahan: Dari POST menjadi GET
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        const data = await response.json(); // Selalu coba parse JSON
-
-        if (!response.ok) {
-            // Tangani error dengan lebih baik
-            const error = new Error(data.error || 'Gagal membuat QR Code');
-            error.status = response.status;
-            throw error;
-        }
-        return data; // Mengembalikan data langsung dari response
     },
 
     /**
@@ -49,26 +43,14 @@ const AttendanceService = {
      * @returns {Promise<Array>}
      */
     getTodaysAttendance: async () => {
-        const token = getToken();
-        if (!token) {
-            throw new Error('Tidak ada token autentikasi ditemukan. Silakan login kembali.');
-        }
+        try {
+            const response = await apiClient.get('/attendance/today');
+            return response.data;
 
-        const response = await fetch(`${API_BASE_URL}/attendance/today`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        const data = await response.json(); // Selalu coba parse JSON
-
-        if (!response.ok) {
-            const error = new Error(data.error || 'Gagal mengambil data absensi hari ini');
-            error.status = response.status;
+        } catch (error) {
+            console.error('Error di AttendanceService.getTodaysAttendance:', error);
             throw error;
         }
-        return data;
     },
 
     /**
@@ -77,35 +59,27 @@ const AttendanceService = {
      * @returns {Promise<Object>}
      */
     scanQR: async (qrCodeValue) => {
-        const user = getUser();
-        if (!user || !user.id) { // Pastikan user dan user.id ada
-            throw new Error("User ID tidak ditemukan. Harap login kembali.");
-        }
-        const token = getToken();
-        if (!token) {
-            throw new Error('Tidak ada token autentikasi ditemukan. Silakan login kembali.');
+        const user = getUser(); // Masih perlu getUser karena user.id diperlukan di body
+        if (!user || !user.id) {
+            // Ini akan ditangkap oleh interceptor jika tidak ada token,
+            // tapi validasi awal di sini juga baik
+            const customError = new Error("User ID tidak ditemukan. Harap login kembali.");
+            customError.status = 401; // Unauthorized
+            throw customError;
         }
 
-        const response = await fetch(`${API_BASE_URL}/attendance/scan`, { // Perhatikan endpoint, sebelumnya '/attendance/scan'
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
+        try {
+            // apiClient otomatis menambahkan Authorization header
+            const response = await apiClient.post('/attendance/scan', { // Perhatikan endpoint, sebelumnya '/attendance/scan'
                 qr_code_value: qrCodeValue,
                 user_id: user.id
-            }),
-        });
-        
-        const data = await response.json(); // Selalu coba parse JSON
+            });
+            return response.data;
 
-        if (!response.ok) {
-            const error = new Error(data.error || data.message || 'Gagal melakukan absensi.'); // Ambil error dari 'error' atau 'message'
-            error.status = response.status;
+        } catch (error) {
+            console.error('Error di AttendanceService.scanQR:', error);
             throw error;
         }
-        return data;
     },
 
     /**
@@ -113,31 +87,16 @@ const AttendanceService = {
      * @returns {Promise<Array>}
      */
     getMyHistory: async () => {
-        const token = getToken();
-        if (!token) {
-            throw new Error('Tidak ada token autentikasi ditemukan. Silakan login kembali.');
-        }
+        try {
+            // apiClient otomatis menambahkan Authorization header
+            const response = await apiClient.get('/attendance/my-history');
+            return response.data;
 
-        const response = await fetch(`${API_BASE_URL}/attendance/my-history`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        const data = await response.json(); // Selalu coba parse JSON
-
-        if (!response.ok) {
-            const error = new Error(data.error || 'Gagal mengambil riwayat absensi');
-            error.status = response.status;
+        } catch (error) {
+            console.error('Error di AttendanceService.getMyHistory:', error);
             throw error;
         }
-        return data;
     },
 };
 
-// ==========================================================
-// PASTIKAN BARIS INI ADA DI PALING BAWAH
-// Ini adalah baris yang menyebabkan error jika tidak ada.
-// ==========================================================
 export default AttendanceService;

@@ -1,25 +1,15 @@
-// js/Services/LeaveRequestService.js
+// src/js/Services/LeaveRequestsServices.js
 
-// Pastikan ini sesuai dengan URL backend Go Anda (biasanya port 8080 untuk Go Fiber)
+import apiClient from './apiClient'; // Import apiClient yang sudah dibuat
 
-// Jika backend Anda berjalan di http://localhost:3000/api/v1, gunakan:
- const API_BASE_URL = 'http://localhost:3000/api/v1';
+// Hapus API_BASE_URL dan getToken karena apiClient dan interceptor menanganinya
+// Hapus juga getUser jika tidak ada fungsi yang secara eksplisit membutuhkannya di sini
+// const API_BASE_URL = 'http://localhost:3000/api/v1';
+// const getToken = () => localStorage.getItem('token');
+// const getUser = () => { /* ... */ };
 
-// Fungsi pembantu lokal untuk mendapatkan token dari localStorage
-const getToken = () => localStorage.getItem('token');
 
-// Fungsi pembantu lokal untuk mendapatkan objek user dari localStorage
-const getUser = () => {
-    try {
-        const userString = localStorage.getItem('user');
-        return userString ? JSON.parse(userString) : null;
-    } catch (e) {
-        console.error("Error parsing user from localStorage:", e);
-        return null;
-    }
-};
-
-export const LeaveRequestService = {
+export const LeaveRequestService = { // Tetap gunakan export const untuk konsistensi
     /**
      * Mengambil semua pengajuan cuti/sakit. Hanya untuk admin.
      * @returns {Promise<Array>} Daftar pengajuan cuti/sakit.
@@ -27,34 +17,13 @@ export const LeaveRequestService = {
      */
     getAllLeaveRequests: async () => {
         try {
-            const token = getToken();
-            if (!token) {
-                const error = new Error('Token tidak ditemukan. Harap login kembali.');
-                error.status = 401; // Unauthorized
-                throw error;
-            }
+            // apiClient otomatis menambahkan Authorization header dan menangani response.json()
+            const response = await apiClient.get('/leave-requests');
+            return response.data; // Axios otomatis mengembalikan data respons
 
-            const response = await fetch(`${API_BASE_URL}/leave-requests`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || data.message || 'Gagal mengambil pengajuan cuti/izin.');
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
-
-            return data;
         } catch (error) {
-            console.error('Error di leaveRequestService.getAllLeaveRequests:', error);
-            throw error;
+            console.error('Error di LeaveRequestService.getAllLeaveRequests:', error);
+            throw error; // Interceptor sudah menangani error respons
         }
     },
 
@@ -68,34 +37,12 @@ export const LeaveRequestService = {
      */
     updateLeaveRequestStatus: async (requestId, status, note = '') => {
         try {
-            const token = getToken();
-            if (!token) {
-                const error = new Error('Token tidak ditemukan. Harap login kembali.');
-                error.status = 401;
-                throw error;
-            }
+            // apiClient otomatis menambahkan Authorization header dan Content-Type
+            const response = await apiClient.put(`/leave-requests/${requestId}/status`, { status, note });
+            return response.data;
 
-            const response = await fetch(`${API_BASE_URL}/leave-requests/${requestId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ status, note })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || data.message || 'Gagal memperbarui status pengajuan.');
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
-
-            return data;
         } catch (error) {
-            console.error('Error di leaveRequestService.updateLeaveRequestStatus:', error);
+            console.error('Error di LeaveRequestService.updateLeaveRequestStatus:', error);
             throw error;
         }
     },
@@ -106,36 +53,14 @@ export const LeaveRequestService = {
      * @returns {Promise<Object>} Respon dari server.
      * @throws {Error} Jika respons API bukan 2xx.
      */
-    createLeaveRequest: async (formData) => { // Token diambil di dalam fungsi
+    createLeaveRequest: async (formData) => {
         try {
-            const token = getToken();
-            if (!token) {
-                const error = new Error('Token tidak ditemukan. Harap login kembali.');
-                error.status = 401;
-                throw error;
-            }
+            // Untuk FormData, Axios akan otomatis mengatur Content-Type: multipart/form-data
+            const response = await apiClient.post('/leave-requests', formData);
+            return response.data;
 
-            const response = await fetch(`${API_BASE_URL}/leave-requests`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    // Penting: JANGAN SET Content-Type secara manual untuk FormData
-                    // Browser akan secara otomatis mengatur 'multipart/form-data' dengan boundary yang benar
-                },
-                body: formData, // FormData otomatis mengelola multipart/form-data
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || data.message || "Gagal mengirim pengajuan cuti/izin.");
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
-            return data;
         } catch (error) {
-            console.error("Error in createLeaveRequest:", error);
+            console.error("Error di LeaveRequestService.createLeaveRequest:", error);
             throw error;
         }
     },
@@ -145,41 +70,19 @@ export const LeaveRequestService = {
      * @returns {Promise<Array>} Daftar pengajuan cuti/izin/sakit karyawan.
      * @throws {Error} Jika respons API bukan 2xx.
      */
-    getMyLeaveRequests: async () => { // Token diambil di dalam fungsi
+    getMyLeaveRequests: async () => {
         try {
-            const token = getToken();
-            if (!token) {
-                const error = new Error('Token tidak ditemukan. Harap login kembali.');
-                error.status = 401;
-                throw error;
-            }
+            // apiClient otomatis menambahkan Authorization header
+            const response = await apiClient.get('/leave-requests/my-requests');
+            return response.data;
 
-            const response = await fetch(`${API_BASE_URL}/leave-requests/my-requests`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                const error = new Error(data.error || data.message || "Gagal mengambil riwayat pengajuan.");
-                error.status = response.status;
-                error.details = data.details || data.errors;
-                throw error;
-            }
-            return data;
         } catch (error) {
-            console.error("Error in getMyLeaveRequests:", error);
+            console.error("Error di LeaveRequestService.getMyLeaveRequests:", error);
             throw error;
         }
     },
 };
 
-// Export sebagai default jika Anda ingin mengimpornya dengan nama apapun
+// Pertahankan export const untuk konsistensi
+// Jika `export default` diperlukan oleh kode Anda, pastikan sesuai.
 // export default LeaveRequestService;
-
-// Atau, tetap seperti ini jika Anda ingin mengimpornya dengan nama spesifik `leaveRequestService`
-// import { leaveRequestService } from '../Services/LeaveRequestService.js';

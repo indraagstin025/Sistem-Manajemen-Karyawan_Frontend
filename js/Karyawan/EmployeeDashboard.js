@@ -15,15 +15,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const employeePosition = document.getElementById("employeePosition");
     const employeeDepartment = document.getElementById("employeeDepartment");
     // Diperbarui: todayAttendanceStatusSummary untuk kartu ringkasan
-    const todayAttendanceStatusSummary = document.getElementById("todayAttendanceStatus"); 
+    const todayAttendanceStatusSummary = document.getElementById("todayAttendanceStatus");
     const remainingLeave = document.getElementById("remainingLeave"); // Elemen untuk sisa cuti
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
-    
+
     // Tombol Logout
-    const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton"); 
-    
+    const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
+
     // Sidebar Mobile
     const sidebarToggle = document.getElementById("sidebarToggle");
     const mobileSidebar = document.getElementById("mobileSidebar");
@@ -107,28 +107,30 @@ document.addEventListener("DOMContentLoaded", async () => {
                 console.error("Error parsing user from localStorage:", e);
                 throw new Error("Data pengguna di sesi rusak.");
             }
-            
+
             if (user.role !== 'karyawan') { // Sesuaikan dengan role karyawan di database Anda
                 showToast("Akses ditolak. Peran tidak sesuai untuk halaman ini.", "error");
                 setTimeout(() => authService.logout(), 2000);
                 return null;
             }
 
-            const employeeData = await userService.getUserByID(user.id, token);
-            
+            // authToken sudah ditangani oleh interceptor di userService, jadi tidak perlu diteruskan di sini.
+            // Pastikan getUserByID di UserService.js tidak lagi menerima parameter token
+            const employeeData = await userService.getUserByID(user.id);
+
             if (employeeData) {
                 profilePhoto.src = employeeData.photo || "https://via.placeholder.com/80/4A5568/E2E8F0?text=ME";
                 employeeName.textContent = employeeData.name;
                 employeePosition.textContent = employeeData.position || "-";
                 employeeDepartment.textContent = employeeData.department || "-";
-                
+
                 // --- KOREKSI: Tampilkan sisa cuti dari data karyawan ---
                 if (employeeData.annual_leave_balance !== undefined && employeeData.annual_leave_balance !== null) {
                     remainingLeave.textContent = `${employeeData.annual_leave_balance} Hari`;
                 } else {
                     remainingLeave.textContent = `N/A`; // Atau default lain jika data tidak ada
                 }
-                
+
                 if (userAvatarNav) {
                     userAvatarNav.src = employeeData.photo || "https://via.placeholder.co/40x40/E2E8F0/4A5568?text=ME";
                     userAvatarNav.alt = employeeData.name;
@@ -138,7 +140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } catch (error) {
             console.error("Error fetching employee profile data:", error);
             showToast(error.message || "Gagal memuat data profil.", "error");
-            if (error.message.includes('token') || error.message.includes('sesi') || error.message.includes('Peran tidak sesuai') || error.message.includes('Data pengguna di sesi rusak')) {
+            if (error.status === 401 || (error.message && (error.message.includes('token') || error.message.includes('sesi') || error.message.includes('Peran tidak sesuai') || error.message.includes('Data pengguna di sesi rusak')))) {
                 setTimeout(() => authService.logout(), 2000);
             }
             return null;
@@ -153,26 +155,50 @@ document.addEventListener("DOMContentLoaded", async () => {
     const updateAttendanceStatusUI = (attendance) => {
         const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
         currentDateSpan.textContent = today;
-        
+        attendanceStatusSpan.className = ''; // Reset class sebelum menambahkan yang baru
+        todayAttendanceStatusSummary.classList.remove('text-gray-900', 'text-green-600', 'text-red-600', 'text-orange-600'); // Reset warna summary
+
         if (attendance) {
-            todayAttendanceStatusSummary.textContent = "Hadir";
-            todayAttendanceStatusSummary.classList.remove('text-gray-900', 'text-red-600');
-            todayAttendanceStatusSummary.classList.add('text-green-600');
-            
+            // Set status dan warna untuk ringkasan
+            todayAttendanceStatusSummary.textContent = attendance.status; // Gunakan status dari data absensi
+            if (attendance.status === 'Hadir') {
+                todayAttendanceStatusSummary.classList.add('text-green-600');
+            } else if (attendance.status === 'Telat') {
+                todayAttendanceStatusSummary.classList.add('text-orange-600');
+            } else if (attendance.status === 'Sakit' || attendance.status === 'Cuti') {
+                todayAttendanceStatusSummary.classList.add('text-blue-600'); // Atau warna lain untuk non-hadir
+            } else {
+                todayAttendanceStatusSummary.classList.add('text-gray-900'); // Default
+            }
+
+            // Perbarui detail absensi
             checkInTimeSpan.textContent = formatTime(attendance.check_in);
             attendanceStatusSpan.textContent = attendance.status;
-            attendanceStatusSpan.className = '';
+
             if (attendance.status === 'Hadir') {
                 attendanceStatusSpan.classList.add('text-green-600', 'font-semibold');
             } else if (attendance.status === 'Telat') {
                 attendanceStatusSpan.classList.add('text-orange-600', 'font-semibold');
+            } else if (attendance.status === 'Sakit' || attendance.status === 'Cuti') {
+                // Untuk status Sakit/Cuti, mungkin tidak ada check-in/out, tapi statusnya penting
+                checkInTimeSpan.textContent = '-'; // Tidak ada check-in time
+                attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold'); // Warna untuk cuti/sakit
+                // Sembunyikan bagian check-out jika statusnya Sakit/Cuti
+                checkOutDisplay.classList.add('hidden');
             } else {
                 attendanceStatusSpan.classList.add('text-gray-600', 'font-semibold');
             }
 
-            checkOutDisplay.classList.add('hidden'); // Selalu sembunyikan jika hanya check-in
-            checkOutTimeSpan.textContent = '';
-            
+            // Tampilkan atau sembunyikan waktu check-out
+            if (attendance.check_out) {
+                checkOutDisplay.classList.remove('hidden');
+                checkOutTimeSpan.textContent = formatTime(attendance.check_out);
+            } else {
+                checkOutDisplay.classList.add('hidden');
+                checkOutTimeSpan.textContent = '';
+            }
+
+            // Tampilkan atau sembunyikan catatan
             if (attendance.note) {
                 attendanceNoteDisplay.classList.remove('hidden');
                 attendanceNoteSpan.textContent = attendance.note;
@@ -181,8 +207,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 attendanceNoteSpan.textContent = '';
             }
         } else {
+            // Jika tidak ada data absensi untuk hari ini
             todayAttendanceStatusSummary.textContent = "Belum Absen";
-            todayAttendanceStatusSummary.classList.remove('text-gray-900', 'text-green-600');
             todayAttendanceStatusSummary.classList.add('text-red-600');
 
             checkInTimeSpan.textContent = '-';
@@ -201,24 +227,40 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         try {
+            // Pastikan getMyHistory di AttendanceService tidak membutuhkan token di parameternya
             const history = await AttendanceService.getMyHistory();
             const today = new Date().toISOString().slice(0, 10);
+            // Mencari absensi untuk hari ini
             const todayAttendance = history.find(att => att.date === today);
 
             updateAttendanceStatusUI(todayAttendance);
 
-            if (todayAttendance) {
+            // Logic untuk scanner QR
+            if (todayAttendance && (todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat')) {
+                // Jika sudah hadir/telat, hentikan scanner
                 if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
                     await html5QrCodeScanner.stop();
                     showToast('Anda sudah check-in hari ini.', 'info');
                 }
                 if (qrScannerContainer) {
-                     qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Anda sudah absen hari ini.</p>';
-                     qrScanResult.textContent = '';
+                    qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Anda sudah absen hari ini.</p>';
+                    qrScanResult.textContent = '';
                 }
                 if (cameraSelect) cameraSelect.classList.add('hidden');
-
-            } else {
+            } else if (todayAttendance && (todayAttendance.status === 'Sakit' || todayAttendance.status === 'Cuti')) {
+                // Jika statusnya Sakit atau Cuti, tidak perlu scanner
+                if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
+                    await html5QrCodeScanner.stop();
+                    showToast(`Status Anda hari ini: ${todayAttendance.status}.`, 'info');
+                }
+                if (qrScannerContainer) {
+                    qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">Status Anda hari ini: ${todayAttendance.status}.</p>`;
+                    qrScanResult.textContent = '';
+                }
+                if (cameraSelect) cameraSelect.classList.add('hidden');
+            }
+            else {
+                // Jika belum ada absensi atau statusnya belum Hadir/Telat/Sakit/Cuti (misal: "Izin")
                 startScanner();
             }
 
@@ -229,6 +271,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             checkInTimeSpan.textContent = 'Gagal memuat';
             attendanceStatusSpan.textContent = 'Error';
             attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
+            // Tetap coba mulai scanner jika ada error dan belum ada status yang jelas
             startScanner();
         }
     };
@@ -242,30 +285,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
             await html5QrCodeScanner.stop();
         }
-        
+
         const currentUser = authService.getCurrentUser();
         if (!currentUser || !currentUser.id) {
             showToast('User tidak terautentikasi. Silakan login kembali.', 'error');
             qrScanResult.textContent = 'Error: User tidak terautentikasi.';
-            startScanner();
+            startScanner(); // Coba restart scanner jika gagal
             return;
         }
 
         try {
+            // Pastikan scanQR di AttendanceService tidak membutuhkan token di parameternya
             const response = await AttendanceService.scanQR(decodedText, currentUser.id);
             showToast(response.message, 'success');
             qrScanResult.textContent = response.message;
-            loadMyTodayAttendance();
+            loadMyTodayAttendance(); // Muat ulang status setelah absensi berhasil
         } catch (error) {
             console.error('Error saat memindai QR Code:', error);
             showToast(`Absensi gagal: ${error.message}`, 'error');
             qrScanResult.textContent = `Gagal Absen: ${error.message}`;
-            startScanner();
+            startScanner(); // Coba restart scanner jika gagal
         }
     };
 
     const onScanError = (errorMessage) => {
-        // console.warn(`QR Code error: ${errorMessage}`);
+        // console.warn(`QR Code error: ${errorMessage}`); // Biasanya terlalu berisik, bisa dikomentari
     };
 
     const startScanner = async () => {
@@ -275,23 +319,28 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+        // Hapus konten lama untuk mencegah tumpang tindih
+        qrScannerContainer.innerHTML = '';
+        qrScanResult.textContent = '';
+
+
         try {
             const cameras = await Html5Qrcode.getCameras();
             if (cameras && cameras.length > 0) {
                 let cameraIdToUse = cameras[0].id; // Default: kamera pertama
 
                 if (cameras.length > 1) {
-                    if (cameraSelect) cameraSelect.classList.remove('hidden'); // Pastikan cameraSelect ada
-                    if (cameraSelect) cameraSelect.innerHTML = ''; 
+                    if (cameraSelect) cameraSelect.classList.remove('hidden');
+                    if (cameraSelect) cameraSelect.innerHTML = '';
                     cameras.forEach(camera => {
                         const option = document.createElement('option');
                         option.value = camera.id;
                         option.textContent = camera.label || `Kamera ${camera.id}`;
                         if (cameraSelect) cameraSelect.appendChild(option);
                     });
-                    
-                    const backCamera = cameras.find(camera => 
-                        camera.label.toLowerCase().includes('back') || 
+
+                    const backCamera = cameras.find(camera =>
+                        camera.label.toLowerCase().includes('back') ||
                         camera.label.toLowerCase().includes('environment')
                     );
                     if (cameraSelect) cameraSelect.value = backCamera ? backCamera.id : cameras[0].id;
@@ -318,7 +367,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     },
                     /* verbose= */ false
                 );
-                
+
                 await html5QrCodeScanner.render(onScanSuccess, onScanError);
 
                 qrScanResult.textContent = 'Siap memindai QR Code...';
@@ -412,14 +461,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 setTimeout(() => authService.logout(), 2000);
                 return;
             }
-            const token = localStorage.getItem('token');
+            // authToken sudah ditangani oleh interceptor di authService, jadi tidak perlu diteruskan di sini.
+            // const token = localStorage.getItem('token'); // Tidak perlu variabel ini jika tidak digunakan
 
             try {
-                const response = await authService.changePassword(oldPassword, newPassword, token);
+                // Hapus parameter 'token' jika authService.changePassword sudah menggunakan apiClient dengan interceptor
+                const response = await authService.changePassword(oldPassword, newPassword);
                 changePasswordSuccessMessage.textContent = response.message || "Password berhasil diubah!";
                 changePasswordSuccessMessage.classList.remove("hidden");
                 showToast("Password berhasil diubah!", "success");
-                
+
                 setTimeout(() => {
                     changePasswordModal.classList.remove("active");
                     setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
@@ -486,17 +537,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <button id="cancelLogoutBtn" class="px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-md hover:bg-gray-600">Batal</button>
             </div>
         `;
-        const toast = Toastify({ 
-            node: toastNode, 
-            duration: -1, 
-            gravity: "top", 
-            position: "center", 
-            close: true, 
-            style: { 
-                background: "linear-gradient(to right, #4f46e5, #7c3aed)", 
+        const toast = Toastify({
+            node: toastNode,
+            duration: -1,
+            gravity: "top",
+            position: "center",
+            close: true,
+            style: {
+                background: "linear-gradient(to right, #4f46e5, #7c3aed)",
                 borderRadius: "12px",
-                padding: "1rem" 
-            } 
+                padding: "1rem"
+            }
         }).showToast();
 
         toastNode.querySelector("#confirmLogoutBtn").addEventListener("click", () => {
