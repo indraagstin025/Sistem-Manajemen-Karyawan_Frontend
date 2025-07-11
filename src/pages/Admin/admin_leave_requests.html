@@ -4,46 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Pengajuan Cuti & Izin</title>
-    <link rel="stylesheet" href="/style/input.css"> 
+    <link rel="stylesheet" href="/style/input.css">
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://unpkg.com/feather-icons"></script>
-    <style>
-        body {
-            font-family: "Inter", sans-serif;
-        }
-        /* Transisi untuk modal */
-        .modal {
-            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-            opacity: 0;
-            visibility: hidden;
-        }
-        .modal.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        .modal-content {
-            transition: transform 0.3s ease-out;
-            transform: translateY(-20px);
-        }
-        .modal.active .modal-content {
-            transform: translateY(0);
-        }
-        /* Transisi untuk sidebar mobile */
-        .mobile-sidebar-panel {
-            transition: transform 0.3s ease-out;
-        }
-        .mobile-sidebar {
-            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-            opacity: 0;
-            visibility: hidden;
-        }
-        .mobile-sidebar.opacity-100 {
-            opacity: 1;
-            visibility: visible;
-        }
-    </style>
+<style>
+    body {
+        font-family: "Inter", sans-serif;
+    }
+    /* Transisi untuk modal umum */
+    .modal {
+        transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+        opacity: 0;
+        visibility: hidden;
+    }
+    .modal.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .modal-content { /* Ini untuk modal ganti password, bukan attachment viewer */
+        transition: transform 0.3s ease-out;
+        transform: translateY(-20px);
+    }
+    .modal.active .modal-content {
+        transform: translateY(0);
+    }
+    /* Transisi untuk sidebar mobile */
+    .mobile-sidebar-panel {
+        transition: transform 0.3s ease-out;
+    }
+    .mobile-sidebar {
+        transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+        opacity: 0;
+        visibility: hidden;
+    }
+    .mobile-sidebar.opacity-100 {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Gaya tambahan untuk modal viewer lampiran */
+    #attachmentViewerModal.active .modal-content-viewer {
+        transform: scale(1); /* Example scaling animation */
+        opacity: 1;
+    }
+    .modal-content-viewer {
+        transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        transform: scale(0.95);
+        opacity: 0;
+        /* Tailwind CSS classes like w-full, max-w-6xl, h-full, max-h-[90vh], flex, flex-col
+           should be sufficient for sizing and layout here. No custom CSS needed for layout. */
+    }
+
+    /* Ini adalah aturan paling penting untuk konten di dalam modal */
+    #attachmentContent img,
+    #attachmentContent iframe {
+        width: 100%;  /* Pastikan gambar/iframe memenuhi lebar parent */
+        height: 100%; /* Pastikan gambar/iframe memenuhi tinggi parent */
+        object-fit: contain; /* Sangat penting: agar gambar/PDF diskalakan sambil menjaga aspek rasio */
+        border: none; /* Hilangkan border pada iframe */
+        /* Optional: tambahkan max-width/max-height jika ingin pembatasan lebih lanjut */
+        /* max-width: 100%; */
+        /* max-height: 100%; */
+    }
+
+    /* Optional: Memberikan background pada konten modal agar mudah melihat batasnya */
+    /* .p-4.flex-grow.overflow-auto {
+        background-color: #f7fafc; 
+    } */
+</style>
 </head>
 <body class="bg-gray-100 font-sans antialiased flex h-screen">
 
@@ -292,6 +322,30 @@
             </form>
         </div>
     </div>
+
+    ---
+
+<div id="attachmentViewerModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50">
+    <div class="modal-content-viewer bg-white rounded-lg shadow-xl w-full max-w-6xl h-full max-h-[90vh] flex flex-col relative">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 flex-shrink-0">
+            <h3 class="text-lg leading-6 font-medium text-gray-900" id="attachmentModalTitle">Lihat Lampiran</h3>
+            <button type="button" id="closeAttachmentViewerModalBtn" class="text-gray-400 hover:text-gray-500">
+                <span class="sr-only">Tutup</span>
+                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="p-4 flex-grow overflow-auto flex items-center justify-center bg-gray-100">
+            <div id="attachmentContent" class="w-full h-full">
+                </div>
+            <p id="attachmentErrorMessage" class="text-red-500 text-center hidden"></p>
+        </div>
+    </div>
+</div>
+
+    ---
 
     <script type="module" src="/js/Admin/AdminLeaveRequests.js"></script>
 </body>
