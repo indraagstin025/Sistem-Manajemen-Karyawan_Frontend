@@ -117,4 +117,25 @@ export const userService = {
             throw error;
         }
     },
+
+
+
+        /**
+     * Mengambil foto profil user (dari GridFS).
+     * @param {string} id - ID user.
+     * @returns {Promise<Blob>} Blob gambar (bisa digunakan untuk URL.createObjectURL).
+     */
+    getProfilePhoto: async (id) => {
+        try {
+            const response = await apiClient.get(`/users/${id}/photo`, {
+                responseType: 'blob', // Agar hasilnya berupa file Blob
+            });
+            return response.data; // Blob
+        } catch (error) {
+            console.error(`Error di userService.getProfilePhoto (${id}):`, error);
+            throw error;
+        }
+    },
 };
+
+

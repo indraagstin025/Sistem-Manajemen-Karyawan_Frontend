@@ -29,6 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ======================================================
   // PERBAIKAN 1: Deklarasi fungsi utilitas dipindahkan ke atas
   // ======================================================
+
+  
   const showGlobalMessage = (message, type = "success") => {
     departmentListSuccess.classList.add("hidden");
     departmentListError.classList.add("hidden");

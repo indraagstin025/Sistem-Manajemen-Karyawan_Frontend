@@ -87,65 +87,82 @@ document.addEventListener("DOMContentLoaded", async () => {
         }).showToast();
     };
 
-    // --- Fungsi untuk memuat data profil karyawan ---
-    const fetchEmployeeProfileData = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
-                setTimeout(() => authService.logout(), 2000);
-                return null;
-            }
+const fetchEmployeeProfileData = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
+      setTimeout(() => authService.logout(), 2000);
+      return null;
+    }
 
-            let user;
-            try {
-                user = authService.getCurrentUser();
-                if (!user) {
-                    throw new Error("Data pengguna tidak ditemukan di sesi.");
-                }
-            } catch (e) {
-                console.error("Error parsing user from localStorage:", e);
-                throw new Error("Data pengguna di sesi rusak.");
-            }
+    let user;
+    try {
+      user = authService.getCurrentUser();
+      if (!user) {
+        throw new Error("Data pengguna tidak ditemukan di sesi.");
+      }
+    } catch (e) {
+      console.error("Error parsing user from localStorage:", e);
+      throw new Error("Data pengguna di sesi rusak.");
+    }
 
-            if (user.role !== 'karyawan') { // Sesuaikan dengan role karyawan di database Anda
-                showToast("Akses ditolak. Peran tidak sesuai untuk halaman ini.", "error");
-                setTimeout(() => authService.logout(), 2000);
-                return null;
-            }
+    if (user.role !== 'karyawan') {
+      showToast("Akses ditolak. Peran tidak sesuai untuk halaman ini.", "error");
+      setTimeout(() => authService.logout(), 2000);
+      return null;
+    }
 
-            // authToken sudah ditangani oleh interceptor di userService, jadi tidak perlu diteruskan di sini.
-            // Pastikan getUserByID di UserService.js tidak lagi menerima parameter token
-            const employeeData = await userService.getUserByID(user.id);
+    const employeeData = await userService.getUserByID(user.id);
 
-            if (employeeData) {
-                profilePhoto.src = employeeData.photo || "https://via.placeholder.com/80/4A5568/E2E8F0?text=ME";
-                employeeName.textContent = employeeData.name;
-                employeePosition.textContent = employeeData.position || "-";
-                employeeDepartment.textContent = employeeData.department || "-";
-
-                // --- KOREKSI: Tampilkan sisa cuti dari data karyawan ---
-                if (employeeData.annual_leave_balance !== undefined && employeeData.annual_leave_balance !== null) {
-                    remainingLeave.textContent = `${employeeData.annual_leave_balance} Hari`;
-                } else {
-                    remainingLeave.textContent = `N/A`; // Atau default lain jika data tidak ada
-                }
-
-                if (userAvatarNav) {
-                    userAvatarNav.src = employeeData.photo || "https://via.placeholder.co/40x40/E2E8F0/4A5568?text=ME";
-                    userAvatarNav.alt = employeeData.name;
-                }
-            }
-            return employeeData;
-        } catch (error) {
-            console.error("Error fetching employee profile data:", error);
-            showToast(error.message || "Gagal memuat data profil.", "error");
-            if (error.status === 401 || (error.message && (error.message.includes('token') || error.message.includes('sesi') || error.message.includes('Peran tidak sesuai') || error.message.includes('Data pengguna di sesi rusak')))) {
-                setTimeout(() => authService.logout(), 2000);
-            }
-            return null;
+    if (employeeData) {
+      // Load foto dari GridFS
+      try {
+        const blob = await userService.getProfilePhoto(user.id);
+        const photoUrl = URL.createObjectURL(blob);
+        profilePhoto.src = photoUrl;
+        if (userAvatarNav) {
+          userAvatarNav.src = photoUrl;
+          userAvatarNav.alt = employeeData.name;
         }
-    };
+      } catch {
+        const fallback = "https://via.placeholder.com/80/4A5568/E2E8F0?text=ME";
+        profilePhoto.src = fallback;
+        if (userAvatarNav) {
+          userAvatarNav.src = fallback;
+          userAvatarNav.alt = employeeData.name;
+        }
+      }
+
+      employeeName.textContent = employeeData.name;
+      employeePosition.textContent = employeeData.position || "-";
+      employeeDepartment.textContent = employeeData.department || "-";
+
+      if (employeeData.annual_leave_balance !== undefined && employeeData.annual_leave_balance !== null) {
+        remainingLeave.textContent = `${employeeData.annual_leave_balance} Hari`;
+      } else {
+        remainingLeave.textContent = `N/A`;
+      }
+    }
+    return employeeData;
+
+  } catch (error) {
+    console.error("Error fetching employee profile data:", error);
+    showToast(error.message || "Gagal memuat data profil.", "error");
+    if (
+      error.status === 401 ||
+      (error.message &&
+        (error.message.includes('token') ||
+         error.message.includes('sesi') ||
+         error.message.includes('Peran tidak sesuai') ||
+         error.message.includes('Data pengguna di sesi rusak')))
+    ) {
+      setTimeout(() => authService.logout(), 2000);
+    }
+    return null;
+  }
+};
+
 
     // --- Helper Functions untuk Absensi ---
     const formatTime = (timeString) => {

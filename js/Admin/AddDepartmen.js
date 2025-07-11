@@ -1,6 +1,7 @@
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
 
+
 document.addEventListener("DOMContentLoaded", async () => {
   feather.replace();
 
@@ -52,15 +53,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    const authToken = localStorage.getItem("authToken");
-    if (!authToken) {
+    const token = localStorage.getItem("token");
+    if (!token) {
       showMessage("Anda tidak terautentikasi. Silakan login ulang.", "error", departmentErrorMessageDiv);
       authService.logout();
       return;
     }
 
     try {
-      const response = await departmentService.createDepartment({ name: departmentName }, authToken);
+      const response = await departmentService.createDepartment({ name: departmentName }, token);
       console.log("Departemen berhasil ditambahkan:", response);
 
       showMessage("Departemen berhasil ditambahkan!", "success", departmentSuccessMessageDiv);

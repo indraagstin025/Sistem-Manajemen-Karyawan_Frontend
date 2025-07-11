@@ -5,6 +5,8 @@ import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
 import Swal from 'sweetalert2';
 
+
+
 document.addEventListener("DOMContentLoaded", async () => {
     feather.replace();
 
@@ -85,8 +87,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     // Ini adalah pengecekan awal yang baik untuk UX, tapi interceptor juga akan menangani
-    const authToken = localStorage.getItem("token");
-    if (!authToken) {
+    const token = localStorage.getItem("token");
+    if (!token) {
         showGlobalMessage("Anda tidak terautentikasi. Silakan login ulang.", "error");
         setTimeout(() => (window.location.href = "/src/pages/login.html"), 2000);
         return;
@@ -152,44 +154,53 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    const renderEmployees = (employees) => {
-        employeeTableBody.innerHTML = "";
+const renderEmployees = async (employees) => {
+    employeeTableBody.innerHTML = "";
 
-        employees.forEach((employee) => {
-            const row = document.createElement("tr");
-            row.className = "border-b border-gray-100";
-            const photoUrl = employee.photo || "https://placehold.co/32x32/E2E8F0/4A5568?text=ME";
+    for (const employee of employees) {
+        const row = document.createElement("tr");
+        row.className = "border-b border-gray-100";
 
-            row.innerHTML = `
-                <td class="px-4 py-3">
-                    <img src="${photoUrl}" alt="${employee.name}" class="profile-thumb">
-                </td>
-                <td class="px-4 py-3">${employee.name}</td>
-                <td class="px-4 py-3">${employee.email}</td>
-                <td class="px-4 py-3 capitalize">${employee.role}</td>
-                <td class="px-4 py-3">${employee.position || "-"}</td>
-                <td class="px-4 py-3">${employee.department || "-"}</td>
-                <td class="px-4 py-3">Rp ${employee.base_salary ? employee.base_salary.toLocaleString("id-ID") : "0"}</td>
-                <td class="px-4 py-3">
-                    <button class="edit-btn text-blue-600 hover:text-blue-800 mr-2" title="Edit" data-id="${employee.id}">
-                        <i data-feather="edit" class="w-5 h-5"></i>
-                    </button>
-                    <button class="delete-btn text-red-600 hover:text-red-800" title="Hapus" data-id="${employee.id}" data-name="${employee.name}">
-                        <i data-feather="trash-2" class="w-5 h-5"></i>
-                    </button>
-                </td>
-            `;
-            employeeTableBody.appendChild(row);
-        });
-        feather.replace();
+        let photoUrl = "https://via.placeholder.com/48";
+        try {
+            const blob = await userService.getProfilePhoto(employee.id);
+            photoUrl = URL.createObjectURL(blob);
+        } catch (error) {
+            console.warn(`Foto tidak ditemukan untuk user ${employee.name}, pakai default`);
+        }
 
-        document.querySelectorAll(".edit-btn").forEach((button) => {
-            button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id));
-        });
-        document.querySelectorAll(".delete-btn").forEach((button) => {
-            button.addEventListener("click", (e) => handleDelete(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
-        });
-    };
+        row.innerHTML = `
+            <td class="px-4 py-3">
+                <img src="${photoUrl}" alt="${employee.name}" class="profile-thumb">
+            </td>
+            <td class="px-4 py-3">${employee.name}</td>
+            <td class="px-4 py-3">${employee.email}</td>
+            <td class="px-4 py-3 capitalize">${employee.role}</td>
+            <td class="px-4 py-3">${employee.position || "-"}</td>
+            <td class="px-4 py-3">${employee.department || "-"}</td>
+            <td class="px-4 py-3">Rp ${employee.base_salary ? employee.base_salary.toLocaleString("id-ID") : "0"}</td>
+            <td class="px-4 py-3">
+                <button class="edit-btn text-blue-600 hover:text-blue-800 mr-2" title="Edit" data-id="${employee.id}">
+                    <i data-feather="edit" class="w-5 h-5"></i>
+                </button>
+                <button class="delete-btn text-red-600 hover:text-red-800" title="Hapus" data-id="${employee.id}" data-name="${employee.name}">
+                    <i data-feather="trash-2" class="w-5 h-5"></i>
+                </button>
+            </td>
+        `;
+        employeeTableBody.appendChild(row);
+    }
+
+    feather.replace();
+
+    document.querySelectorAll(".edit-btn").forEach((button) => {
+        button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id));
+    });
+    document.querySelectorAll(".delete-btn").forEach((button) => {
+        button.addEventListener("click", (e) => handleDelete(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
+    });
+};
+
 
     const updatePagination = (total, page, limit) => {
         const startIndex = (page - 1) * limit + 1;

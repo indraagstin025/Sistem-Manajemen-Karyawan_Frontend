@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const chartCanvas = document.getElementById("departmentChart");
   const generateQrMenuBtn = document.getElementById("generate-qr-menu-btn");
   const generateQrMenuBtnMobile = document.getElementById("generate-qr-menu-btn-mobile");
+  
   const logoutButton = document.getElementById("logoutButton");
   const logoutButtonMobile = document.getElementById("logoutButtonMobile");
   const sidebarToggle = document.getElementById("sidebarToggle");
@@ -37,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let modalQrRefreshInterval;
   let modalQrCountdownInterval;
   let isRefreshingQrCode = false;
-  let hasScheduledRefresh = false;
+
   let lastQrGenerationRequestTime = 0;
 
 
@@ -69,6 +70,22 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // --- Logika Modal QR Code ---
+
+
+  const loadUserProfile = async () => {
+  try {
+    const user = await authService.getCurrentUser(); // pastikan ini mengembalikan data user
+    if (user && user.photo_url && userAvatarNav) {
+      userAvatarNav.src = user.photo_url;
+    } else {
+      // Jika tidak ada foto, tampilkan default avatar
+      userAvatarNav.src = "/assets/default-avatar.png";
+    }
+  } catch (error) {
+    console.error("Gagal memuat profil pengguna:", error);
+    userAvatarNav.src = "/assets/default-avatar.png";
+  }
+};
 
 const displayModalQRCode = (qrData, isAutoRefresh = false) => {
   modalQrPlaceholderEl.classList.remove("hidden");
@@ -366,4 +383,6 @@ const handleGenerateModalQRCode = async (isAutoRefresh = false) => {
   };
 
   initializePage();
+  loadUserProfile();
+
 });
