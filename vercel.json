@@ -1,7 +1,20 @@
 {
   "rewrites": [
     { "source": "/login", "destination": "/login.html" },
-    { "source": "/admin/:path*", "destination": "/Admin/:path*" },
-    { "source": "/karyawan/:path*", "destination": "/Karyawan/:path*" }
+
+ 
+    { "source": "/admin/add-department", "destination": "/Admin/add_department.html" },
+    { "source": "/admin/add-employee", "destination": "/Admin/add_employee.html" },
+    { "source": "/admin/dashboard", "destination": "/Admin/admin_dashboard.html" },
+    { "source": "/admin/leave-requests", "destination": "/Admin/admin_leave_requests.html" },
+    { "source": "/admin/list-attendance", "destination": "/Admin/list_attendance.html" },
+    { "source": "/admin/manage-departments", "destination": "/Admin/manage_departments.html" },
+    { "source": "/admin/manage-employees", "destination": "/Admin/manage_employees.html" },
+
+
+    { "source": "/karyawan/attendance-history", "destination": "/Karyawan/attendance_history.html" },
+    { "source": "/karyawan/dashboard", "destination": "/Karyawan/employee_dashboard.html" },
+    { "source": "/karyawan/profile", "destination": "/Karyawan/employee_profile.html" },
+    { "source": "/karyawan/request-leave", "destination": "/Karyawan/request_leave.html" }
   ]
 }
