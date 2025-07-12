@@ -1,11 +1,13 @@
 {
   "name": "sistem-manajemen-karyawan_frontend",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
+ 
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node copy-html.js",
     "preview": "vite preview"
   },
   "keywords": [],

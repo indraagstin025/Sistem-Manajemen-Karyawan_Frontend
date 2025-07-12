@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Riwayat Absensi - HR-System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      /* Gaya untuk dropdown */
+      .dropdown-menu {
+        transition: all 0.2s ease-out;
+        opacity: 0;
+        transform: scale(0.95);
+        display: none; /* Sembunyikan secara default */
+      }
+
+      .dropdown-menu.active {
+        display: block;
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      /* Gaya untuk Sidebar Mobile */
+      #mobileSidebar {
+        transition: opacity 0.3s ease-out;
+      }
+      #mobileSidebarPanel {
+        transition: transform 0.3s ease-out;
+      }
+
+      /* Gaya untuk Modal Change Password */
+      .modal {
+        background-color: rgba(0, 0, 0, 0.6); /* Overlay */
+        transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
+        visibility: hidden;
+        opacity: 0;
+      }
+      .modal.active {
+        visibility: visible;
+        opacity: 1;
+        transition: opacity 0.3s ease-out, visibility 0s linear 0s;
+      }
+      .modal-content {
+        transform: translateY(-20px);
+        opacity: 0;
+        transition: all 0.3s ease-out;
+      }
+      .modal.active .modal-content {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      /* Stil untuk pesan notifikasi */
+      .notification {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center; /* Tambah ini agar teks di tengah */
+        gap: 0.75rem; /* Spasi antara ikon dan teks */
+      }
+      .notification.success {
+        background-color: #d1fae5; /* green-100 */
+        color: #065f46; /* green-800 */
+      }
+      .notification.error {
+        background-color: #fee2e2; /* red-100 */
+        color: #991b1b; /* red-800 */
+      }
+      .notification.info {
+        background-color: #dbeafe; /* blue-100 */
+        color: #1e40af; /* blue-800 */
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/attendance_history-a408cb2d.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/input-214ac174.js">
+    <link rel="modulepreload" crossorigin href="/assets/AuthServices-0f733033.js">
+    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-788ac82a.js">
+    <link rel="modulepreload" crossorigin href="/assets/UserServices-9109671c.js">
+    <link rel="modulepreload" crossorigin href="/assets/toastify-85d374dd.js">
+    <link rel="stylesheet" href="/assets/input-99631fe4.css">
+    <link rel="stylesheet" href="/assets/toastify-a461d729.css">
+  </head>
+  <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
+    <div class="flex min-h-screen">
+      <aside class="hidden md:flex flex-col w-64 bg-white shadow-xl border-r border-gray-200 py-6">
+        <div class="flex items-center justify-center h-16 mb-8">
+          <a href="/employee_dashboard.html" class="text-3xl font-extrabold text-teal-600">HR-System</a>
+        </div>
+        <nav class="flex flex-col flex-grow px-4">
+          <a
+            href="/employee_dashboard.html"
+            class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200"
+          >
+            <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
+          </a>
+          <a href="/attendance_history.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95">
+            <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Riwayat Absensi</span>
+          </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
+          </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span>
+          </a>
+          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          </a>
+          <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
+            <a href="#" id="logoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
+              <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
+            </a>
+          </div>
+        </nav>
+      </aside>
+
+      <div class="flex flex-col flex-grow">
+        <header class="h-16 bg-white shadow-md flex items-center justify-between px-6 border-b border-gray-200 z-10">
+          <div class="flex items-center">
+            <button class="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 mr-4" id="sidebarToggle">
+              <i data-feather="menu" class="w-6 h-6"></i>
+            </button>
+            <h1 class="text-2xl font-bold text-gray-900">Riwayat Absensi Saya</h1>
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="relative hidden sm:block">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i data-feather="search" class="h-5 w-5 text-gray-400"></i>
+              </span>
+              <input type="text" placeholder="Cari..." class="py-2 pl-10 pr-4 block w-48 rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
+            </div>
+
+            <button class="text-gray-500 hover:text-teal-600 relative">
+              <i data-feather="bell" class="w-6 h-6"></i>
+              <span class="absolute top-0 right-0 -mt-1 -mr-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full ring-2 ring-white">3</span>
+            </button>
+
+            <div class="relative" id="userDropdown">
+              <img
+                id="userAvatar"
+                class="h-10 w-10 rounded-full object-cover cursor-pointer border-2 border-gray-200 hover:border-teal-500 transition-colors duration-200"
+                src="https://placehold.co/40x40/E2E8F0/4A5568?text=ME"
+                alt="User Avatar"
+              />
+              <div id="dropdownMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 dropdown-menu z-20">
+                <a href="/employee_profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil Saya</a>
+                <a href="#" id="openChangePasswordModalBtn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Ganti Password</a>
+                <div class="border-t border-gray-100 my-1"></div>
+                <a href="#" id="dropdownLogoutButton" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Keluar</a>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
+          <div id="attendanceHistoryMessage" class="notification hidden"></div>
+
+          <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Daftar Riwayat Absensi Anda</h2>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="attendanceHistoryTableBody">
+                  <tr>
+                    <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat absensi...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="paginationControls" class="mt-4 flex justify-center items-center space-x-2 hidden">
+                <button id="prevPageBtn" class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">Sebelumnya</button>
+                <span id="currentPageInfo" class="text-gray-700">Halaman 1</span>
+                <button id="nextPageBtn" class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">Selanjutnya</button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="changePasswordModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+      <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto overflow-y-auto max-h-[90vh]">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-2xl font-bold text-gray-900">Ganti Password</h3>
+          <button id="closeChangePasswordModalBtn" class="text-gray-500 hover:text-gray-800">
+            <i data-feather="x" class="w-6 h-6"></i>
+          </button>
+        </div>
+        <form id="changePasswordForm" class="space-y-4">
+          <div>
+            <label for="oldPassword" class="block text-sm font-medium text-gray-700">Password Lama</label>
+            <input type="password" id="oldPassword" name="old_password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
+          </div>
+          <div>
+            <label for="newPassword" class="block text-sm font-medium text-gray-700">Password Baru</label>
+            <input type="password" id="newPassword" name="new_password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
+          </div>
+          <div>
+            <label for="confirmNewPassword" class="block text-sm font-medium text-gray-700">Konfirmasi Password Baru</label>
+            <input type="password" id="confirmNewPassword" name="confirm_new_password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
+          </div>
+
+          <div id="changePasswordErrorMessage" class="text-red-600 text-sm text-center hidden"></div>
+          <div id="changePasswordSuccessMessage" class="text-green-600 text-sm text-center hidden"></div>
+
+          <div class="flex justify-end space-x-3 mt-6">
+            <button type="button" id="cancelChangePasswordBtn" class="px-5 py-2.5 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors duration-200">Batal</button>
+            <button type="submit" class="px-5 py-2.5 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors duration-200">Simpan Password</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="mobileSidebar" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden md:hidden opacity-0 transition-opacity duration-300 ease-out">
+      <div class="w-64 bg-white h-full shadow-xl flex flex-col transform -translate-x-full transition-transform duration-300 ease-out" id="mobileSidebarPanel">
+        <div class="flex items-center justify-between h-16 bg-teal-600 text-white px-4">
+          <a href="#" class="text-2xl font-bold">HR-System</a>
+          <button id="closeSidebar" class="text-white hover:text-gray-200 focus:outline-none">
+            <i data-feather="x" class="w-6 h-6"></i>
+          </button>
+        </div>
+        <nav class="flex flex-col flex-grow p-4">
+          <a href="/employee_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
+          </a>
+          <a href="/attendance_history.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
+            <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Riwayat Absensi</span>
+          </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span> </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span> </a>
+          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
+            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          </a>
+          <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
+            <a href="#" id="mobileLogoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
+              <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
+            </a>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    
+  </body>
+</html>
