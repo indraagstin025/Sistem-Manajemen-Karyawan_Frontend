@@ -1,11 +1,11 @@
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
+import { initializeSidebar } from "../components/sidebarHandler.js"; // Import fungsi sidebar
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Panggil Feather Icons untuk merender ikon
-  feather.replace();
+  // feather.replace(); // Pindahkan ini jika Anda memusatkannya di initializeSidebar()
+  initializeSidebar(); // Panggil fungsi sidebar yang sudah diimpor
 
-  // --- Seleksi Elemen DOM ---
   const departmentTableBody = document.getElementById("departmentTableBody");
   const loadingMessage = document.getElementById("loadingMessage");
   const departmentListError = document.getElementById("departmentListError");
@@ -23,14 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const editDepartmentId = document.getElementById("editDepartmentId");
   const editDepartmentName = document.getElementById("editDepartmentName");
 
-  // --- Variabel State ---
   let currentPage = 1;
 
-  // ======================================================
-  // PERBAIKAN 1: Deklarasi fungsi utilitas dipindahkan ke atas
-  // ======================================================
-
-  
   const showGlobalMessage = (message, type = "success") => {
     departmentListSuccess.classList.add("hidden");
     departmentListError.classList.add("hidden");
@@ -59,28 +53,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
   
-  // ======================================================
-  // PERBAIKAN 2: Gunakan kunci 'token' yang konsisten
-  // ======================================================
-  const authToken = localStorage.getItem("token");
-  if (!authToken) {
+  const token = localStorage.getItem("token");
+  if (!token) {
     showGlobalMessage("Anda tidak terautentikasi. Silakan login ulang.", "error");
     setTimeout(() => (window.location.href = "/src/pages/login.html"), 2000);
     return;
   }
 
-  // --- Logika Utama ---
-
   const fetchDepartments = async () => {
     departmentTableBody.innerHTML = "";
     loadingMessage.classList.remove("hidden");
     try {
-      const departments = await departmentService.getAllDepartments(authToken);
+      const departments = await departmentService.getAllDepartments(token);
       loadingMessage.classList.add("hidden");
 
       if (departments && departments.length > 0) {
         renderDepartments(departments);
-        // Logika paginasi sederhana karena departemen biasanya tidak terlalu banyak
         paginationInfo.textContent = `Menampilkan ${departments.length} dari ${departments.length} departemen`;
         prevPageBtn.disabled = true;
         nextPageBtn.disabled = true;
@@ -125,7 +113,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     feather.replace();
 
-    // Daftarkan event listener setelah elemen dibuat
     document.querySelectorAll(".edit-btn").forEach((button) => {
       button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
     });
@@ -152,15 +139,13 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     try {
-      await departmentService.deleteDepartment(departmentId, authToken);
+      await departmentService.deleteDepartment(departmentId, token);
       showGlobalMessage(`Departemen "${departmentName}" berhasil dihapus!`, "success");
-      fetchDepartments(); // Muat ulang data
+      fetchDepartments();
     } catch (error) {
       showGlobalMessage(error.message || "Gagal menghapus departemen.", "error");
     }
   };
-
-  // --- Pendaftaran Event Listener ---
 
   if (closeEditDepartmentModalBtn) closeEditDepartmentModalBtn.addEventListener("click", closeEditModal);
   if (cancelEditDepartmentBtn) cancelEditDepartmentBtn.addEventListener("click", closeEditModal);
@@ -181,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       try {
-        await departmentService.updateDepartment(departmentId, { name: updatedName }, authToken);
+        await departmentService.updateDepartment(departmentId, { name: updatedName }, token);
         showModalMessage("Departemen berhasil diupdate!", "success");
         setTimeout(() => {
           closeEditModal();
@@ -193,6 +178,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- Inisialisasi Halaman ---
+  // --- Logout Button Listener (Jika ada di ManageDepartments.js) ---
+  const logoutButton = document.getElementById("logoutButton");
+  if (logoutButton) {
+      logoutButton.addEventListener("click", (event) => {
+          event.preventDefault();
+          authService.logout();
+      });
+  }
+
   fetchDepartments();
 });

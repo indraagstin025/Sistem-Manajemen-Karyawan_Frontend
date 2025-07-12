@@ -2,9 +2,9 @@
 
 import { LeaveRequestService } from "../Services/LeaveRequestsServices.js";
 import { authService } from "../Services/AuthServices.js";
-import apiClient from "../Services/apiClient.js"; // Pastikan ini benar-benar digunakan jika tidak bisa dihapus
+import { initializeSidebar } from "../components/sidebarHandler.js";
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 
-import { userService } from "../Services/UserServices.js"; // Pastikan ini benar-benar digunakan jika tidak bisa dihapus
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 
@@ -12,21 +12,16 @@ import "toastify-js/src/toastify.css";
 const BACKEND_URL = "https://sistem-manajemen-karyawanbackend-production.up.railway.app";
 
 // === FUNGSI BANTUAN ===
-// Fungsi ini bertugas membuat URL lengkap dan aman dari path relatif
 const createFullUrl = (relativePath) => {
-    // Jika path tidak ada atau kosong, kembalikan null
     if (!relativePath) {
         return null;
     }
-    // Jika path sudah merupakan URL lengkap (misal dari S3), gunakan langsung
     if (relativePath.startsWith("http://") || relativePath.startsWith("https://")) {
         return relativePath;
     }
-    // Jika tidak, gabungkan dengan base URL backend
     return `${BACKEND_URL}${relativePath}`;
 };
 
-// Fungsi untuk menampilkan Toastify notification
 const showToast = (message, type = "success") => {
     let backgroundColor;
     if (type === "success") {
@@ -53,7 +48,6 @@ const showToast = (message, type = "success") => {
     }).showToast();
 };
 
-// Fungsi untuk menampilkan konfirmasi logout
 const showLogoutConfirmation = () => {
     const toastNode = document.createElement("div");
     toastNode.className = "flex flex-col items-center p-2";
@@ -77,30 +71,14 @@ const showLogoutConfirmation = () => {
 
 // --- START: DOMContentLoaded Listener ---
 document.addEventListener("DOMContentLoaded", async () => {
-    feather.replace();
+    initializeSidebar(); // Panggil fungsi sidebar yang sudah diimpor
 
-    // === ELEMEN DOM ===
     const leaveRequestsTableBody = document.getElementById("leaveRequestsTableBody");
     const leaveRequestsMessage = document.getElementById("leaveRequestsMessage");
     const userAvatarNav = document.getElementById("userAvatar");
     const userNameNav = document.getElementById("userNameNav");
     const dropdownMenu = document.getElementById("dropdownMenu");
-    const userDropdownContainer = document.getElementById("userDropdown");
     const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
-    const sidebarToggle = document.getElementById("sidebarToggle");
-    const mobileSidebar = document.getElementById("mobileSidebar");
-    const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
-    const closeSidebar = document.getElementById("closeSidebar");
-    const changePasswordModal = document.getElementById("changePasswordModal");
-    const openChangePasswordModalBtn = document.getElementById("openChangePasswordModalBtn");
-    const closeChangePasswordModalBtn = document.getElementById("closeChangePasswordModalBtn"); // Perbaikan di sini
-    const cancelChangePasswordBtn = document.getElementById("cancelChangePasswordBtn");
-    const changePasswordForm = document.getElementById("changePasswordForm");
-    const oldPasswordInput = document.getElementById("oldPassword");
-    const newPasswordInput = document.getElementById("newPassword");
-    const confirmNewPasswordInput = document.getElementById("confirmNewPassword");
-    const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
-    const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage");
     const paginationControls = document.getElementById("paginationControls");
     const prevPageBtn = document.getElementById("prevPageBtn");
     const nextPageBtn = document.getElementById("nextPageBtn");
@@ -120,7 +98,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // === FUNGSI UTAMA / HANDLER ===
 
-    // Mengambil data profil admin untuk header
     const fetchAdminProfileDataForHeader = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -145,7 +122,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // Memuat semua pengajuan cuti/izin dari API
     const loadLeaveRequests = async () => {
         leaveRequestsTableBody.innerHTML = `
                 <tr>
@@ -170,7 +146,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            allLeaveRequestsData = await LeaveRequestService.getAllLeaveRequests();
+            const fetchedData = await LeaveRequestService.getAllLeaveRequests();
+            allLeaveRequestsData = fetchedData || [];
+            
             allLeaveRequestsData.sort((a, b) => {
                 if (a.status === "pending" && b.status !== "pending") return -1;
                 if (a.status !== "pending" && b.status === "pending") return 1;
@@ -179,10 +157,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (allLeaveRequestsData.length === 0) {
                 leaveRequestsTableBody.innerHTML = `
-                            <tr>
-                                <td colspan="9" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Tidak ada pengajuan cuti/izin yang ditemukan.</td>
-                            </tr>
-                        `;
+                                <tr>
+                                    <td colspan="9" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Tidak ada pengajuan cuti/izin yang ditemukan.</td>
+                                </tr>
+                            `;
                 leaveRequestsMessage.textContent = "Tidak ada pengajuan cuti atau izin yang perlu ditinjau.";
                 leaveRequestsMessage.classList.remove("hidden");
             } else {
@@ -203,138 +181,122 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // Fungsi untuk menangani tampilan lampiran di modal
-// ... (Kode sebelumnya) ...
+    const handleViewAttachment = async (event) => {
+        const button = event.currentTarget;
+        const fullUrl = button.dataset.url;
+        let displayFilename = button.dataset.filename;
 
-// Fungsi untuk menangani tampilan lampiran di modal
-const handleViewAttachment = async (event) => {
-    const button = event.target;
-    const fullUrl = button.dataset.url;
-    // Gunakan filename yang sudah bersih dari URL atau dari data-filename
-    let displayFilename = button.dataset.filename;
-
-    attachmentContent.innerHTML = ''; // Bersihkan konten sebelumnya
-    attachmentErrorMessage.classList.add('hidden');
-    // Atur judul modal dengan nama file yang lebih baik
-    attachmentModalTitle.textContent = `Lihat Lampiran: ${displayFilename || 'Loading...'}`;
-
-    if (!fullUrl) {
-        attachmentErrorMessage.textContent = "URL lampiran tidak ditemukan.";
-        attachmentErrorMessage.classList.remove('hidden');
         attachmentViewerModal.classList.remove("active");
-        setTimeout(() => attachmentViewerModal.classList.add("hidden"), 300);
-        showToast("URL lampiran tidak ditemukan.", "error");
-        return;
-    }
+        attachmentViewerModal.classList.add("hidden");
+        attachmentContent.innerHTML = "";
+        attachmentErrorMessage.classList.add("hidden");
+        attachmentModalTitle.textContent = `Lihat Lampiran: ${displayFilename || "Memuat..."}`;
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-        attachmentErrorMessage.textContent = "Sesi tidak valid. Harap login ulang.";
-        attachmentErrorMessage.classList.remove('hidden');
-        showToast("Sesi tidak valid. Harap login ulang.", "error");
-        attachmentViewerModal.classList.remove("active");
-        setTimeout(() => attachmentViewerModal.classList.add("hidden"), 300);
-        return;
-    }
 
-    attachmentViewerModal.classList.remove("hidden");
-    setTimeout(() => attachmentViewerModal.classList.add("active"), 10);
-
-    try {
-        const response = await fetch(fullUrl, {
-            method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage = `Gagal memuat lampiran: ${response.status}`;
-            try {
-                const errorJson = JSON.parse(errorText);
-                errorMessage = errorJson.message || errorMessage;
-            } catch (e) {
-                errorMessage = `${errorMessage} - ${errorText.substring(0, 100)}...`;
-            }
-            throw new Error(errorMessage);
+        if (!fullUrl) {
+            attachmentErrorMessage.textContent = "URL lampiran tidak ditemukan.";
+            attachmentErrorMessage.classList.remove("hidden");
+            showToast("URL lampiran tidak ditemukan.", "error");
+            return;
         }
 
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-
-        // Debugging: Log the blob type and size
-        console.log("Fetched Blob Type:", blob.type);
-        console.log("Fetched Blob Size:", blob.size, "bytes");
-
-        // Ambil nama file yang lebih baik dari Content-Disposition jika ada, atau gunakan yang sudah ada
-        const contentDisposition = response.headers.get("Content-Disposition");
-        if (contentDisposition && contentDisposition.includes("filename=")) {
-            const match = contentDisposition.match(/filename="?(.+)"?/);
-            if (match && match[1]) {
-                displayFilename = match[1].replace(/['"]/g, ''); // Hapus tanda kutip jika ada
-            }
-        }
-        attachmentModalTitle.textContent = `Lihat Lampiran: ${displayFilename || 'Tidak Diketahui'}`; // Update judul lagi jika nama file ditemukan dari header
-
-        const contentType = response.headers.get("Content-Type") || blob.type;
-
-        if (contentType.startsWith("image/")) {
-            const img = document.createElement("img");
-            img.src = blobUrl;
-            img.alt = displayFilename; // Gunakan nama file yang lebih baik
-            img.className = "max-w-full max-h-full object-contain";
-            attachmentContent.appendChild(img);
-        } else if (contentType === "application/pdf") {
-            const iframe = document.createElement("iframe");
-            iframe.src = blobUrl;
-            iframe.style.width = "100%";
-            iframe.style.height = "100%";
-            iframe.style.border = "none";
-            // Pastikan iframe bisa di-scroll jika kontennya panjang
-            iframe.setAttribute('allowfullscreen', ''); // allow fullscreen
-            iframe.setAttribute('webkitallowfullscreen', ''); // For Safari
-            iframe.setAttribute('mozallowfullscreen', ''); // For Firefox
-            attachmentContent.appendChild(iframe);
-        } else {
-            // Untuk jenis file yang tidak bisa ditampilkan langsung, berikan pesan dan tombol unduh
-            attachmentErrorMessage.textContent = `Tipe file '${contentType || "tidak diketahui"}' tidak didukung untuk tampilan langsung. Silakan unduh.`;
-            attachmentErrorMessage.classList.remove('hidden');
-
-            const downloadBtn = document.createElement("button");
-            downloadBtn.textContent = "Unduh File";
-            downloadBtn.className = "mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600";
-            downloadBtn.addEventListener("click", () => handleDownloadAttachment({ target: { dataset: { url: fullUrl, filename: displayFilename } } }));
-            attachmentContent.appendChild(downloadBtn);
+        const token = localStorage.getItem("token");
+        if (!token) {
+            attachmentErrorMessage.textContent = "Sesi tidak valid. Harap login ulang.";
+            attachmentErrorMessage.classList.remove("hidden");
+            showToast("Sesi tidak valid. Harap login ulang.", "error");
+            return;
         }
 
-        // Cleanup old blob URL
-        attachmentViewerModal.addEventListener('transitionend', function handler() {
-            if (attachmentViewerModal.classList.contains('hidden')) {
-                URL.revokeObjectURL(blobUrl);
-                // Penting: Hapus event listener ini setelah dijalankan sekali
-                attachmentViewerModal.removeEventListener('transitionend', handler);
+        attachmentViewerModal.classList.remove("hidden");
+        setTimeout(() => attachmentViewerModal.classList.add("active"), 10);
+
+        try {
+            const response = await fetch(fullUrl, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `Gagal memuat lampiran: ${response.status}`;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.message || errorMessage;
+                } catch (e) {
+                    errorMessage = `${errorMessage} - ${errorText.substring(0, 100)}...`;
+                }
+                throw new Error(errorMessage);
             }
-        }, { once: true }); // Menggunakan { once: true } lebih bersih daripada removeEventListener manual
 
-    } catch (error) {
-        console.error("Gagal memuat lampiran untuk tampilan:", error);
-        attachmentErrorMessage.textContent = error.message || "Terjadi kesalahan saat memuat lampiran.";
-        attachmentErrorMessage.classList.remove('hidden');
-        showToast(error.message || "Gagal memuat lampiran.", "error");
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
 
-        // Tutup modal jika ada error parah saat loading konten
-        attachmentViewerModal.classList.remove("active");
-        setTimeout(() => attachmentViewerModal.classList.add("hidden"), 300);
-    }
-};
+            const contentDisposition = response.headers.get("Content-Disposition");
+            if (contentDisposition && contentDisposition.includes("filename=")) {
+                const match = contentDisposition.match(/filename="?(.+)"?/);
+                if (match && match[1]) {
+                    displayFilename = match[1].replace(/['"]/g, "");
+                }
+            }
+            attachmentModalTitle.textContent = `Lihat Lampiran: ${displayFilename || "Tidak Diketahui"}`;
 
-// ... (sisa kode lainnya, termasuk renderLeaveRequestsTable, handleDownloadAttachment, dll., harus tetap sama) ...
-    // Fungsi untuk mengunduh lampiran (diperbarui)
+            const contentType = response.headers.get("Content-Type") || blob.type;
+
+            if (contentType.startsWith("image/")) {
+                const img = document.createElement("img");
+                img.src = blobUrl;
+                img.alt = displayFilename;
+                img.className = "max-w-full max-h-full object-contain";
+                attachmentContent.appendChild(img);
+            } else if (contentType === "application/pdf") {
+                const iframe = document.createElement("iframe");
+                iframe.src = blobUrl;
+                iframe.style.width = "100%";
+                iframe.style.height = "100%";
+                iframe.style.border = "none";
+                iframe.setAttribute("allowfullscreen", "");
+                iframe.setAttribute("webkitallowfullscreen", "");
+                iframe.setAttribute("mozallowfullscreen", "");
+                attachmentContent.appendChild(iframe);
+            } else {
+                attachmentErrorMessage.textContent = `Tipe file '${contentType || "tidak diketahui"}' tidak didukung untuk tampilan langsung. Silakan unduh.`;
+                attachmentErrorMessage.classList.remove("hidden");
+
+                const downloadBtn = document.createElement("button");
+                downloadBtn.textContent = "Unduh File";
+                downloadBtn.className = "mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600";
+                downloadBtn.addEventListener("click", () => handleDownloadAttachment({ target: { dataset: { url: fullUrl, filename: displayFilename } } }));
+                attachmentContent.appendChild(downloadBtn);
+            }
+
+            attachmentViewerModal.addEventListener(
+                "transitionend",
+                function handler() {
+                    if (attachmentViewerModal.classList.contains("hidden")) {
+                        URL.revokeObjectURL(blobUrl);
+                        attachmentViewerModal.removeEventListener("transitionend", handler);
+                    }
+                },
+                { once: true }
+            );
+        } catch (error) {
+            console.error("Gagal memuat lampiran untuk tampilan:", error);
+            attachmentErrorMessage.textContent = error.message || "Terjadi kesalahan saat memuat lampiran.";
+            attachmentErrorMessage.classList.remove("hidden");
+            showToast(error.message || "Gagal memuat lampiran.", "error");
+
+            attachmentViewerModal.classList.remove("active");
+            setTimeout(() => attachmentViewerModal.classList.add("hidden"), 300);
+        }
+    };
+
     const handleDownloadAttachment = async (event) => {
         const button = event.target;
         const fullUrl = button.dataset.url;
-        const filenameAttr = button.dataset.filename; // Ambil nama file dari data-filename
+        const filenameAttr = button.dataset.filename;
 
         if (!fullUrl) {
             showToast("URL lampiran tidak ditemukan.", "error");
@@ -349,7 +311,7 @@ const handleViewAttachment = async (event) => {
 
         const originalText = button.textContent;
         button.disabled = true;
-        button.textContent = "Mengunduh..."; // Tampilkan feedback di tombol
+        button.textContent = "Mengunduh...";
 
         try {
             const response = await fetch(fullUrl, {
@@ -376,16 +338,14 @@ const handleViewAttachment = async (event) => {
             if (contentDisposition && contentDisposition.includes("filename=")) {
                 const match = contentDisposition.match(/filename="?(.+)"?/);
                 if (match && match[1]) {
-                    filename = match[1].replace(/['"]/g, ''); // Hapus tanda kutip jika ada
+                    filename = match[1].replace(/['"]/g, "");
                 }
-            } else if (filenameAttr) { // Gunakan filename dari data-attribute jika ada
+            } else if (filenameAttr) {
                 filename = filenameAttr;
             } else {
-                 // Fallback: Ambil nama file dari URL jika Content-Disposition & data-filename tidak ada
-                 const urlParts = fullUrl.split('/');
-                 filename = urlParts[urlParts.length - 1].split('?')[0];
+                const urlParts = fullUrl.split("/");
+                filename = urlParts[urlParts.length - 1].split("?")[0];
             }
-
 
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
@@ -397,107 +357,124 @@ const handleViewAttachment = async (event) => {
             a.click();
             a.remove();
 
-            URL.revokeObjectURL(url); // Hapus URL blob setelah digunakan
+            URL.revokeObjectURL(url);
             showToast("File berhasil diunduh!", "success");
         } catch (error) {
             console.error("Gagal mengunduh file:", error);
             showToast(error.message || "Terjadi kesalahan saat mengunduh file.", "error");
         } finally {
             button.disabled = false;
-            button.textContent = originalText; // Kembalikan teks asli tombol
+            button.textContent = originalText;
         }
     };
 
-    // Merender tabel pengajuan cuti/izin dengan pagination
     const renderLeaveRequestsTable = (data, page, limit) => {
-        leaveRequestsTableBody.innerHTML = ""; // Bersihkan isi tabel
+        const leaveRequestsTableBody = document.getElementById('leaveRequestsTableBody');
+        if (!leaveRequestsTableBody) {
+            return;
+        }
+
+        leaveRequestsTableBody.innerHTML = "";
         const startIndex = (page - 1) * limit;
         const paginatedItems = data.slice(startIndex, startIndex + limit);
+
+        if (paginatedItems.length === 0) {
+            leaveRequestsTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500">Tidak ada data pengajuan.</td></tr>`;
+            return;
+        }
 
         paginatedItems.forEach((request) => {
             const row = leaveRequestsTableBody.insertRow();
 
-            // Format tanggal
-            const formattedStartDate = new Date(request.start_date + "T00:00:00").toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
-            const formattedEndDate = new Date(request.end_date + "T00:00:00").toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
+            const formattedStartDate = new Date(request.start_date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+            const formattedEndDate = new Date(request.end_date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
-            // Menentukan kelas dan teks status
-            let statusClass = "";
-            let statusText = "";
-            if (request.status === "pending") {
-                statusClass = "text-yellow-600 font-semibold";
-                statusText = "Menunggu";
-            } else if (request.status === "approved") {
-                statusClass = "text-green-600 font-semibold";
+            let statusClass = "pending";
+            let statusText = "Menunggu";
+            if (request.status === "approved") {
+                statusClass = "approved";
                 statusText = "Disetujui";
             } else if (request.status === "rejected") {
-                statusClass = "text-red-600 font-semibold";
+                statusClass = "rejected";
                 statusText = "Ditolak";
+            } else if (request.status === "completed") {
+                statusClass = "completed";
+                statusText = "Selesai";
             }
 
-            // URL lampiran dan nama file dari URL
             const fileUrl = createFullUrl(request.attachment_url);
-            const fileNameFromUrl = request.attachment_url ? request.attachment_url.split('/').pop().split('?')[0] : '';
-
-            // Konten untuk kolom lampiran: tombol Lihat dan tombol Unduh (ikon)
+            const fileNameFromUrl = request.attachment_url ? request.attachment_url.split("/").pop().split("?")[0] : "";
             const attachmentLink = fileUrl
                 ? `<div class="flex items-center space-x-2">
-                     <button class="view-attachment-btn text-blue-600 hover:underline" data-url="${fileUrl}" data-filename="${fileNameFromUrl}">Lihat Lampiran</button>
-                     <button class="download-btn text-gray-500 hover:text-gray-700" data-url="${fileUrl}" data-filename="${fileNameFromUrl}" title="Unduh Lampiran">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                        </svg>
-                     </button>
-                   </div>`
+                        <button class="view-attachment-btn text-teal-600 hover:underline focus:outline-none" data-url="${fileUrl}" data-filename="${fileNameFromUrl}">Lihat</button>
+                        <button class="download-btn text-gray-500 hover:text-gray-700" data-url="${fileUrl}" data-filename="${fileNameFromUrl}" title="Unduh Lampiran">
+                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                        </button>
+                    </div>`
                 : "-";
 
             const employeeName = request.user_name || request.user_email || request.user_id;
-            const photoUrl = createFullUrl(request.user_photo) || "https://placehold.co/40x40/E2E8F0/4A5568?text=ME";
+            const initial = employeeName ? employeeName.charAt(0).toUpperCase() : "?";
+            const placeholderPhoto = `https://placehold.co/36x36/E2E8F0/4A5568?text=${initial}`;
+            const photoElementId = `photo-${request.id}`;
 
             row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10">
-                                    <img class="h-10 w-10 rounded-full object-cover" src="${photoUrl}" alt="${employeeName}">
-                                </div>
-                                <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">${employeeName}</div>
-                                    <div class="text-sm text-gray-500">${request.user_email || "-"}</div>
-                                </div>
+                <td>
+                    <div class="employee-info">
+                        <img id="${photoElementId}" class="profile-thumb" src="${placeholderPhoto}" alt="${employeeName}">
+                        <div>
+                            <div class="name">${employeeName}</div>
+                            <div class="email">${request.user_email || "-"}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${request.request_type || "-"}</td>
+                <td>${formattedStartDate}</td>
+                <td>${formattedEndDate}</td>
+                <td title="${request.reason || ""}">${request.reason || "-"}</td>
+                <td class="text-center">${attachmentLink}</td>
+                <td class="text-center">
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </td>
+                <td title="${request.note || ""}">${request.note || "-"}</td>
+                <td>
+                    ${
+                        request.status === "pending"
+                            ? `
+                            <div class="action-buttons">
+                                <button data-id="${request.id}" data-action="approve" class="action-btn bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-md transition-colors duration-200">Setujui</button>
+                                <button data-id="${request.id}" data-action="reject" class="action-btn bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition-colors duration-200">Tolak</button>
                             </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${request.request_type || "-"}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${formattedStartDate}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${formattedEndDate}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">${request.reason || "-"}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attachmentLink}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusText}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">${request.note || "-"}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            ${
-                                request.status === "pending"
-                                    ? `
-                                    <button data-id="${request.id}" data-action="approve" class="action-btn bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md text-xs mr-2">Setujui</button>
-                                    <button data-id="${request.id}" data-action="reject" class="action-btn bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-xs">Tolak</button>
-                                `
-                                    : `
-                                    <span class="text-gray-500 text-xs">Selesai</span>
-                                `
-                            }
-                        </td>
-                    `;
+                            `
+                            : `<span class="text-gray-500 text-sm">Selesai</span>`
+                    }
+                </td>
+            `;
+
+            getUserPhotoBlobUrl(request.user_id, employeeName, 36).then((photoUrl) => {
+                const photoEl = document.getElementById(photoElementId);
+                if (photoEl) {
+                    photoEl.src = photoUrl;
+                }
+            });
         });
 
-        // Tambahkan event listener untuk tombol "Lihat Lampiran" dan "Unduh"
-        leaveRequestsTableBody.querySelectorAll(".view-attachment-btn").forEach((button) => {
+        // Re-bind event listeners to prevent duplication
+        leaveRequestsTableBody.querySelectorAll(".view-attachment-btn").forEach(button => {
+            button.removeEventListener("click", handleViewAttachment);
             button.addEventListener("click", handleViewAttachment);
         });
-        leaveRequestsTableBody.querySelectorAll(".download-btn").forEach((button) => {
+        leaveRequestsTableBody.querySelectorAll(".download-btn").forEach(button => {
+            button.removeEventListener("click", handleDownloadAttachment);
             button.addEventListener("click", handleDownloadAttachment);
+        });
+        leaveRequestsTableBody.querySelectorAll(".action-btn").forEach(button => {
+            button.removeEventListener("click", handleActionButtonClick);
+            button.addEventListener("click", handleActionButtonClick);
         });
     };
 
-    // Memperbarui kontrol pagination
+
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         currentPageInfo.textContent = `Halaman ${currentPage} dari ${totalPages}`;
@@ -512,7 +489,6 @@ const handleViewAttachment = async (event) => {
         }
     };
 
-    // Handler untuk klik tombol aksi (Setujui/Tolak)
     const handleActionButtonClick = async (event) => {
         const button = event.target;
         const requestId = button.dataset.id;
@@ -531,7 +507,9 @@ const handleViewAttachment = async (event) => {
             confirmMessage = "Anda yakin ingin MENOLAK pengajuan ini?";
             successMessage = "Pengajuan berhasil ditolak.";
             note = prompt("Masukkan catatan penolakan (opsional):");
-            if (note === null) return; // Jika user klik 'Cancel' di prompt
+            if (note === null) {
+                return;
+            }
         } else {
             return;
         }
@@ -554,7 +532,7 @@ const handleViewAttachment = async (event) => {
                 button.textContent = "Memproses...";
                 await LeaveRequestService.updateLeaveRequestStatus(requestId, statusToUpdate, note);
                 showToast(successMessage, "success");
-                loadLeaveRequests(); // Reload data setelah update
+                loadLeaveRequests();
             } catch (error) {
                 console.error("Error updating leave request status:", error);
                 showToast(error.message || "Gagal memperbarui status pengajuan.", "error");
@@ -567,18 +545,7 @@ const handleViewAttachment = async (event) => {
         });
     };
 
-    // Mengatur ulang form ganti password
-    const resetChangePasswordForm = () => {
-        changePasswordForm.reset();
-        changePasswordErrorMessage.classList.add("hidden");
-        changePasswordSuccessMessage.classList.add("hidden");
-        changePasswordErrorMessage.textContent = "";
-        changePasswordSuccessMessage.textContent = "";
-    };
 
-    // === EVENT LISTENERS ===
-
-    // Pagination buttons
     if (prevPageBtn) {
         prevPageBtn.addEventListener("click", () => {
             if (currentPage > 1) {
@@ -600,8 +567,6 @@ const handleViewAttachment = async (event) => {
         });
     }
 
-    // Delegation untuk tombol aksi (approve/reject)
-    // Gunakan event delegation pada tbody untuk tombol yang dinamis
     if (leaveRequestsTableBody) {
         leaveRequestsTableBody.addEventListener("click", (event) => {
             const target = event.target;
@@ -611,94 +576,33 @@ const handleViewAttachment = async (event) => {
         });
     }
 
-
-    // Change Password Modal
-    if (openChangePasswordModalBtn) {
-        openChangePasswordModalBtn.addEventListener("click", (event) => {
-            event.preventDefault();
-            resetChangePasswordForm();
-            changePasswordModal.classList.remove("hidden");
-            setTimeout(() => changePasswordModal.classList.add("active"), 10);
-            if (dropdownMenu) dropdownMenu.classList.remove("active"); // Tutup dropdown jika terbuka
-        });
-    }
-
-    if (closeChangePasswordModalBtn) {
-        closeChangePasswordModalBtn.addEventListener("click", () => {
-            changePasswordModal.classList.remove("active");
-            setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
-        });
-    }
-
-    if (cancelChangePasswordBtn) {
-        cancelChangePasswordBtn.addEventListener("click", () => {
-            changePasswordModal.classList.remove("active");
-            setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
-        });
-    }
-
-    // Submit Change Password Form
-    if (changePasswordForm) {
-        changePasswordForm.addEventListener("submit", async (event) => {
-            event.preventDefault();
-            changePasswordErrorMessage.classList.add("hidden");
-            changePasswordSuccessMessage.classList.add("hidden");
-            changePasswordErrorMessage.textContent = "";
-            changePasswordSuccessMessage.textContent = "";
-            const oldPassword = oldPasswordInput.value;
-            const newPassword = newPasswordInput.value;
-            const confirmNewPassword = confirmNewPasswordInput.value;
-
-            if (newPassword !== confirmNewPassword) {
-                changePasswordErrorMessage.textContent = "Password baru dan konfirmasi password tidak cocok.";
-                changePasswordErrorMessage.classList.remove("hidden");
+    // Dropdown User in Header (Adjusted to work with group-hover CSS but also provide click toggle)
+    const userDropdownGroup = document.querySelector('.header .relative.group');
+    if (userDropdownGroup) {
+        userDropdownGroup.addEventListener("click", (event) => {
+            const dropdown = userDropdownGroup.querySelector('#dropdownMenu');
+            if (event.target.closest('#dropdownMenu a')) {
                 return;
             }
-            if (newPassword.length < 6) {
-                changePasswordErrorMessage.textContent = "Password baru minimal 6 karakter.";
-                changePasswordErrorMessage.classList.remove("hidden");
-                return;
-            }
-            const currentUser = authService.getCurrentUser();
-            if (!currentUser || !currentUser.id || !localStorage.getItem("token")) {
-                showToast("Sesi tidak valid. Harap login kembali.", "error");
-                setTimeout(() => authService.logout(), 2000);
-                return;
-            }
-            const token = localStorage.getItem("token");
-            try {
-                const response = await authService.changePassword(oldPassword, newPassword, token);
-                changePasswordSuccessMessage.textContent = response.message || "Password berhasil diubah!";
-                changePasswordSuccessMessage.classList.remove("hidden");
-                showToast("Password berhasil diubah!", "success");
-                setTimeout(() => {
-                    changePasswordModal.classList.remove("active");
-                    setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
-                }, 1500);
-            } catch (error) {
-                console.error("Error changing password:", error);
-                const errorMessage = error.message || "Gagal mengubah password. Silakan coba lagi.";
-                changePasswordErrorMessage.textContent = errorMessage;
-                changePasswordErrorMessage.classList.remove("hidden");
-                showToast(errorMessage, "error");
-            }
-        });
-    }
 
-    // User Dropdown
-    if (userDropdownContainer) {
-        userDropdownContainer.addEventListener("click", () => {
-            dropdownMenu.classList.toggle("active");
+            if (dropdown) {
+                dropdown.classList.toggle("hidden");
+                dropdown.classList.toggle("active");
+            }
         });
-        // Tutup dropdown jika klik di luar
+        // Close dropdown if clicking outside the entire group
         document.addEventListener("click", (event) => {
-            if (!userDropdownContainer.contains(event.target)) {
-                dropdownMenu.classList.remove("active");
+            const dropdown = userDropdownGroup.querySelector('#dropdownMenu');
+            if (dropdown && !userDropdownGroup.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.remove("active");
+                setTimeout(() => {
+                    dropdown.classList.add("hidden");
+                }, 200);
             }
-        });
+        }, true);
     }
 
-    // Logout Buttons
+
     allLogoutButtons.forEach((button) => {
         button.addEventListener("click", (event) => {
             event.preventDefault();
@@ -706,56 +610,30 @@ const handleViewAttachment = async (event) => {
         });
     });
 
-    // Mobile Sidebar
-    if (sidebarToggle && mobileSidebar && mobileSidebarPanel && closeSidebar) {
-        const showMobileSidebar = () => {
-            mobileSidebar.classList.remove("hidden");
-            setTimeout(() => {
-                mobileSidebar.classList.add("opacity-100");
-                mobileSidebarPanel.classList.remove("-translate-x-full");
-            }, 10);
-        };
-        const hideMobileSidebar = () => {
-            mobileSidebar.classList.remove("opacity-100");
-            mobileSidebarPanel.classList.add("-translate-x-full");
-            setTimeout(() => mobileSidebar.classList.add("hidden"), 300);
-        };
-        sidebarToggle.addEventListener("click", showMobileSidebar);
-        closeSidebar.addEventListener("click", hideMobileSidebar);
-        // Tutup sidebar jika klik di overlay gelap
-        mobileSidebar.addEventListener("click", (event) => {
-            if (event.target === mobileSidebar) hideMobileSidebar();
-        });
-    }
-
-    // Event listener untuk tombol tutup modal lampiran
     if (closeAttachmentViewerModalBtn) {
         closeAttachmentViewerModalBtn.addEventListener("click", () => {
             attachmentViewerModal.classList.remove("active");
             setTimeout(() => {
                 attachmentViewerModal.classList.add("hidden");
-                attachmentContent.innerHTML = ''; // Bersihkan konten saat ditutup
-                attachmentErrorMessage.classList.add('hidden'); // Sembunyikan pesan error
+                attachmentContent.innerHTML = "";
+                attachmentErrorMessage.classList.add("hidden");
             }, 300);
         });
 
-        // Juga tutup modal jika klik di luar area konten modal
+        // Pastikan klik di luar modal-content menutup modal
         attachmentViewerModal.addEventListener("click", (event) => {
-            // Pastikan klik di backdrop, bukan di dalam modal-content-viewer
             if (event.target === attachmentViewerModal) {
                 attachmentViewerModal.classList.remove("active");
                 setTimeout(() => {
                     attachmentViewerModal.classList.add("hidden");
-                    attachmentContent.innerHTML = '';
-                    attachmentErrorMessage.classList.add('hidden');
+                    attachmentContent.innerHTML = "";
+                    attachmentErrorMessage.classList.add("hidden");
                 }, 300);
             }
         });
     }
 
-
     // === INISIALISASI ===
     fetchAdminProfileDataForHeader();
     loadLeaveRequests();
 });
-// --- END: DOMContentLoaded Listener ---

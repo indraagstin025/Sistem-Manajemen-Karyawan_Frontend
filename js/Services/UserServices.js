@@ -125,17 +125,30 @@ export const userService = {
      * @param {string} id - ID user.
      * @returns {Promise<Blob>} Blob gambar (bisa digunakan untuk URL.createObjectURL).
      */
-    getProfilePhoto: async (id) => {
-        try {
-            const response = await apiClient.get(`/users/${id}/photo`, {
-                responseType: 'blob', // Agar hasilnya berupa file Blob
-            });
-            return response.data; // Blob
-        } catch (error) {
-            console.error(`Error di userService.getProfilePhoto (${id}):`, error);
-            throw error;
-        }
-    },
-};
+getProfilePhoto: async (userId) => {
+  try {
+    const response = await apiClient.get(`/users/${userId}/photo`, {
+      responseType: "blob",
+      validateStatus: (status) => {
+        // Jangan lempar error untuk 404, hanya anggap error jika status >= 500
+        return (status >= 200 && status < 300) || status === 404;
+      },
+    });
+
+    // Kalau status 404, berarti foto tidak ditemukan → kembalikan null
+    if (response.status === 404) {
+      return null;
+    }
+
+    // Kembalikan blob foto jika ada
+    return response.data;
+  } catch (error) {
+    // Untuk error selain 404 (misal: 500, 403), tetap log
+    console.error(`Gagal memuat foto user ${userId}:`, error);
+    return null; // Bisa juga lempar error kalau ingin strict
+  }
+}
+
+  };
 
 

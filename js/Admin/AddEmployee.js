@@ -2,11 +2,13 @@ import { userService } from "../Services/UserServices.js";
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeFormValidation, isFormValid } from "../Validations/addEmployeeValidation.js";
+import { initializeSidebar } from "../components/sidebarHandler.js"; // Import fungsi sidebar
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  feather.replace();
+  // feather.replace(); // Pindahkan ini jika Anda memusatkannya di initializeSidebar()
+  initializeSidebar(); // Panggil fungsi sidebar yang sudah diimpor
   initializeFormValidation();
 
 
@@ -14,10 +16,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const departmentSelect = document.getElementById("department");
   const cancelButton = document.getElementById("cancelButton");
   const logoutButtons = document.querySelectorAll("#logoutButton");
-  const sidebarToggle = document.getElementById("sidebarToggle");
-  const mobileSidebar = document.getElementById("mobileSidebar");
-  const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
-  const closeSidebar = document.getElementById("closeSidebar");
+  // Hapus baris berikut karena sudah di handle di initializeSidebar
+  // const sidebarToggle = document.getElementById("sidebarToggle");
+  // const mobileSidebar = document.getElementById("mobileSidebar");
+  // const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
+  // const closeSidebar = document.getElementById("closeSidebar");
   const passwordInput = document.getElementById("password");
   const togglePasswordButton = document.getElementById("togglePassword");
 
@@ -37,12 +40,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
   
-
-  /**
-   * Menampilkan notifikasi modal di tengah layar tanpa ikon.
-   * @param {string} message - Pesan yang akan ditampilkan.
-   * @param {'success' | 'error' | 'warning'} type - Tipe notifikasi untuk menentukan warna.
-   */
   function showAlert(message, type = "success") {
     const colorConfig = {
       success: "linear-gradient(to right, #10b981, #14b8a6)",
@@ -102,15 +99,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const userData = Object.fromEntries(formData.entries());
     userData.role = "karyawan";
     userData.base_salary = parseFloat(userData.base_salary);
-    const authToken = localStorage.getItem("authToken");
+    const token = localStorage.getItem("token");
 
-    if (!authToken) {
+    if (!token) {
       authService.logout();
       return;
     }
 
     try {
-      await userService.registerUser(userData, authToken);
+      await userService.registerUser(userData, token);
       showAlert("Karyawan baru berhasil didaftarkan!", "success");
 
       addEmployeeForm.reset();
@@ -139,23 +136,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  const showMobileSidebar = () => {
-    mobileSidebar?.classList.remove("hidden");
-    setTimeout(() => {
-      mobileSidebar?.classList.remove("opacity-0");
-      mobileSidebarPanel?.classList.remove("-translate-x-full");
-    }, 10);
-  };
 
-  const hideMobileSidebar = () => {
-    mobileSidebar?.classList.add("opacity-0");
-    mobileSidebarPanel?.classList.add("-translate-x-full");
-    setTimeout(() => mobileSidebar?.classList.add("hidden"), 300);
-  };
-
-  sidebarToggle?.addEventListener("click", showMobileSidebar);
-  closeSidebar?.addEventListener("click", hideMobileSidebar);
-  mobileSidebar?.addEventListener("click", (event) => {
-    if (event.target === mobileSidebar) hideMobileSidebar();
-  });
 });

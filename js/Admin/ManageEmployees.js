@@ -1,14 +1,19 @@
 // src/js/Karyawan/ManageEmployees.js
+// Atau sesuaikan path jika ManageEmployees.js berada di Admin folder
 
 import { userService } from "../Services/UserServices.js";
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
+import { initializeSidebar } from "../components/sidebarHandler.js"; 
+import { initializeLogout } from "../components/logoutHandler.js";
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
+
 import Swal from 'sweetalert2';
 
-
-
 document.addEventListener("DOMContentLoaded", async () => {
-    feather.replace();
+    // feather.replace(); // Pindahkan ini jika Anda memusatkannya di initializeSidebar()
+    initializeSidebar(); // Panggil fungsi sidebar yang sudah diimpor
+    initializeLogout();
 
     const employeeTableBody = document.getElementById("employeeTableBody");
     const loadingMessage = document.getElementById("loadingMessage");
@@ -86,7 +91,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }, 3000);
     };
 
-    // Ini adalah pengecekan awal yang baik untuk UX, tapi interceptor juga akan menangani
     const token = localStorage.getItem("token");
     if (!token) {
         showGlobalMessage("Anda tidak terautentikasi. Silakan login ulang.", "error");
@@ -96,7 +100,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const loadDepartmentsToEditModal = async () => {
         try {
-            // TIDAK PERLU authToken di sini lagi
             const departments = await departmentService.getAllDepartments();
             allDepartments = departments;
 
@@ -126,7 +129,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         loadingMessage.classList.remove("hidden");
 
         try {
-            //authToken dihapus dari parameter
             const data = await userService.getAllUsers(currentPage, itemsPerPage, currentSearch, currentRoleFilter);
 
             loadingMessage.classList.add("hidden");
@@ -146,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             let errorMessage = "Gagal memuat data karyawan. Silakan coba lagi.";
             if (error.status === 401 || error.status === 403) {
                 errorMessage = "Sesi Anda telah berakhir atau Anda tidak memiliki izin. Silakan login kembali.";
-                setTimeout(() => authService.logout(), 2000); // Menggunakan authService.logout() yang sudah ada
+                setTimeout(() => authService.logout(), 2000);
             } else if (error.message) {
                 errorMessage = error.message;
             }
@@ -154,53 +156,59 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-const renderEmployees = async (employees) => {
-    employeeTableBody.innerHTML = "";
+    const renderEmployees = async (employees) => {
+        employeeTableBody.innerHTML = "";
 
-    for (const employee of employees) {
-        const row = document.createElement("tr");
-        row.className = "border-b border-gray-100";
+        for (const employee of employees) {
+            const row = document.createElement("tr");
+            row.className = "border-b border-gray-100";
 
-        let photoUrl = "https://via.placeholder.com/48";
-        try {
-            const blob = await userService.getProfilePhoto(employee.id);
-            photoUrl = URL.createObjectURL(blob);
-        } catch (error) {
-            console.warn(`Foto tidak ditemukan untuk user ${employee.name}, pakai default`);
+            // 1. Siapkan placeholder dinamis dengan inisial nama
+            const initial = employee.name ? employee.name.charAt(0).toUpperCase() : '?';
+          // Awalnya
+let photoUrl = `https://placehold.co/48x48/E2E8F0/4A5568?text=${initial}`;
+
+try {
+    const blob = await userService.getProfilePhoto(employee.id);
+    if (blob && blob instanceof Blob && blob.size > 0) {
+        photoUrl = URL.createObjectURL(blob);
+    }
+} catch (error) {
+    console.warn(`Gagal memuat foto untuk user ${employee.name}, menggunakan placeholder.`);
+}
+
+
+            row.innerHTML = `
+                <td class="px-4 py-3">
+                    <img src="${photoUrl}" alt="${employee.name}" class="h-12 w-12 rounded-full object-cover">
+                </td>
+                <td class="px-4 py-3">${employee.name}</td>
+                <td class="px-4 py-3">${employee.email}</td>
+                <td class="px-4 py-3 capitalize">${employee.role}</td>
+                <td class="px-4 py-3">${employee.position || "-"}</td>
+                <td class="px-4 py-3">${employee.department || "-"}</td>
+                <td class="px-4 py-3">Rp ${employee.base_salary ? employee.base_salary.toLocaleString("id-ID") : "0"}</td>
+                <td class="px-4 py-3">
+                    <button class="edit-btn text-blue-600 hover:text-blue-800 mr-2" title="Edit" data-id="${employee.id}">
+                        <i data-feather="edit" class="w-5 h-5"></i>
+                    </button>
+                    <button class="delete-btn text-red-600 hover:text-red-800" title="Hapus" data-id="${employee.id}" data-name="${employee.name}">
+                        <i data-feather="trash-2" class="w-5 h-5"></i>
+                    </button>
+                </td>
+            `;
+            employeeTableBody.appendChild(row);
         }
 
-        row.innerHTML = `
-            <td class="px-4 py-3">
-                <img src="${photoUrl}" alt="${employee.name}" class="profile-thumb">
-            </td>
-            <td class="px-4 py-3">${employee.name}</td>
-            <td class="px-4 py-3">${employee.email}</td>
-            <td class="px-4 py-3 capitalize">${employee.role}</td>
-            <td class="px-4 py-3">${employee.position || "-"}</td>
-            <td class="px-4 py-3">${employee.department || "-"}</td>
-            <td class="px-4 py-3">Rp ${employee.base_salary ? employee.base_salary.toLocaleString("id-ID") : "0"}</td>
-            <td class="px-4 py-3">
-                <button class="edit-btn text-blue-600 hover:text-blue-800 mr-2" title="Edit" data-id="${employee.id}">
-                    <i data-feather="edit" class="w-5 h-5"></i>
-                </button>
-                <button class="delete-btn text-red-600 hover:text-red-800" title="Hapus" data-id="${employee.id}" data-name="${employee.name}">
-                    <i data-feather="trash-2" class="w-5 h-5"></i>
-                </button>
-            </td>
-        `;
-        employeeTableBody.appendChild(row);
-    }
+        feather.replace();
 
-    feather.replace();
-
-    document.querySelectorAll(".edit-btn").forEach((button) => {
-        button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id));
-    });
-    document.querySelectorAll(".delete-btn").forEach((button) => {
-        button.addEventListener("click", (e) => handleDelete(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
-    });
-};
-
+        document.querySelectorAll(".edit-btn").forEach((button) => {
+            button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id));
+        });
+        document.querySelectorAll(".delete-btn").forEach((button) => {
+            button.addEventListener("click", (e) => handleDelete(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
+        });
+    };
 
     const updatePagination = (total, page, limit) => {
         const startIndex = (page - 1) * limit + 1;
@@ -222,7 +230,6 @@ const renderEmployees = async (employees) => {
         }
 
         try {
-            // authToken dihapus dari parameter
             const employee = await userService.getUserByID(employeeId);
             if (employee) {
                 editEmployeeId.value = employee.id;
@@ -279,7 +286,6 @@ const renderEmployees = async (employees) => {
             delete updatedData.role;
             delete updatedData.photo_file;
 
-
             updatedData.base_salary = parseFloat(updatedData.base_salary);
             if (isNaN(updatedData.base_salary)) {
                 editErrorMessageDiv.textContent = "Gaji pokok harus berupa angka yang valid.";
@@ -297,7 +303,6 @@ const renderEmployees = async (employees) => {
                     address: updatedData.address,
                 };
 
-                // authToken dihapus dari parameter
                 const response = await userService.updateUser(employeeId, dataToUpdate);
                 console.log("Karyawan berhasil diupdate:", response);
 
@@ -342,7 +347,6 @@ const renderEmployees = async (employees) => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    // authToken dihapus dari parameter
                     const response = await userService.deleteUser(employeeId);
                     console.log("Karyawan berhasil dihapus:", response);
 
@@ -360,7 +364,7 @@ const renderEmployees = async (employees) => {
                     let errorMessage = "Terjadi kesalahan saat menghapus karyawan. Silakan coba lagi.";
                     if (error.status === 401 || error.status === 403) {
                         errorMessage = "Anda tidak memiliki izin untuk menghapus karyawan ini.";
-                        setTimeout(() => authService.logout(), 2000); // Tambahkan logout di sini
+                        setTimeout(() => authService.logout(), 2000);
                     } else if (error.message) {
                         errorMessage = error.message;
                     }
@@ -375,7 +379,6 @@ const renderEmployees = async (employees) => {
             }
         });
     };
-
 
     if (prevPageBtn) {
         prevPageBtn.addEventListener("click", () => {
@@ -404,38 +407,5 @@ const renderEmployees = async (employees) => {
             }, 500);
         });
     }
-
-    const sidebarToggle = document.getElementById("sidebarToggle");
-    const mobileSidebar = document.getElementById("mobileSidebar");
-    const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
-    const closeSidebar = document.getElementById("closeSidebar");
-
-    if (sidebarToggle && mobileSidebar && mobileSidebarPanel && closeSidebar) {
-        sidebarToggle.addEventListener("click", () => {
-            mobileSidebar.classList.remove("hidden");
-            setTimeout(() => {
-                mobileSidebar.classList.add("opacity-100");
-                mobileSidebarPanel.classList.remove("-translate-x-full");
-            }, 10);
-        });
-
-        const hideMobileSidebar = () => {
-            mobileSidebar.classList.remove("opacity-100");
-            mobileSidebarPanel.classList.add("-translate-x-full");
-            setTimeout(() => {
-                mobileSidebar.classList.add("hidden");
-            }, 300);
-        };
-
-        closeSidebar.addEventListener("click", hideMobileSidebar);
-
-        mobileSidebar.addEventListener("click", (event) => {
-            if (event.target === mobileSidebar) {
-                hideMobileSidebar();
-            }
-        });
-    }
-
-    // Inisialisasi awal
     fetchEmployees();
 });
