@@ -46,10 +46,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
           if (data.user.role === "admin") {
             console.log('Kondisi IF terpenuhi. Peran adalah "admin", mengarahkan ke dasbor admin...');
-            window.location.href = "/src/pages/Admin/admin_dashboard.html";
+            window.location.href = "/admin_dashboard.html";
           } else {
             console.log('Kondisi ELSE terpenuhi. Peran BUKAN "admin", mengarahkan ke dasbor karyawan...');
-            window.location.href = "/src/pages/Karyawan/employee_dashboard.html";
+            window.location.href = "/employee_dashboard.html";
           }
         } else {
           console.error("Struktur data dari server tidak sesuai. 'data.user.role' tidak ditemukan.", data);

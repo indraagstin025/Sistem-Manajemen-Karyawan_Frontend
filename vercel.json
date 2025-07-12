@@ -1,17 +1,17 @@
 {
   "rewrites": [
     { "source": "/login", "destination": "/login.html" },
-    { "source": "/admin/dashboard", "destination": "/Admin/admin_dashboard.html" },
-    { "source": "/admin/add-department", "destination": "/Admin/add_department.html" },
-    { "source": "/admin/add-employee", "destination": "/Admin/add_employee.html" },
-    { "source": "/admin/leave-requests", "destination": "/Admin/admin_leave_requests.html" },
-    { "source": "/admin/list-attendance", "destination": "/Admin/list_attendance.html" },
-    { "source": "/admin/manage-departments", "destination": "/Admin/manage_departments.html" },
-    { "source": "/admin/manage-employees", "destination": "/Admin/manage_employees.html" },
+    { "source": "/admin/dashboard", "destination": "/admin_dashboard.html" },
+    { "source": "/admin/add-department", "destination": "/add_department.html" },
+    { "source": "/admin/add-employee", "destination": "/add_employee.html" },
+    { "source": "/admin/leave-requests", "destination": "/admin_leave_requests.html" },
+    { "source": "/admin/list-attendance", "destination": "/list_attendance.html" },
+    { "source": "/admin/manage-departments", "destination": "/manage_departments.html" },
+    { "source": "/admin/manage-employees", "destination": "/manage_employees.html" },
 
-    { "source": "/karyawan/dashboard", "destination": "/Karyawan/employee_dashboard.html" },
-    { "source": "/karyawan/profile", "destination": "/Karyawan/employee_profile.html" },
-    { "source": "/karyawan/request-leave", "destination": "/Karyawan/request_leave.html" },
-    { "source": "/karyawan/attendance-history", "destination": "/Karyawan/attendance_history.html" }
+    { "source": "/karyawan/dashboard", "destination": "/employee_dashboard.html" },
+    { "source": "/karyawan/profile", "destination": "/employee_profile.html" },
+    { "source": "/karyawan/request-leave", "destination": "/request_leave.html" },
+    { "source": "/karyawan/attendance-history", "destination": "/attendance_history.html" }
   ]
 }
