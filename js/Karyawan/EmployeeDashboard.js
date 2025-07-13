@@ -5,7 +5,7 @@ import { userService }
 import { authService }
     from "../Services/AuthServices.js";
 import AttendanceService from '../Services/AttendanceServices.js';
-
+// import { Html5Qrcode } from "html5-qrcode"; // <-- Baris ini Dihapus!
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 import Swal from 'sweetalert2'; // <-- Import SweetAlert2
@@ -23,8 +23,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
-  
-
 
     const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
 
@@ -36,11 +34,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const changePasswordModal = document.getElementById("changePasswordModal");
     const openChangePasswordModalBtn = document.getElementById("openChangePasswordModalBtn");
     const closeChangePasswordModalBtn = document.getElementById("closeChangePasswordModalBtn");
-    const cancelChangePasswordBtn = document.getElementById("cancelChangePasswordBtn");
+    const cancelChangePasswordBtn = document = document.getElementById("cancelChangePasswordBtn");
     const changePasswordForm = document.getElementById("changePasswordForm");
     const oldPasswordInput = document.getElementById("oldPassword");
     const newPasswordInput = document.getElementById("newPassword");
-    const confirmNewPasswordInput = document = document.getElementById("confirmNewPassword");
+    const confirmNewPasswordInput = document.getElementById("confirmNewPassword"); // <-- Pastikan ini sudah benar
     const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
     const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage");
 
@@ -59,13 +57,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const checkInTimeSpan = document.getElementById('check-in-time');
     const attendanceStatusSpan = document.getElementById('attendance-status');
     const checkOutDisplay = document.getElementById('check-out-display');
-    const checkOutTimeSpan = document = document.getElementById('check-out-time');
+    const checkOutTimeSpan = document.getElementById('check-out-time'); // <-- Pastikan ini sudah benar
     const attendanceNoteDisplay = document.getElementById('attendance-note-display');
     const attendanceNoteSpan = document.getElementById('attendance-note');
 
 
     // --- Fungsi Utilitas ---
-
     // Fungsi untuk menampilkan notifikasi SweetAlert2
     function showSweetAlert(title, message, icon = "success", showConfirmButton = false, timer = 2000) {
         Swal.fire({
@@ -82,7 +79,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Fungsi Utilitas (showToast) - Pertahankan untuk error/info jika perlu, atau hapus
+    // Fungsi Utilitas (showToast) - Pertahankan untuk error/info jika perlu
     function showToast(message, type = "success") {
         let backgroundColor;
         if (type === "success") {
@@ -187,7 +184,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 console.log("Scanner dihentikan dan dibersihkan.");
             } catch (err) {
                 console.warn("Gagal menghentikan/membersihkan scanner:", err);
-                // Biarkan error ini, mungkin karena scanner sudah mati atau tidak ada stream
             }
             isScannerActivelyScanning = false; // Reset flag
         }
@@ -211,7 +207,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const currentUser = authService.getCurrentUser();
         if (!currentUser || !currentUser.id) {
-            showToast('User tidak terautentikasi. Silakan login kembali.', 'error'); // Tetap pakai Toastify untuk error autentikasi
+            showToast('User tidak terautentikasi. Silakan login kembali.', 'error');
             qrScanResult.textContent = 'Error: User tidak terautentikasi.';
             await stopAndClearScanner(); // Pastikan scanner berhenti
             isProcessingScan = false; // Reset flag
@@ -281,8 +277,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             // Pastikan untuk menghentikan dan membersihkan scanner sebelum memulai yang baru
             await stopAndClearScanner(); // Panggil helper function
 
-            if (!Html5Qrcode.getCameras) {
-                qrScanResult.textContent = "Browser tidak mendukung akses kamera.";
+            // Menggunakan Html5Qrcode dari global scope
+            if (typeof Html5Qrcode === 'undefined' || !Html5Qrcode.getCameras) {
+                qrScanResult.textContent = "Browser tidak mendukung akses kamera atau Html5Qrcode tidak dimuat dengan benar.";
                 qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Browser Anda tidak mendukung akses kamera atau izin ditolak.</p>';
                 return;
             }
@@ -310,6 +307,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             cameraSelect.removeEventListener("change", handleCameraChange);
             cameraSelect.addEventListener("change", handleCameraChange);
 
+            // Menggunakan Html5Qrcode dari global scope
             html5QrCodeInstance = new Html5Qrcode("reader"); // Re-initialize instance
 
             await html5QrCodeInstance.start(
@@ -352,6 +350,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             await stopAndClearScanner(); // Selalu hentikan dan bersihkan sebelum restart
 
+            // Menggunakan Html5Qrcode dari global scope
             html5QrCodeInstance = new Html5Qrcode("reader"); // Buat instance baru
 
             await html5QrCodeInstance.start(
