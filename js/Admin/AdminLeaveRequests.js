@@ -1,6 +1,6 @@
 // js/Admin/AdminLeaveRequests.js
 
-import { LeaveRequestService } = "../Services/LeaveRequestsServices.js";
+import { LeaveRequestService } from "../Services/LeaveRequestsServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
