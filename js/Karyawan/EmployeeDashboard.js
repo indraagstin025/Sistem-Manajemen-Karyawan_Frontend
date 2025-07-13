@@ -3,6 +3,7 @@
 import { userService } from "../Services/UserServices.js";
 import { authService } from "../Services/AuthServices.js";
 import AttendanceService from '../Services/AttendanceServices.js';
+import { Html5Qrcode } from "html5-qrcode"; // Pastikan ini diimpor
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
@@ -14,23 +15,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     const employeeName = document.getElementById("employeeName");
     const employeePosition = document.getElementById("employeePosition");
     const employeeDepartment = document.getElementById("employeeDepartment");
-    // Diperbarui: todayAttendanceStatusSummary untuk kartu ringkasan
     const todayAttendanceStatusSummary = document.getElementById("todayAttendanceStatus");
-    const remainingLeave = document.getElementById("remainingLeave"); // Elemen untuk sisa cuti
+    const remainingLeave = document.getElementById("remainingLeave");
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
 
-    // Tombol Logout
     const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
 
-    // Sidebar Mobile
     const sidebarToggle = document.getElementById("sidebarToggle");
     const mobileSidebar = document.getElementById("mobileSidebar");
     const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
     const closeSidebar = document.getElementById("closeSidebar");
 
-    // Change Password Modal elements
     const changePasswordModal = document.getElementById("changePasswordModal");
     const openChangePasswordModalBtn = document.getElementById("openChangePasswordModalBtn");
     const closeChangePasswordModalBtn = document.getElementById("closeChangePasswordModalBtn");
@@ -42,15 +39,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
     const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage");
 
-    // QR Scanner elements (Pastikan ID ini ada di HTML terbaru Anda)
-    const qrScannerContainer = document.getElementById('reader'); // Ini adalah container tempat video feed akan dirender
+    // QR Scanner elements
+    const qrScannerContainer = document.getElementById('reader');
     const qrScanResult = document.getElementById('qr-scan-result');
-    const notificationMessage = document.getElementById('notification-message');
-    const cameraSelect = document.getElementById('camera-select'); // Elemen dropdown kamera
+    const notificationMessage = document.getElementById('notification-message'); // Elemen ini ada di HTML tapi tidak digunakan secara aktif di sini
+    const cameraSelect = document.getElementById('camera-select');
 
-    let html5QrCodeScanner; // Variabel untuk instance Html5QrcodeScanner
+    // Deklarasikan html5QrCodeInstance di scope yang dapat diakses oleh semua fungsi scanner
+    let html5QrCodeInstance = null;
+    let isProcessingScan = false;
 
-    // Today's Attendance Status detail elements (Pastikan ID ini ada di HTML terbaru Anda)
     const currentDateSpan = document.getElementById('current-date');
     const checkInTimeSpan = document.getElementById('check-in-time');
     const attendanceStatusSpan = document.getElementById('attendance-status');
@@ -87,81 +85,80 @@ document.addEventListener("DOMContentLoaded", async () => {
         }).showToast();
     };
 
-const fetchEmployeeProfileData = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
-      setTimeout(() => authService.logout(), 2000);
-      return null;
-    }
+    const fetchEmployeeProfileData = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
+                setTimeout(() => authService.logout(), 2000);
+                return null;
+            }
 
-    let user;
-    try {
-      user = authService.getCurrentUser();
-      if (!user) {
-        throw new Error("Data pengguna tidak ditemukan di sesi.");
-      }
-    } catch (e) {
-      console.error("Error parsing user from localStorage:", e);
-      throw new Error("Data pengguna di sesi rusak.");
-    }
+            let user;
+            try {
+                user = authService.getCurrentUser();
+                if (!user) {
+                    throw new Error("Data pengguna tidak ditemukan di sesi.");
+                }
+            } catch (e) {
+                console.error("Error parsing user from localStorage:", e);
+                throw new Error("Data pengguna di sesi rusak.");
+            }
 
-    if (user.role !== 'karyawan') {
-      showToast("Akses ditolak. Peran tidak sesuai untuk halaman ini.", "error");
-      setTimeout(() => authService.logout(), 2000);
-      return null;
-    }
+            if (user.role !== 'karyawan') {
+                showToast("Akses ditolak. Peran tidak sesuai untuk halaman ini.", "error");
+                setTimeout(() => authService.logout(), 2000);
+                return null;
+            }
 
-    const employeeData = await userService.getUserByID(user.id);
+            const employeeData = await userService.getUserByID(user.id);
 
-    if (employeeData) {
-      // Load foto dari GridFS
-      try {
-        const blob = await userService.getProfilePhoto(user.id);
-        const photoUrl = URL.createObjectURL(blob);
-        profilePhoto.src = photoUrl;
-        if (userAvatarNav) {
-          userAvatarNav.src = photoUrl;
-          userAvatarNav.alt = employeeData.name;
+            if (employeeData) {
+                try {
+                    const blob = await userService.getProfilePhoto(user.id);
+                    const photoUrl = URL.createObjectURL(blob);
+                    profilePhoto.src = photoUrl;
+                    if (userAvatarNav) {
+                        userAvatarNav.src = photoUrl;
+                        userAvatarNav.alt = employeeData.name;
+                    }
+                } catch {
+                    const fallback = "https://via.placeholder.com/80/4A5568/E2E8F0?text=ME";
+                    profilePhoto.src = fallback;
+                    if (userAvatarNav) {
+                        userAvatarNav.src = fallback;
+                        userAvatarNav.alt = employeeData.name;
+                    }
+                }
+
+                employeeName.textContent = employeeData.name;
+                employeePosition.textContent = employeeData.position || "-";
+                employeeDepartment.textContent = employeeData.department || "-";
+
+                if (employeeData.annual_leave_balance !== undefined && employeeData.annual_leave_balance !== null) {
+                    remainingLeave.textContent = `${employeeData.annual_leave_balance} Hari`;
+                } else {
+                    remainingLeave.textContent = `N/A`;
+                }
+            }
+            return employeeData;
+
+        } catch (error) {
+            console.error("Error fetching employee profile data:", error);
+            showToast(error.message || "Gagal memuat data profil.", "error");
+            if (
+                error.status === 401 ||
+                (error.message &&
+                    (error.message.includes('token') ||
+                        error.message.includes('sesi') ||
+                        error.message.includes('Peran tidak sesuai') ||
+                        error.message.includes('Data pengguna di sesi rusak')))
+            ) {
+                setTimeout(() => authService.logout(), 2000);
+            }
+            return null;
         }
-      } catch {
-        const fallback = "https://via.placeholder.com/80/4A5568/E2E8F0?text=ME";
-        profilePhoto.src = fallback;
-        if (userAvatarNav) {
-          userAvatarNav.src = fallback;
-          userAvatarNav.alt = employeeData.name;
-        }
-      }
-
-      employeeName.textContent = employeeData.name;
-      employeePosition.textContent = employeeData.position || "-";
-      employeeDepartment.textContent = employeeData.department || "-";
-
-      if (employeeData.annual_leave_balance !== undefined && employeeData.annual_leave_balance !== null) {
-        remainingLeave.textContent = `${employeeData.annual_leave_balance} Hari`;
-      } else {
-        remainingLeave.textContent = `N/A`;
-      }
-    }
-    return employeeData;
-
-  } catch (error) {
-    console.error("Error fetching employee profile data:", error);
-    showToast(error.message || "Gagal memuat data profil.", "error");
-    if (
-      error.status === 401 ||
-      (error.message &&
-        (error.message.includes('token') ||
-         error.message.includes('sesi') ||
-         error.message.includes('Peran tidak sesuai') ||
-         error.message.includes('Data pengguna di sesi rusak')))
-    ) {
-      setTimeout(() => authService.logout(), 2000);
-    }
-    return null;
-  }
-};
+    };
 
 
     // --- Helper Functions untuk Absensi ---
@@ -172,23 +169,21 @@ const fetchEmployeeProfileData = async () => {
     const updateAttendanceStatusUI = (attendance) => {
         const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
         currentDateSpan.textContent = today;
-        attendanceStatusSpan.className = ''; // Reset class sebelum menambahkan yang baru
-        todayAttendanceStatusSummary.classList.remove('text-gray-900', 'text-green-600', 'text-red-600', 'text-orange-600'); // Reset warna summary
+        attendanceStatusSpan.className = '';
+        todayAttendanceStatusSummary.classList.remove('text-gray-900', 'text-green-600', 'text-red-600', 'text-orange-600', 'text-blue-600');
 
         if (attendance) {
-            // Set status dan warna untuk ringkasan
-            todayAttendanceStatusSummary.textContent = attendance.status; // Gunakan status dari data absensi
+            todayAttendanceStatusSummary.textContent = attendance.status;
             if (attendance.status === 'Hadir') {
                 todayAttendanceStatusSummary.classList.add('text-green-600');
             } else if (attendance.status === 'Telat') {
                 todayAttendanceStatusSummary.classList.add('text-orange-600');
-            } else if (attendance.status === 'Sakit' || attendance.status === 'Cuti') {
-                todayAttendanceStatusSummary.classList.add('text-blue-600'); // Atau warna lain untuk non-hadir
+            } else if (attendance.status === 'Sakit' || attendance.status === 'Cuti' || attendance.status === 'Izin') {
+                todayAttendanceStatusSummary.classList.add('text-blue-600');
             } else {
-                todayAttendanceStatusSummary.classList.add('text-gray-900'); // Default
+                todayAttendanceStatusSummary.classList.add('text-gray-900');
             }
 
-            // Perbarui detail absensi
             checkInTimeSpan.textContent = formatTime(attendance.check_in);
             attendanceStatusSpan.textContent = attendance.status;
 
@@ -196,17 +191,14 @@ const fetchEmployeeProfileData = async () => {
                 attendanceStatusSpan.classList.add('text-green-600', 'font-semibold');
             } else if (attendance.status === 'Telat') {
                 attendanceStatusSpan.classList.add('text-orange-600', 'font-semibold');
-            } else if (attendance.status === 'Sakit' || attendance.status === 'Cuti') {
-                // Untuk status Sakit/Cuti, mungkin tidak ada check-in/out, tapi statusnya penting
-                checkInTimeSpan.textContent = '-'; // Tidak ada check-in time
-                attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold'); // Warna untuk cuti/sakit
-                // Sembunyikan bagian check-out jika statusnya Sakit/Cuti
+            } else if (attendance.status === 'Sakit' || attendance.status === 'Cuti' || attendance.status === 'Izin') {
+                checkInTimeSpan.textContent = '-';
+                attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold');
                 checkOutDisplay.classList.add('hidden');
             } else {
                 attendanceStatusSpan.classList.add('text-gray-600', 'font-semibold');
             }
 
-            // Tampilkan atau sembunyikan waktu check-out
             if (attendance.check_out) {
                 checkOutDisplay.classList.remove('hidden');
                 checkOutTimeSpan.textContent = formatTime(attendance.check_out);
@@ -215,7 +207,6 @@ const fetchEmployeeProfileData = async () => {
                 checkOutTimeSpan.textContent = '';
             }
 
-            // Tampilkan atau sembunyikan catatan
             if (attendance.note) {
                 attendanceNoteDisplay.classList.remove('hidden');
                 attendanceNoteSpan.textContent = attendance.note;
@@ -224,7 +215,6 @@ const fetchEmployeeProfileData = async () => {
                 attendanceNoteSpan.textContent = '';
             }
         } else {
-            // Jika tidak ada data absensi untuk hari ini
             todayAttendanceStatusSummary.textContent = "Belum Absen";
             todayAttendanceStatusSummary.classList.add('text-red-600');
 
@@ -244,40 +234,32 @@ const fetchEmployeeProfileData = async () => {
         }
 
         try {
-            // Pastikan getMyHistory di AttendanceService tidak membutuhkan token di parameternya
             const history = await AttendanceService.getMyHistory();
             const today = new Date().toISOString().slice(0, 10);
-            // Mencari absensi untuk hari ini
             const todayAttendance = history.find(att => att.date === today);
 
             updateAttendanceStatusUI(todayAttendance);
 
-            // Logic untuk scanner QR
-            if (todayAttendance && (todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat')) {
-                // Jika sudah hadir/telat, hentikan scanner
-                if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
-                    await html5QrCodeScanner.stop();
-                    showToast('Anda sudah check-in hari ini.', 'info');
-                }
-                if (qrScannerContainer) {
-                    qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Anda sudah absen hari ini.</p>';
-                    qrScanResult.textContent = '';
-                }
-                if (cameraSelect) cameraSelect.classList.add('hidden');
-            } else if (todayAttendance && (todayAttendance.status === 'Sakit' || todayAttendance.status === 'Cuti')) {
-                // Jika statusnya Sakit atau Cuti, tidak perlu scanner
-                if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
-                    await html5QrCodeScanner.stop();
-                    showToast(`Status Anda hari ini: ${todayAttendance.status}.`, 'info');
-                }
-                if (qrScannerContainer) {
-                    qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">Status Anda hari ini: ${todayAttendance.status}.</p>`;
-                    qrScanResult.textContent = '';
-                }
-                if (cameraSelect) cameraSelect.classList.add('hidden');
+            // Hentikan scanner yang mungkin sedang berjalan terlebih dahulu
+            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
+                await html5QrCodeInstance.stop();
+                await html5QrCodeInstance.clear(); // Hapus elemen video
             }
-            else {
-                // Jika belum ada absensi atau statusnya belum Hadir/Telat/Sakit/Cuti (misal: "Izin")
+            cameraSelect.classList.add('hidden'); // Sembunyikan dropdown kamera secara default
+
+            if (todayAttendance && (todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat')) {
+                // Jika sudah hadir/telat
+                qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Anda sudah check-in hari ini.</p>';
+                qrScanResult.textContent = '';
+                showToast('Anda sudah check-in hari ini.', 'info');
+            } else if (todayAttendance && (todayAttendance.status === 'Sakit' || todayAttendance.status === 'Cuti' || todayAttendance.status === 'Izin')) {
+                // Jika statusnya Sakit, Cuti, atau Izin, tidak perlu scanner
+                qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">Status Anda hari ini: ${todayAttendance.status}.</p>`;
+                qrScanResult.textContent = '';
+                showToast(`Status Anda hari ini: ${todayAttendance.status}.`, 'info');
+            } else {
+                // Jika belum ada absensi atau statusnya belum Hadir/Telat/Sakit/Cuti/Izin
+                // Aktifkan scanner
                 startScanner();
             }
 
@@ -293,127 +275,194 @@ const fetchEmployeeProfileData = async () => {
         }
     };
 
-
-    // --- QR Scanner Logic ---
+    // --- Fungsi QR Scanner (HTML5-Qrcode Manual) ---
     const onScanSuccess = async (decodedText, decodedResult) => {
+        if (isProcessingScan) return;
+        isProcessingScan = true;
+
         console.log(`QR Code terdeteksi: ${decodedText}`);
         qrScanResult.textContent = `Memindai: ${decodedText}`;
-
-        if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
-            await html5QrCodeScanner.stop();
-        }
 
         const currentUser = authService.getCurrentUser();
         if (!currentUser || !currentUser.id) {
             showToast('User tidak terautentikasi. Silakan login kembali.', 'error');
             qrScanResult.textContent = 'Error: User tidak terautentikasi.';
-            startScanner(); // Coba restart scanner jika gagal
+            isProcessingScan = false;
             return;
         }
 
         try {
-            // Pastikan scanQR di AttendanceService tidak membutuhkan token di parameternya
             const response = await AttendanceService.scanQR(decodedText, currentUser.id);
+
             showToast(response.message, 'success');
             qrScanResult.textContent = response.message;
-            loadMyTodayAttendance(); // Muat ulang status setelah absensi berhasil
+
+            // Stop scanner karena sudah berhasil
+            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
+                await html5QrCodeInstance.stop();
+                await html5QrCodeInstance.clear(); // Hapus elemen video
+            }
+
+            // Refresh tampilan
+            loadMyTodayAttendance();
         } catch (error) {
             console.error('Error saat memindai QR Code:', error);
-            showToast(`Absensi gagal: ${error.message}`, 'error');
-            qrScanResult.textContent = `Gagal Absen: ${error.message}`;
-            startScanner(); // Coba restart scanner jika gagal
-        }
-    };
 
-    const onScanError = (errorMessage) => {
-        // console.warn(`QR Code error: ${errorMessage}`); // Biasanya terlalu berisik, bisa dikomentari
-    };
+            const message = error?.response?.data?.error || error.message || 'Terjadi kesalahan saat absen.';
 
-    const startScanner = async () => {
-        if (!qrScannerContainer) {
-            console.error("QR scanner container #reader not found.");
-            showToast("Gagal memulai scanner: Elemen HTML tidak ditemukan.", "error");
-            return;
-        }
+            if (error.response?.status === 409) {
+                showToast(message, 'info');
+                qrScanResult.textContent = message;
 
-        // Hapus konten lama untuk mencegah tumpang tindih
-        qrScannerContainer.innerHTML = '';
-        qrScanResult.textContent = '';
-
-
-        try {
-            const cameras = await Html5Qrcode.getCameras();
-            if (cameras && cameras.length > 0) {
-                let cameraIdToUse = cameras[0].id; // Default: kamera pertama
-
-                if (cameras.length > 1) {
-                    if (cameraSelect) cameraSelect.classList.remove('hidden');
-                    if (cameraSelect) cameraSelect.innerHTML = '';
-                    cameras.forEach(camera => {
-                        const option = document.createElement('option');
-                        option.value = camera.id;
-                        option.textContent = camera.label || `Kamera ${camera.id}`;
-                        if (cameraSelect) cameraSelect.appendChild(option);
-                    });
-
-                    const backCamera = cameras.find(camera =>
-                        camera.label.toLowerCase().includes('back') ||
-                        camera.label.toLowerCase().includes('environment')
-                    );
-                    if (cameraSelect) cameraSelect.value = backCamera ? backCamera.id : cameras[0].id;
-                    cameraIdToUse = (cameraSelect && cameraSelect.value) ? cameraSelect.value : cameras[0].id;
-                } else {
-                    if (cameraSelect) cameraSelect.classList.add('hidden');
+                // Stop scanner untuk hentikan loop jika sudah absen
+                if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
+                    await html5QrCodeInstance.stop();
+                    await html5QrCodeInstance.clear();
                 }
-
-                if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
-                    await html5QrCodeScanner.stop();
-                }
-
-                // Re-initialize Html5QrcodeScanner with specific camera constraints
-                html5QrCodeScanner = new Html5QrcodeScanner(
-                    "reader",
-                    {
-                        fps: 10,
-                        qrbox: 250,
-                        aspectRatio: 1.333333,
-                        disableFlip: false,
-                        videoConstraints: {
-                            deviceId: { exact: cameraIdToUse }
-                        }
-                    },
-                    /* verbose= */ false
-                );
-
-                await html5QrCodeScanner.render(onScanSuccess, onScanError);
-
-                qrScanResult.textContent = 'Siap memindai QR Code...';
-
+                loadMyTodayAttendance(); // Muat ulang status absensi untuk memastikan UI diperbarui
             } else {
-                showToast("Tidak ada kamera yang ditemukan.", "error");
-                qrScanResult.textContent = 'Tidak ada kamera yang ditemukan.';
-                qrScannerContainer.innerHTML = '<p class="text-red-500 mt-8">Gagal mengakses kamera. Pastikan browser memiliki izin dan kamera terhubung.</p>';
-                if (cameraSelect) cameraSelect.classList.add('hidden');
+                showToast(`Absensi gagal: ${message}`, 'error');
+                qrScanResult.textContent = `Gagal Absen: ${message}`;
+
+                // Tunggu sebentar lalu restart scanner (kecuali jika error karena kamera tidak tersedia, dll.)
+                // Hindari loop restart jika error kamera persisten
+                if (error.message && error.message.includes("kamera")) {
+                     qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat kamera: ${message}</p>`;
+                } else {
+                    setTimeout(async () => { // Tambahkan async di sini
+                        // Cek lagi apakah scanner sudah harus berhenti (misal karena status sudah berubah saat async call)
+                        const history = await AttendanceService.getMyHistory(); // Ambil data terbaru
+                        const today = new Date().toISOString().slice(0, 10);
+                        const currentTodayAttendance = history.find(att => att.date === today);
+
+                        if (!currentTodayAttendance || (currentTodayAttendance.status !== 'Hadir' && currentTodayAttendance.status !== 'Telat' && currentTodayAttendance.status !== 'Sakit' && currentTodayAttendance.status !== 'Cuti' && currentTodayAttendance.status !== 'Izin')) {
+                            startScanner();
+                        } else {
+                             // Jika status sudah berubah (misal user absen di tab lain), stop scanner.
+                            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
+                                html5QrCodeInstance.stop();
+                                html5QrCodeInstance.clear();
+                            }
+                            qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Scanner dinonaktifkan karena status absensi sudah diperbarui.</p>';
+                        }
+                    }, 1000);
+                }
             }
-        } catch (err) {
-            console.error("Error accessing camera:", err);
-            showToast(`Gagal mengakses kamera: ${err.message}`, "error");
-            qrScanResult.textContent = 'Gagal mengakses kamera.';
-            qrScannerContainer.innerHTML = '<p class="text-red-500 mt-8">Gagal mengakses kamera. Pastikan browser memiliki izin dan kamera terhubung.</p>';
-            if (cameraSelect) cameraSelect.classList.add('hidden');
+        } finally {
+            isProcessingScan = false;
         }
     };
 
-    // Event listener untuk perubahan pilihan kamera
-    if (cameraSelect) {
-        cameraSelect.addEventListener('change', async () => {
-            if (html5QrCodeScanner && html5QrCodeScanner.isScanning) {
-                await html5QrCodeScanner.stop();
+    const onScanFailure = (error) => {
+        // console.warn(`Scan gagal: ${error}`);
+        // Logika ini dibiarkan kosong agar tidak terlalu banyak notifikasi
+        // karena Html5-Qrcode akan terus memanggil ini saat tidak ada QR terdeteksi.
+    };
+
+    async function startScanner() {
+        try {
+            // Pastikan elemen reader ada sebelum membuat instance
+            if (!qrScannerContainer) {
+                console.error("Elemen 'reader' tidak ditemukan di DOM.");
+                qrScanResult.textContent = "Error: Elemen scanner tidak ditemukan.";
+                return;
             }
-            startScanner();
-        });
+
+            // Hentikan scanner yang mungkin sedang berjalan sebelumnya
+            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
+                await html5QrCodeInstance.stop();
+                await html5QrCodeInstance.clear();
+            }
+
+            if (!Html5Qrcode.getCameras) {
+                qrScanResult.textContent = "Browser tidak mendukung akses kamera.";
+                qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Browser Anda tidak mendukung akses kamera atau izin ditolak.</p>';
+                return;
+            }
+
+            const cameras = await Html5Qrcode.getCameras();
+            if (cameras.length === 0) {
+                qrScanResult.textContent = "Tidak ada kamera tersedia.";
+                qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Tidak ada kamera yang ditemukan di perangkat Anda.</p>';
+                return;
+            }
+
+            // Pilih kamera default (kamera pertama)
+            const defaultCameraId = cameras[0].id;
+
+            // Tampilkan dropdown kamera
+            cameraSelect.innerHTML = ""; // Bersihkan opsi sebelumnya
+            cameras.forEach((cam) => {
+                const option = document.createElement("option");
+                option.value = cam.id;
+                option.text = cam.label || `Kamera ${cam.id}`;
+                cameraSelect.appendChild(option);
+            });
+            cameraSelect.classList.remove("hidden"); // Tampilkan dropdown
+
+            // Set kamera default di dropdown
+            cameraSelect.value = defaultCameraId;
+
+
+            // Tambahkan event listener untuk mengganti kamera secara manual
+            // Pastikan hanya satu listener yang ditambahkan
+            cameraSelect.removeEventListener("change", handleCameraChange); // Hapus jika sudah ada
+            cameraSelect.addEventListener("change", handleCameraChange);
+
+            // Inisialisasi Html5Qrcode instance
+            // Jika sudah ada instance, gunakan yang itu, jika tidak, buat yang baru
+            if (!html5QrCodeInstance) {
+                 html5QrCodeInstance = new Html5Qrcode("reader");
+            }
+
+
+            // Mulai pemindaian dengan kamera default
+            await html5QrCodeInstance.start(
+                { deviceId: { exact: defaultCameraId } }, // Gunakan ID kamera yang tepat
+                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 }, // Konfigurasi scanner
+                onScanSuccess,
+                onScanFailure
+            );
+            qrScanResult.textContent = "Pindai QR Code untuk Absen...";
+
+        } catch (err) {
+            console.error("Gagal memulai scanner:", err);
+            qrScanResult.textContent = `Gagal memulai scanner: ${err.message}`;
+            qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat scanner: ${err.message}. Pastikan kamera diizinkan.</p>`;
+            cameraSelect.classList.add("hidden"); // Sembunyikan dropdown jika gagal
+        }
     }
 
+    async function handleCameraChange(e) {
+        const selectedCameraId = e.target.value;
+        await restartScanner(selectedCameraId);
+    }
+
+    async function restartScanner(cameraId) {
+        try {
+            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
+                await html5QrCodeInstance.stop();
+                await html5QrCodeInstance.clear();
+            }
+            // Buat instance baru jika belum ada (misal, setelah clear)
+            if (!html5QrCodeInstance) {
+                html5QrCodeInstance = new Html5Qrcode("reader");
+            }
+
+            await html5QrCodeInstance.start(
+                { deviceId: { exact: cameraId } },
+                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+                onScanSuccess,
+                onScanFailure
+            );
+            qrScanResult.textContent = "Pindai QR Code untuk Absen...";
+            showToast("Kamera berhasil diganti.", "info");
+        } catch (err) {
+            console.error("Gagal restart scanner:", err);
+            qrScanResult.textContent = `Gagal mengganti kamera: ${err.message}`;
+            qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal mengganti kamera: ${err.message}</p>`;
+        }
+    }
 
     // --- Change Password Modal Logic ---
     const resetChangePasswordForm = () => {
@@ -478,11 +527,8 @@ const fetchEmployeeProfileData = async () => {
                 setTimeout(() => authService.logout(), 2000);
                 return;
             }
-            // authToken sudah ditangani oleh interceptor di authService, jadi tidak perlu diteruskan di sini.
-            // const token = localStorage.getItem('token'); // Tidak perlu variabel ini jika tidak digunakan
 
             try {
-                // Hapus parameter 'token' jika authService.changePassword sudah menggunakan apiClient dengan interceptor
                 const response = await authService.changePassword(oldPassword, newPassword);
                 changePasswordSuccessMessage.textContent = response.message || "Password berhasil diubah!";
                 changePasswordSuccessMessage.classList.remove("hidden");
