@@ -681,7 +681,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
-    // --- Inisialisasi Halaman ---
+
     const currentUser = await fetchEmployeeProfileData();
     if (currentUser) {
         loadMyTodayAttendance();
