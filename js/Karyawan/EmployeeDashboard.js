@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // QR Scanner elements
     const qrScannerContainer = document.getElementById('reader');
     const qrScanResult = document.getElementById('qr-scan-result');
-    const notificationMessage = document.getElementById('notification-message');
+    const notificationMessage = document.getElementById('notification-message'); // Ini tidak digunakan di kode yang disediakan, bisa dihapus jika tidak ada.
     const cameraSelect = document.getElementById('camera-select');
 
     let html5QrCodeInstance = null;
@@ -53,8 +53,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentDateSpan = document.getElementById('current-date');
     const checkInTimeSpan = document.getElementById('check-in-time');
     const attendanceStatusSpan = document.getElementById('attendance-status');
-    const checkOutDisplay = document.getElementById('check-out-display'); // Ini bisa dihapus dari HTML jika tidak perlu
-    const checkOutTimeSpan = document.getElementById('check-out-time'); // Ini bisa dihapus dari HTML jika tidak perlu
+    // HAPUS ATAU KOMENTARI BARIS INI: checkOutDisplay dan checkOutTimeSpan TIDAK ADA LAGI di HTML
+    // const checkOutDisplay = document.getElementById('check-out-display');
+    // const checkOutTimeSpan = document.getElementById('check-out-time');
     const attendanceNoteDisplay = document.getElementById('attendance-note-display');
     const attendanceNoteSpan = document.getElementById('attendance-note');
 
@@ -146,9 +147,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 attendanceStatusSpan.classList.add('text-gray-600', 'font-semibold');
             }
 
-            // HIDE check-out display since backend only supports check-in
-            checkOutDisplay.classList.add('hidden');
-            checkOutTimeSpan.textContent = ''; // Ensure it's empty
+            // HAPUS ATAU KOMENTARI BARIS INI: checkOutDisplay dan checkOutTimeSpan TIDAK ADA LAGI
+            // checkOutDisplay.classList.add('hidden');
+            // checkOutTimeSpan.textContent = '';
 
             if (attendance.note) {
                 attendanceNoteDisplay.classList.remove('hidden');
@@ -164,7 +165,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             checkInTimeSpan.textContent = '-';
             attendanceStatusSpan.textContent = 'Belum Absen';
             attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
-            checkOutDisplay.classList.add('hidden');
+            // HAPUS ATAU KOMENTARI BARIS INI: checkOutDisplay TIDAK ADA LAGI
+            // checkOutDisplay.classList.add('hidden');
             attendanceNoteDisplay.classList.add('hidden');
         }
     }
@@ -222,8 +224,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         } catch (error) {
             console.error('Error saat memindai QR Code:', error);
 
-            // Perhatikan bahwa backend sekarang akan selalu mengembalikan "Anda sudah melakukan check-in hari ini."
-            // untuk status 409, tidak ada lagi "check-in dan check-out"
             const message = error?.response?.data?.error || error.message || 'Terjadi kesalahan saat absen.';
 
             if (error.response?.status === 409) {
@@ -390,7 +390,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                  todayAttendance.status === 'Telat' ||
                  todayAttendance.status === 'Sakit' ||
                  todayAttendance.status === 'Cuti' ||
-                 todayAttendance.status === 'Izin'); // Cukup cek apakah ada record untuk hari ini
+                 todayAttendance.status === 'Izin');
 
             if (shouldStopScanner) {
                 await stopAndClearScanner();
