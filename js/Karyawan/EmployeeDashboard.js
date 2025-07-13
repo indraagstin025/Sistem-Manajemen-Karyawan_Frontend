@@ -1,14 +1,11 @@
 // js/Karyawan/EmployeeDashboard.js
 
-import { userService }
-    from "../Services/UserServices.js";
-import { authService }
-    from "../Services/AuthServices.js";
+import { userService } from "../Services/UserServices.js";
+import { authService } from "../Services/AuthServices.js";
 import AttendanceService from '../Services/AttendanceServices.js';
-// import { Html5Qrcode } from "html5-qrcode"; // <-- Baris ini Dihapus!
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
-import Swal from 'sweetalert2'; // <-- Import SweetAlert2
+import Swal from 'sweetalert2'; // Import SweetAlert2
 
 document.addEventListener("DOMContentLoaded", async () => {
     feather.replace();
@@ -34,11 +31,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const changePasswordModal = document.getElementById("changePasswordModal");
     const openChangePasswordModalBtn = document.getElementById("openChangePasswordModalBtn");
     const closeChangePasswordModalBtn = document.getElementById("closeChangePasswordModalBtn");
-    const cancelChangePasswordBtn = document = document.getElementById("cancelChangePasswordBtn");
+    const cancelChangePasswordBtn = document.getElementById("cancelChangePasswordBtn");
     const changePasswordForm = document.getElementById("changePasswordForm");
     const oldPasswordInput = document.getElementById("oldPassword");
     const newPasswordInput = document.getElementById("newPassword");
-    const confirmNewPasswordInput = document.getElementById("confirmNewPassword"); // <-- Pastikan ini sudah benar
+    const confirmNewPasswordInput = document.getElementById("confirmNewPassword");
     const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
     const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage");
 
@@ -57,12 +54,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const checkInTimeSpan = document.getElementById('check-in-time');
     const attendanceStatusSpan = document.getElementById('attendance-status');
     const checkOutDisplay = document.getElementById('check-out-display');
-    const checkOutTimeSpan = document.getElementById('check-out-time'); // <-- Pastikan ini sudah benar
+    const checkOutTimeSpan = document.getElementById('check-out-time');
     const attendanceNoteDisplay = document.getElementById('attendance-note-display');
     const attendanceNoteSpan = document.getElementById('attendance-note');
 
 
     // --- Fungsi Utilitas ---
+
     // Fungsi untuk menampilkan notifikasi SweetAlert2
     function showSweetAlert(title, message, icon = "success", showConfirmButton = false, timer = 2000) {
         Swal.fire({
@@ -262,7 +260,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function startScanner() {
         // Jika scanner sudah aktif dan diinisialisasi, jangan lakukan apa-apa
-        if (html5QrCodeInstance && html5QrCodeInstance.isScanning && isScannerActivelyScanning) {
+        if (html5QrCodeInstance && isScannerActivelyScanning) { // Gunakan isScannerActivelyScanning
             console.log("Scanner sudah berjalan.");
             return;
         }
@@ -448,7 +446,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-
+    // --- Fungsi untuk Mengambil Data Profil Karyawan (DIJAGA, yang lainnya dihapus) ---
     const fetchEmployeeProfileData = async () => {
         try {
             const token = localStorage.getItem("token");
