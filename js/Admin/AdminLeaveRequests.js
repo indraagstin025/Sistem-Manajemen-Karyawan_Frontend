@@ -1,12 +1,13 @@
 // js/Admin/AdminLeaveRequests.js
 
-import { LeaveRequestService } from "../Services/LeaveRequestsServices.js";
+import { LeaveRequestService } = "../Services/LeaveRequestsServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
+import Swal from 'sweetalert2'; // Import SweetAlert2
 
 // Base URL untuk backend Anda
 const BACKEND_URL = "https://sistem-manajemen-karyawanbackend-production.up.railway.app";
@@ -48,29 +49,44 @@ const showToast = (message, type = "success") => {
     }).showToast();
 };
 
-const showLogoutConfirmation = () => {
-    const toastNode = document.createElement("div");
-    toastNode.className = "flex flex-col items-center p-2";
-    toastNode.innerHTML = `
-        <p class="font-semibold text-white text-base mb-4">Anda yakin ingin keluar?</p>
-        <div class="flex space-x-3">
-            <button id="confirmActionBtn" class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700">Ya, Keluar</button>
-            <button id="cancelLogoutBtn" class="px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-md hover:bg-gray-600">Batal</button>
-        </div>
-    `;
-    const toast = Toastify({ node: toastNode, duration: -1, gravity: "top", position: "center", close: true, style: { background: "linear-gradient(to right, #4f46e5, #7c3aed)", borderRadius: "12px", padding: "1rem" } }).showToast();
-
-    toastNode.querySelector("#confirmActionBtn").addEventListener("click", () => {
-        authService.logout();
-        toast.hideToast();
+// Fungsi showSweetAlert untuk notifikasi umum (jika belum ada)
+function showSweetAlert(title, message, icon = "success", showConfirmButton = false, timer = 2000) {
+    Swal.fire({
+        title: title,
+        text: message,
+        icon: icon,
+        showConfirmButton: showConfirmButton,
+        timer: timer,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
     });
-    toastNode.querySelector("#cancelLogoutBtn").addEventListener("click", () => {
-        toast.hideToast();
+}
+
+
+const showLogoutConfirmation = () => {
+    // Menggunakan SweetAlert2 untuk konfirmasi logout
+    Swal.fire({
+        title: 'Anda yakin ingin keluar?',
+        text: "Anda akan diarahkan ke halaman login.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626', // bg-red-600
+        cancelButtonColor: '#6b7280',  // bg-gray-500
+        confirmButtonText: 'Ya, Keluar',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            authService.logout();
+        }
     });
 };
 
 // --- START: DOMContentLoaded Listener ---
 document.addEventListener("DOMContentLoaded", async () => {
+    feather.replace(); // Pastikan feather.replace() dipanggil di sini
     initializeSidebar(); // Panggil fungsi sidebar yang sudah diimpor
 
     const leaveRequestsTableBody = document.getElementById("leaveRequestsTableBody");
@@ -124,9 +140,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const loadLeaveRequests = async () => {
         leaveRequestsTableBody.innerHTML = `
-                <tr>
-                    <td colspan="9" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat pengajuan...</td>
-                </tr>
+            <tr>
+                <td colspan="9" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat pengajuan...</td>
+            </tr>
             `;
         leaveRequestsMessage.classList.add("hidden");
         paginationControls.classList.add("hidden");
@@ -406,11 +422,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             const fileNameFromUrl = request.attachment_url ? request.attachment_url.split("/").pop().split("?")[0] : "";
             const attachmentLink = fileUrl
                 ? `<div class="flex items-center space-x-2">
-                        <button class="view-attachment-btn text-teal-600 hover:underline focus:outline-none" data-url="${fileUrl}" data-filename="${fileNameFromUrl}">Lihat</button>
-                        <button class="download-btn text-gray-500 hover:text-gray-700" data-url="${fileUrl}" data-filename="${fileNameFromUrl}" title="Unduh Lampiran">
-                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                        </button>
-                    </div>`
+                            <button class="view-attachment-btn text-teal-600 hover:underline focus:outline-none" data-url="${fileUrl}" data-filename="${fileNameFromUrl}">Lihat</button>
+                            <button class="download-btn text-gray-500 hover:text-gray-700" data-url="${fileUrl}" data-filename="${fileNameFromUrl}" title="Unduh Lampiran">
+                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                            </button>
+                        </div>`
                 : "-";
 
             const employeeName = request.user_name || request.user_email || request.user_id;
@@ -494,55 +510,74 @@ document.addEventListener("DOMContentLoaded", async () => {
         const requestId = button.dataset.id;
         const action = button.dataset.action;
         let statusToUpdate = "";
-        let confirmMessage = "";
-        let successMessage = "";
-        let note = "";
+        let confirmTitle = "";
+        let confirmText = "";
+        let inputPlaceholder = "";
+        let inputLabel = "";
+        let iconType = "question";
 
         if (action === "approve") {
             statusToUpdate = "approved";
-            confirmMessage = "Anda yakin ingin MENYETUJUI pengajuan ini?";
-            successMessage = "Pengajuan berhasil disetujui.";
+            confirmTitle = "Setujui Pengajuan Ini?";
+            confirmText = "Anda akan menyetujui pengajuan cuti/izin ini.";
+            inputPlaceholder = "Catatan persetujuan (wajib)";
+            inputLabel = "Catatan Persetujuan:";
+            iconType = "success"; // Atau 'info' / 'question'
         } else if (action === "reject") {
             statusToUpdate = "rejected";
-            confirmMessage = "Anda yakin ingin MENOLAK pengajuan ini?";
-            successMessage = "Pengajuan berhasil ditolak.";
-            note = prompt("Masukkan catatan penolakan (opsional):");
-            if (note === null) {
-                return;
-            }
+            confirmTitle = "Tolak Pengajuan Ini?";
+            confirmText = "Anda akan menolak pengajuan cuti/izin ini.";
+            inputPlaceholder = "Catatan penolakan (wajib)";
+            inputLabel = "Catatan Penolakan:";
+            iconType = "error"; // Atau 'warning'
         } else {
             return;
         }
 
-        const toastNode = document.createElement("div");
-        toastNode.className = "flex flex-col items-center p-2";
-        toastNode.innerHTML = `
-            <p class="font-semibold text-white text-base mb-4">${confirmMessage}</p>
-            <div class="flex space-x-3">
-                <button id="confirmActionBtn" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">Ya</button>
-                <button id="cancelActionBtn" class="px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-md hover:bg-gray-600">Batal</button>
-            </div>
-        `;
-        const toast = Toastify({ node: toastNode, duration: -1, gravity: "top", position: "center", close: true, style: { background: "linear-gradient(to right, #4f46e5, #7c3aed)", borderRadius: "12px", padding: "1rem" } }).showToast();
+        // Tampilkan SweetAlert dengan input teks
+        const { value: note } = await Swal.fire({
+            title: confirmTitle,
+            text: confirmText,
+            icon: iconType,
+            input: 'textarea', // Gunakan textarea untuk input catatan yang lebih panjang
+            inputLabel: inputLabel,
+            inputPlaceholder: inputPlaceholder,
+            inputValidator: (value) => {
+                if (!value || value.trim() === '') {
+                    return 'Catatan wajib diisi!';
+                }
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Proses',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: action === "approve" ? '#10b981' : '#dc2626', // Teal untuk approve, Red untuk reject
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true // Agar tombol "Batal" di kiri
+        });
 
-        toastNode.querySelector("#confirmActionBtn").addEventListener("click", async () => {
-            toast.hideToast();
-            try {
-                button.disabled = true;
-                button.textContent = "Memproses...";
-                await LeaveRequestService.updateLeaveRequestStatus(requestId, statusToUpdate, note);
-                showToast(successMessage, "success");
-                loadLeaveRequests();
-            } catch (error) {
-                console.error("Error updating leave request status:", error);
-                showToast(error.message || "Gagal memperbarui status pengajuan.", "error");
-                button.disabled = false;
-                button.textContent = action === "approve" ? "Setujui" : "Tolak";
-            }
-        });
-        toastNode.querySelector("#cancelActionBtn").addEventListener("click", () => {
-            toast.hideToast();
-        });
+        // Jika user tidak memasukkan catatan atau membatalkan SweetAlert
+        if (note === undefined || note === null || note.trim() === "") {
+            showToast("Proses dibatalkan: Catatan tidak diisi.", "info"); // Mengubah ini menjadi 'info'
+            return;
+        }
+
+        // Lanjutkan dengan konfirmasi terakhir (jika diperlukan, atau langsung proses)
+        // Saat ini, SweetAlert input sudah berfungsi sebagai konfirmasi.
+        // Jika Anda ingin konfirmasi terpisah setelah input, Anda bisa menambahkannya di sini.
+        // Namun, biasanya SweetAlert input sudah cukup sebagai satu langkah interaksi.
+
+        try {
+            button.disabled = true;
+            button.textContent = "Memproses...";
+            await LeaveRequestService.updateLeaveRequestStatus(requestId, statusToUpdate, note);
+            showToast(`Pengajuan berhasil ${action === "approve" ? "disetujui" : "ditolak"}.`, "success"); // Pesan sukses yang dinamis
+            loadLeaveRequests();
+        } catch (error) {
+            console.error("Error updating leave request status:", error);
+            showToast(error.message || "Gagal memperbarui status pengajuan.", "error");
+            button.disabled = false;
+            button.textContent = action === "approve" ? "Setujui" : "Tolak";
+        }
     };
 
 
