@@ -3,7 +3,6 @@
 import { userService } from "../Services/UserServices.js";
 import { authService } from "../Services/AuthServices.js";
 import AttendanceService from '../Services/AttendanceServices.js';
-import { Html5Qrcode } from "html5-qrcode";
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
@@ -226,108 +225,108 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     // Fungsi helper untuk menghentikan dan membersihkan scanner
-    const stopAndClearScanner = async () => {
-        if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
-            try {
-                await html5QrCodeInstance.stop();
-                console.log("Scanner dihentikan.");
-            } catch (err) {
-                console.warn("Peringatan saat menghentikan scanner (mungkin sudah berhenti):", err);
-            }
-        }
-        qrScannerContainer.innerHTML = ''; // Pastikan div reader kosong
-        qrScanResult.textContent = ''; // Kosongkan hasil scan
-        cameraSelect.classList.add('hidden'); // Sembunyikan dropdown kamera
-        isScannerInitialized = false;
-        html5QrCodeInstance = null;
-    };
+// GANTIKAN fungsi onScanSuccess yang lama di EmployeeDashboard.js dengan yang ini
 
-    const loadMyTodayAttendance = async () => {
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser || !currentUser.id) {
-            showToast('Gagal memuat status absensi: User tidak terautentikasi.', 'error');
-            return;
-        }
+const onScanSuccess = async (decodedText, decodedResult) => {
+    // 1. Abaikan scan baru jika yang lama masih diproses
+    if (isProcessingScan) {
+        console.log("Pemindaian sebelumnya masih diproses, scan baru diabaikan.");
+        return;
+    }
+    isProcessingScan = true;
 
+    // 2. Jeda pemindai (seperti pada demo scanapp.org)
+    // Ini menghentikan kamera sementara tanpa harus me-restart-nya.
+    if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
         try {
-            const history = await AttendanceService.getMyHistory();
-            const today = new Date().toISOString().slice(0, 10);
-            const todayAttendance = history.find(att => att.date === today);
-
-            updateAttendanceStatusUI(todayAttendance);
-
-            const isAlreadyAttended = todayAttendance && (todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat' || todayAttendance.status === 'Sakit' || todayAttendance.status === 'Cuti' || todayAttendance.status === 'Izin' || todayAttendance.check_out);
-            
-            if (isAlreadyAttended) {
-                await stopAndClearScanner();
-                qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">Status Anda hari ini: <strong>${todayAttendance.status}</strong>. Scanner dinonaktifkan.</p>`;
-            } else {
-                // Hanya mulai scanner jika belum ada absensi
-                startScanner();
-            }
-
-        } catch (error) {
-            console.error('Error loading my today attendance:', error);
-            showToast(`Gagal memuat status absensi: ${error.message}`, 'error');
-            updateAttendanceStatusUI(null); // Tampilkan status 'Belum Absen'
-            // Jika ada error dalam memuat absensi, tetap coba mulai scanner
-            startScanner();
+            await html5QrCodeInstance.pause(true); // 'true' akan membekukan frame video
+            console.log("Scanner dijeda.");
+        } catch(e) {
+            console.warn("Gagal menjeda scanner, mungkin sudah tidak aktif.", e);
         }
-    };
+    }
 
-    // PERUBAHAN KUNCI: Fungsi onScanSuccess disederhanakan dan diperbaiki
-    const onScanSuccess = async (decodedText, decodedResult) => {
-        if (isProcessingScan) return;
-        isProcessingScan = true;
+    qrScanResult.textContent = `Memproses QR Code...`;
+    
+    // 3. Ambil informasi pengguna saat ini
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser || !currentUser.id) {
+        showToast('Sesi tidak valid. Silakan login kembali.', 'error');
+        qrScannerContainer.innerHTML = `<p class="text-red-600 font-semibold mt-8">Error: Sesi pengguna tidak ditemukan.</p>`;
+        isProcessingScan = false;
+        return;
+    }
 
-        console.log(`QR Code terdeteksi: ${decodedText}`);
-        qrScanResult.textContent = `Memproses...`;
-        
-        // Langsung hentikan scanner untuk mencegah pemindaian berulang saat proses async berjalan
+    try {
+        // 4. Kirim data QR ke server
+        const response = await AttendanceService.scanQR(decodedText, currentUser.id);
+        const attendanceData = response.data; // Asumsi API mengembalikan detail di 'data'
+
+        showToast(response.message, 'success');
+
+        // 5. Tampilkan hasil yang kaya informasi (Mirip Demo)
+        qrScannerContainer.innerHTML = `
+            <div class="text-center p-4 bg-white rounded-lg">
+                <i data-feather="check-circle" class="w-16 h-16 text-green-500 mx-auto mb-3"></i>
+                <h3 class="text-xl font-bold text-gray-800">${attendanceData?.employee_name || ''}</h3>
+                <p class="text-lg text-green-600 font-semibold">${response.message}</p>
+                <div class="text-left mt-4 mx-auto max-w-xs border-t pt-3">
+                    <p class="text-gray-600"><strong>Status:</strong> ${attendanceData?.status || 'N/A'}</p>
+                    <p class="text-gray-600"><strong>Waktu:</strong> ${attendanceData?.check_in_time || 'N/A'}</p>
+                </div>
+                <p class="text-xs text-gray-400 mt-4">Scanner akan dinonaktifkan.</p>
+            </div>
+        `;
+        feather.replace(); // Penting untuk merender ikon baru
+
+        // 6. Matikan scanner secara permanen karena tugas selesai
+        // Anda bisa memanggil `stopAndClearScanner()` di sini jika ingin mematikan total.
+        // Karena status sudah berhasil, kita tidak perlu scan lagi hari ini.
+        // Fungsi `loadMyTodayAttendance` akan menangani logika untuk tidak memulai scanner lagi.
         await stopAndClearScanner();
+        loadMyTodayAttendance(); // Refresh UI utama dengan data baru
 
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser || !currentUser.id) {
-            showToast('User tidak terautentikasi. Silakan login kembali.', 'error');
-            qrScanResult.textContent = 'Error: User tidak terautentikasi.';
-            isProcessingScan = false;
-            return;
-        }
+    } catch (error) {
+        const message = error?.response?.data?.error || error.message || 'Terjadi kesalahan.';
+        
+        // Buat tombol untuk memulai ulang scanner secara manual
+        const retryButtonHTML = `
+            <button id="retryScanBtn" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-all">
+                Pindai Ulang
+            </button>
+        `;
 
-        try {
-            const response = await AttendanceService.scanQR(decodedText, currentUser.id);
-
-            showToast(response.message, 'success');
-            qrScannerContainer.innerHTML = `<p class="text-green-600 font-semibold mt-8">${response.message}</p>`;
-            
-            // Panggil untuk refresh UI setelah berhasil
+        if (error.response?.status === 409) {
+            // Jika sudah absen (Conflict)
+            showToast(message, 'info');
+            qrScannerContainer.innerHTML = `
+                <div class="text-center p-4">
+                    <i data-feather="alert-triangle" class="w-16 h-16 text-orange-500 mx-auto mb-3"></i>
+                    <p class="text-orange-600 font-semibold">${message}</p>
+                    <p class="text-xs text-gray-400 mt-2">Anda sudah melakukan absensi sebelumnya.</p>
+                </div>
+            `;
+            await stopAndClearScanner(); // Matikan scanner karena sudah ada data
             loadMyTodayAttendance();
-
-        } catch (error) {
-            console.error('Error saat memindai QR Code:', error);
-            const message = error?.response?.data?.error || error.message || 'Terjadi kesalahan saat absen.';
-            
-            // PERUBAHAN KUNCI: Penanganan 409 dan error lainnya dibuat lebih tegas
-            if (error.response?.status === 409) {
-                showToast(message, 'info'); // Gunakan 'info' untuk konflik
-                qrScannerContainer.innerHTML = `<p class="text-orange-600 font-semibold mt-8">${message}</p>`;
-                // Panggil untuk refresh UI agar menampilkan status yang benar
-                loadMyTodayAttendance();
-            } else {
-                showToast(`Absensi gagal: ${message}`, 'error');
-                qrScannerContainer.innerHTML = `<p class="text-red-600 font-semibold mt-8">Gagal Absen: ${message}. Silakan coba lagi.</p>`;
-                // Beri tombol untuk restart manual agar tidak ada loop otomatis
-                const retryButton = document.createElement('button');
-                retryButton.textContent = 'Coba Pindai Ulang';
-                retryButton.className = 'mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700';
-                retryButton.onclick = startScanner;
-                qrScannerContainer.appendChild(retryButton);
-            }
-        } finally {
-            // Reset flag setelah semua proses selesai
-            isProcessingScan = false;
+        } else {
+            // Jika error lain (koneksi, server error, dll)
+            showToast(`Absensi gagal: ${message}`, 'error');
+            qrScannerContainer.innerHTML = `
+                <div class="text-center p-4">
+                    <i data-feather="x-octagon" class="w-16 h-16 text-red-500 mx-auto mb-3"></i>
+                    <p class="text-red-600 font-semibold">Gagal Absen: ${message}</p>
+                    ${retryButtonHTML}
+                </div>
+            `;
+            // Tambahkan event listener ke tombol baru
+            document.getElementById('retryScanBtn').addEventListener('click', startScanner);
         }
-    };
+        feather.replace(); // Render ikon error
+    } finally {
+        // 7. Reset flag agar scan lain bisa diproses jika diperlukan
+        isProcessingScan = false;
+    }
+};
 
     const onScanFailure = (error) => {
         // Biarkan kosong untuk menghindari log yang berlebihan di console
