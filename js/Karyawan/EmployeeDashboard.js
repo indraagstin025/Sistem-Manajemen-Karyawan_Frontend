@@ -5,8 +5,7 @@ import { userService }
 import { authService }
     from "../Services/AuthServices.js";
 import AttendanceService from '../Services/AttendanceServices.js';
-import { Html5Qrcode }
-    from "html5-qrcode";
+
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 import Swal from 'sweetalert2'; // <-- Import SweetAlert2
@@ -24,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
-    const html5QrCode = new Html5Qrcode("reader");
+  
 
 
     const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
