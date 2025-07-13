@@ -3,7 +3,7 @@
 import { userService } from "../Services/UserServices.js";
 import { authService } from "../Services/AuthServices.js";
 import AttendanceService from '../Services/AttendanceServices.js';
-import { Html5Qrcode } from "html5-qrcode"; // Pastikan ini diimpor
+import { Html5Qrcode } from "html5-qrcode";
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
@@ -35,19 +35,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     const changePasswordForm = document.getElementById("changePasswordForm");
     const oldPasswordInput = document.getElementById("oldPassword");
     const newPasswordInput = document.getElementById("newPassword");
-    const confirmNewPasswordInput = document.getElementById("confirmNewPassword");
+    const confirmNewPasswordInput = document = document.getElementById("confirmNewPassword");
     const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
     const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage");
 
     // QR Scanner elements
     const qrScannerContainer = document.getElementById('reader');
     const qrScanResult = document.getElementById('qr-scan-result');
-    const notificationMessage = document.getElementById('notification-message'); // Elemen ini ada di HTML tapi tidak digunakan secara aktif di sini
+    const notificationMessage = document.getElementById('notification-message');
     const cameraSelect = document.getElementById('camera-select');
 
-    // Deklarasikan html5QrCodeInstance di scope yang dapat diakses oleh semua fungsi scanner
     let html5QrCodeInstance = null;
     let isProcessingScan = false;
+    let isScannerInitialized = false; // Flag baru untuk melacak inisialisasi scanner
 
     const currentDateSpan = document.getElementById('current-date');
     const checkInTimeSpan = document.getElementById('check-in-time');
@@ -226,6 +226,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
+    // Fungsi helper untuk menghentikan dan membersihkan scanner
+    const stopAndClearScanner = async () => {
+        if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
+            try {
+                await html5QrCodeInstance.stop();
+                await html5QrCodeInstance.clear();
+                console.log("Scanner dihentikan dan dibersihkan.");
+            } catch (err) {
+                console.warn("Gagal menghentikan/membersihkan scanner:", err);
+            }
+        }
+        qrScannerContainer.innerHTML = ''; // Pastikan div reader kosong
+        qrScanResult.textContent = ''; // Kosongkan hasil scan
+        cameraSelect.classList.add('hidden'); // Sembunyikan dropdown kamera
+        isScannerInitialized = false; // Reset flag inisialisasi
+        html5QrCodeInstance = null; // Set instance menjadi null
+    };
+
     const loadMyTodayAttendance = async () => {
         const currentUser = authService.getCurrentUser();
         if (!currentUser || !currentUser.id) {
@@ -240,26 +258,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             updateAttendanceStatusUI(todayAttendance);
 
-            // Hentikan scanner yang mungkin sedang berjalan terlebih dahulu
-            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
-                await html5QrCodeInstance.stop();
-                await html5QrCodeInstance.clear(); // Hapus elemen video
-            }
-            cameraSelect.classList.add('hidden'); // Sembunyikan dropdown kamera secara default
-
-            if (todayAttendance && (todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat')) {
-                // Jika sudah hadir/telat
-                qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Anda sudah check-in hari ini.</p>';
-                qrScanResult.textContent = '';
-                showToast('Anda sudah check-in hari ini.', 'info');
-            } else if (todayAttendance && (todayAttendance.status === 'Sakit' || todayAttendance.status === 'Cuti' || todayAttendance.status === 'Izin')) {
-                // Jika statusnya Sakit, Cuti, atau Izin, tidak perlu scanner
-                qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">Status Anda hari ini: ${todayAttendance.status}.</p>`;
-                qrScanResult.textContent = '';
+            // Logika untuk scanner QR
+            if (todayAttendance && (todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat' || todayAttendance.status === 'Sakit' || todayAttendance.status === 'Cuti' || todayAttendance.status === 'Izin')) {
+                // Jika sudah absen atau status non-aktif scan, hentikan scanner
+                await stopAndClearScanner(); // Panggil helper untuk berhenti
+                qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">Anda ${todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat' ? 'sudah absen' : 'memiliki status'} hari ini: ${todayAttendance.status}.</p>`;
                 showToast(`Status Anda hari ini: ${todayAttendance.status}.`, 'info');
             } else {
-                // Jika belum ada absensi atau statusnya belum Hadir/Telat/Sakit/Cuti/Izin
-                // Aktifkan scanner
+                // Jika belum ada absensi atau statusnya belum Hadir/Telat/Sakit/Cuti/Izin, aktifkan scanner
                 startScanner();
             }
 
@@ -270,24 +276,27 @@ document.addEventListener("DOMContentLoaded", async () => {
             checkInTimeSpan.textContent = 'Gagal memuat';
             attendanceStatusSpan.textContent = 'Error';
             attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
-            // Tetap coba mulai scanner jika ada error dan belum ada status yang jelas
+            // Jika ada error dalam memuat absensi, tetap coba mulai scanner
             startScanner();
         }
     };
 
-// ... (bagian kode lainnya di atas)
-
+    // --- Fungsi QR Scanner (HTML5-Qrcode Manual) ---
     const onScanSuccess = async (decodedText, decodedResult) => {
-        if (isProcessingScan) return;
+        if (isProcessingScan) {
+            console.warn("Scan diabaikan karena sedang memproses scan sebelumnya.");
+            return; // Hindari pemrosesan ganda
+        }
         isProcessingScan = true;
 
         console.log(`QR Code terdeteksi: ${decodedText}`);
-        qrScanResult.textContent = `Memindai: ${decodedText}`;
+        qrScanResult.textContent = `Memproses...`; // Beri feedback cepat
 
         const currentUser = authService.getCurrentUser();
         if (!currentUser || !currentUser.id) {
             showToast('User tidak terautentikasi. Silakan login kembali.', 'error');
             qrScanResult.textContent = 'Error: User tidak terautentikasi.';
+            await stopAndClearScanner(); // Pastikan scanner berhenti
             isProcessingScan = false;
             return;
         }
@@ -298,100 +307,81 @@ document.addEventListener("DOMContentLoaded", async () => {
             showToast(response.message, 'success');
             qrScanResult.textContent = response.message;
 
-            // Pastikan scanner berhenti total setelah berhasil absen
-            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
-                await html5QrCodeInstance.stop();
-                await html5QrCodeInstance.clear(); // Hapus elemen video
-                qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Anda sudah absen hari ini.</p>'; // Tambahkan pesan konfirmasi visual
-                cameraSelect.classList.add('hidden'); // Sembunyikan dropdown kamera
-            }
+            // Berhenti setelah berhasil
+            await stopAndClearScanner();
+            qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Absensi berhasil!</p>';
+            loadMyTodayAttendance(); // Refresh tampilan
 
-            // Refresh tampilan status absensi
-            loadMyTodayAttendance();
         } catch (error) {
             console.error('Error saat memindai QR Code:', error);
 
             const message = error?.response?.data?.error || error.message || 'Terjadi kesalahan saat absen.';
 
             if (error.response?.status === 409) {
-                // Jika error 409: sudah absen hari ini
                 showToast(message, 'info');
                 qrScanResult.textContent = message;
-
-                // Stop scanner untuk hentikan loop jika sudah absen
-                if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
-                    await html5QrCodeInstance.stop();
-                    await html5QrCodeInstance.clear();
-                    qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Anda sudah absen hari ini.</p>'; // Tambahkan pesan konfirmasi visual
-                    cameraSelect.classList.add('hidden'); // Sembunyikan dropdown kamera
-                }
-                loadMyTodayAttendance(); // Muat ulang status absensi untuk memastikan UI diperbarui
-
+                await stopAndClearScanner(); // Berhenti total jika sudah absen
+                qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">${message}</p>`;
+                loadMyTodayAttendance();
             } else {
-                // Error lain → Tampilkan pesan error dan berikan opsi untuk restart jika bukan karena kamera
                 showToast(`Absensi gagal: ${message}`, 'error');
-                qrScanResult.textContent = `Gagal Absen: ${message}`;
+                qrScanResult.textContent = `Gagal Absen: ${message}. Mencoba ulang...`;
 
-                // Cek apakah error bukan karena kamera, baru coba restart
+                // Jika error non-409 dan bukan masalah kamera, coba restart setelah jeda
                 if (error.message && error.message.includes("kamera")) {
                      qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat kamera: ${message}</p>`;
-                     // Biarkan scanner berhenti jika masalahnya kamera
-                     if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
-                        await html5QrCodeInstance.stop();
-                        await html5QrCodeInstance.clear();
-                     }
-                     cameraSelect.classList.add('hidden');
+                     await stopAndClearScanner(); // Hentikan jika masalahnya kamera
                 } else {
-                    // Berikan sedikit jeda sebelum mencoba restart
+                    // Berikan jeda lebih panjang sebelum mencoba restart
                     setTimeout(async () => {
                         // Sebelum restart, cek kembali status absensi.
-                        // Mungkin selama jeda ini, user sudah absen di tab lain,
-                        // atau statusnya sudah berubah menjadi sakit/cuti.
                         const history = await AttendanceService.getMyHistory();
                         const today = new Date().toISOString().slice(0, 10);
                         const currentTodayAttendance = history.find(att => att.date === today);
 
                         if (!currentTodayAttendance || (currentTodayAttendance.status !== 'Hadir' && currentTodayAttendance.status !== 'Telat' && currentTodayAttendance.status !== 'Sakit' && currentTodayAttendance.status !== 'Cuti' && currentTodayAttendance.status !== 'Izin')) {
-                            // Jika memang belum absen atau statusnya masih memungkinkan absen, restart scanner
+                            // Hanya restart jika memang masih perlu absen
                             startScanner();
                         } else {
                             // Jika status sudah berubah, hentikan scanner secara permanen
-                            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
-                                html5QrCodeInstance.stop();
-                                html5QrCodeInstance.clear();
-                            }
+                            await stopAndClearScanner();
                             qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Scanner dinonaktifkan karena status absensi sudah diperbarui.</p>';
-                            cameraSelect.classList.add('hidden');
                         }
-                    }, 2000); // Jeda 2 detik sebelum mencoba restart
+                    }, 3000); // Jeda 3 detik sebelum mencoba restart
                 }
             }
         } finally {
-            isProcessingScan = false;
+            // isProcessingScan hanya di-reset di sini
+            // Agar tidak ada scan baru yang diproses sebelum logic selesai
+            // dan sebelum scanner dihentikan atau di-restart
+            // Jika Anda memindahkan ini ke awal blok, bisa jadi race condition
+            // Jadi, biarkan di sini.
+             setTimeout(() => {
+                isProcessingScan = false;
+            }, 1000); // Beri jeda 1 detik sebelum bisa memproses scan lain
         }
     };
-// ... (bagian kode lainnya di bawah)
 
     const onScanFailure = (error) => {
-        // console.warn(`Scan gagal: ${error}`);
-        // Logika ini dibiarkan kosong agar tidak terlalu banyak notifikasi
-        // karena Html5-Qrcode akan terus memanggil ini saat tidak ada QR terdeteksi.
+        // console.warn(`Scan gagal: ${error}`); // Biarkan kosong agar tidak terlalu banyak notifikasi
     };
 
     async function startScanner() {
+        // Jika scanner sudah aktif dan diinisialisasi, jangan lakukan apa-apa
+        if (html5QrCodeInstance && html5QrCodeInstance.isScanning && isScannerInitialized) {
+            console.log("Scanner sudah berjalan.");
+            return;
+        }
+
         try {
-            // Pastikan elemen reader ada sebelum membuat instance
             if (!qrScannerContainer) {
                 console.error("Elemen 'reader' tidak ditemukan di DOM.");
                 qrScanResult.textContent = "Error: Elemen scanner tidak ditemukan.";
                 return;
             }
 
-            // Hentikan scanner yang mungkin sedang berjalan sebelumnya
-            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
-                await html5QrCodeInstance.stop();
-                await html5QrCodeInstance.clear();
-            }
+            // Pastikan untuk menghentikan dan membersihkan scanner sebelum memulai yang baru
+            await stopAndClearScanner(); // Panggil helper function
 
             if (!Html5Qrcode.getCameras) {
                 qrScanResult.textContent = "Browser tidak mendukung akses kamera.";
@@ -406,49 +396,38 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // Pilih kamera default (kamera pertama)
             const defaultCameraId = cameras[0].id;
 
-            // Tampilkan dropdown kamera
-            cameraSelect.innerHTML = ""; // Bersihkan opsi sebelumnya
+            cameraSelect.innerHTML = "";
             cameras.forEach((cam) => {
                 const option = document.createElement("option");
                 option.value = cam.id;
                 option.text = cam.label || `Kamera ${cam.id}`;
                 cameraSelect.appendChild(option);
             });
-            cameraSelect.classList.remove("hidden"); // Tampilkan dropdown
-
-            // Set kamera default di dropdown
+            cameraSelect.classList.remove("hidden");
             cameraSelect.value = defaultCameraId;
 
-
-            // Tambahkan event listener untuk mengganti kamera secara manual
-            // Pastikan hanya satu listener yang ditambahkan
-            cameraSelect.removeEventListener("change", handleCameraChange); // Hapus jika sudah ada
+            cameraSelect.removeEventListener("change", handleCameraChange);
             cameraSelect.addEventListener("change", handleCameraChange);
 
-            // Inisialisasi Html5Qrcode instance
-            // Jika sudah ada instance, gunakan yang itu, jika tidak, buat yang baru
-            if (!html5QrCodeInstance) {
-                 html5QrCodeInstance = new Html5Qrcode("reader");
-            }
+            html5QrCodeInstance = new Html5Qrcode("reader"); // Re-initialize instance
 
-
-            // Mulai pemindaian dengan kamera default
             await html5QrCodeInstance.start(
-                { deviceId: { exact: defaultCameraId } }, // Gunakan ID kamera yang tepat
-                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 }, // Konfigurasi scanner
+                { deviceId: { exact: defaultCameraId } },
+                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
                 onScanSuccess,
                 onScanFailure
             );
             qrScanResult.textContent = "Pindai QR Code untuk Absen...";
+            isScannerInitialized = true; // Set flag setelah berhasil inisialisasi
 
         } catch (err) {
             console.error("Gagal memulai scanner:", err);
             qrScanResult.textContent = `Gagal memulai scanner: ${err.message}`;
             qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat scanner: ${err.message}. Pastikan kamera diizinkan.</p>`;
-            cameraSelect.classList.add("hidden"); // Sembunyikan dropdown jika gagal
+            cameraSelect.classList.add("hidden");
+            isScannerInitialized = false; // Pastikan flag di-reset jika gagal
         }
     }
 
@@ -459,15 +438,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function restartScanner(cameraId) {
         try {
-            if (html5QrCodeInstance && html5QrCodeInstance.isScanning) {
-                await html5QrCodeInstance.stop();
-                await html5QrCodeInstance.clear();
-            }
-            // Buat instance baru jika belum ada (misal, setelah clear)
-            if (!html5QrCodeInstance) {
-                html5QrCodeInstance = new Html5Qrcode("reader");
-            }
+            await stopAndClearScanner(); // Selalu hentikan dan bersihkan sebelum restart
 
+            html5QrCodeInstance = new Html5Qrcode("reader"); // Buat instance baru
+            
             await html5QrCodeInstance.start(
                 { deviceId: { exact: cameraId } },
                 { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
@@ -476,10 +450,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             );
             qrScanResult.textContent = "Pindai QR Code untuk Absen...";
             showToast("Kamera berhasil diganti.", "info");
+            isScannerInitialized = true;
+
         } catch (err) {
             console.error("Gagal restart scanner:", err);
             qrScanResult.textContent = `Gagal mengganti kamera: ${err.message}`;
             qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal mengganti kamera: ${err.message}</p>`;
+            isScannerInitialized = false;
         }
     }
 
