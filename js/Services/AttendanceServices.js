@@ -58,29 +58,36 @@ const AttendanceService = {
      * @param {string} qrCodeValue The value from the scanned QR code
      * @returns {Promise<Object>}
      */
-    scanQR: async (qrCodeValue) => {
-        const user = getUser(); // Masih perlu getUser karena user.id diperlukan di body
-        if (!user || !user.id) {
-            // Ini akan ditangkap oleh interceptor jika tidak ada token,
-            // tapi validasi awal di sini juga baik
-            const customError = new Error("User ID tidak ditemukan. Harap login kembali.");
-            customError.status = 401; // Unauthorized
-            throw customError;
-        }
+scanQR: async (qrCodeValue) => {
+    const user = getUser();
+    if (!user || !user.id) {
+        const customError = new Error("User ID tidak ditemukan. Harap login kembali.");
+        customError.status = 401;
+        throw customError;
+    }
 
-        try {
-            // apiClient otomatis menambahkan Authorization header
-            const response = await apiClient.post('/attendance/scan', { // Perhatikan endpoint, sebelumnya '/attendance/scan'
-                qr_code_value: qrCodeValue,
-                user_id: user.id
-            });
-            return response.data;
+    // Deteksi timezone dari browser
+    let timezone = "Asia/Jakarta"; // fallback default
+    try {
+        timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Jakarta";
+    } catch (e) {
+        console.warn("Gagal mendeteksi zona waktu, menggunakan default Asia/Jakarta");
+    }
 
-        } catch (error) {
-            console.error('Error di AttendanceService.scanQR:', error);
-            throw error;
-        }
-    },
+    try {
+        const response = await apiClient.post('/attendance/scan', {
+            qr_code_value: qrCodeValue,
+            user_id: user.id,
+            timezone: timezone, // ⬅️ Tambahkan timezone ke payload
+        });
+        return response.data;
+
+    } catch (error) {
+        console.error('Error di AttendanceService.scanQR:', error);
+        throw error;
+    }
+},
+
 
     /**
      * @description Get my personal attendance history
