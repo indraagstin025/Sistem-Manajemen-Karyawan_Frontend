@@ -53,8 +53,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentDateSpan = document.getElementById('current-date');
     const checkInTimeSpan = document.getElementById('check-in-time');
     const attendanceStatusSpan = document.getElementById('attendance-status');
-    const checkOutDisplay = document.getElementById('check-out-display');
-    const checkOutTimeSpan = document.getElementById('check-out-time');
+    const checkOutDisplay = document.getElementById('check-out-display'); // Ini bisa dihapus dari HTML jika tidak perlu
+    const checkOutTimeSpan = document.getElementById('check-out-time'); // Ini bisa dihapus dari HTML jika tidak perlu
     const attendanceNoteDisplay = document.getElementById('attendance-note-display');
     const attendanceNoteSpan = document.getElementById('attendance-note');
 
@@ -109,6 +109,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return timeString || '-';
     }
 
+    // Menyesuaikan fungsi updateAttendanceStatusUI untuk hanya fokus pada Check-in
     function updateAttendanceStatusUI(attendance) {
         const today = new Date().toLocaleDateString('id-ID', {
             year: 'numeric',
@@ -141,18 +142,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else if (attendance.status === 'Sakit' || attendance.status === 'Cuti' || attendance.status === 'Izin') {
                 checkInTimeSpan.textContent = '-';
                 attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold');
-                checkOutDisplay.classList.add('hidden');
             } else {
                 attendanceStatusSpan.classList.add('text-gray-600', 'font-semibold');
             }
 
-            if (attendance.check_out) {
-                checkOutDisplay.classList.remove('hidden');
-                checkOutTimeSpan.textContent = formatTime(attendance.check_out);
-            } else {
-                checkOutDisplay.classList.add('hidden');
-                checkOutTimeSpan.textContent = '';
-            }
+            // HIDE check-out display since backend only supports check-in
+            checkOutDisplay.classList.add('hidden');
+            checkOutTimeSpan.textContent = ''; // Ensure it's empty
 
             if (attendance.note) {
                 attendanceNoteDisplay.classList.remove('hidden');
@@ -175,7 +171,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Fungsi helper untuk menghentikan dan membersihkan scanner
     async function stopAndClearScanner() {
-        if (html5QrCodeInstance && isScannerActivelyScanning) { // Periksa flag isScannerActivelyScanning
+        if (html5QrCodeInstance && isScannerActivelyScanning) {
             try {
                 await html5QrCodeInstance.stop();
                 await html5QrCodeInstance.clear();
@@ -183,70 +179,65 @@ document.addEventListener("DOMContentLoaded", async () => {
             } catch (err) {
                 console.warn("Gagal menghentikan/membersihkan scanner:", err);
             }
-            isScannerActivelyScanning = false; // Reset flag
+            isScannerActivelyScanning = false;
         }
-        qrScannerContainer.innerHTML = ''; // Pastikan div reader kosong
-        qrScanResult.textContent = ''; // Kosongkan hasil scan
-        cameraSelect.classList.add('hidden'); // Sembunyikan dropdown kamera
-        isScannerInitialized = false; // Reset flag inisialisasi
-        html5QrCodeInstance = null; // Set instance menjadi null
+        qrScannerContainer.innerHTML = '';
+        qrScanResult.textContent = '';
+        cameraSelect.classList.add('hidden');
+        isScannerInitialized = false;
+        html5QrCodeInstance = null;
     }
 
     // --- Fungsi QR Scanner (HTML5-Qrcode Manual) ---
     async function onScanSuccess(decodedText, decodedResult) {
         if (isProcessingScan) {
             console.warn("Scan diabaikan karena sedang memproses scan sebelumnya.");
-            return; // Hindari pemrosesan ganda
+            return;
         }
-        isProcessingScan = true; // Set flag langsung di awal
+        isProcessingScan = true;
 
         console.log(`QR Code terdeteksi: ${decodedText}`);
-        qrScanResult.textContent = `Memproses...`; // Beri feedback cepat
+        qrScanResult.textContent = `Memproses...`;
 
         const currentUser = authService.getCurrentUser();
         if (!currentUser || !currentUser.id) {
             showToast('User tidak terautentikasi. Silakan login kembali.', 'error');
             qrScanResult.textContent = 'Error: User tidak terautentikasi.';
-            await stopAndClearScanner(); // Pastikan scanner berhenti
-            isProcessingScan = false; // Reset flag
+            await stopAndClearScanner();
+            isProcessingScan = false;
             return;
         }
 
         try {
             const response = await AttendanceService.scanQR(decodedText, currentUser.id);
 
-            // --- GANTI INI DENGAN SWEETALERT2 UNTUK SUCCESS ---
             showSweetAlert('Absensi Berhasil!', response.message, 'success');
-            // --- AKHIR GANTI ---
 
             qrScanResult.textContent = response.message;
 
-            // Berhenti secara eksplisit setelah berhasil
             await stopAndClearScanner();
             qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Absensi berhasil!</p>';
-            loadMyTodayAttendance(); // Refresh tampilan dan akan memicu stopAndClearScanner lagi (redundant tapi aman)
+            loadMyTodayAttendance();
 
         } catch (error) {
             console.error('Error saat memindai QR Code:', error);
 
+            // Perhatikan bahwa backend sekarang akan selalu mengembalikan "Anda sudah melakukan check-in hari ini."
+            // untuk status 409, tidak ada lagi "check-in dan check-out"
             const message = error?.response?.data?.error || error.message || 'Terjadi kesalahan saat absen.';
 
             if (error.response?.status === 409) {
-                // --- GANTI INI DENGAN SWEETALERT2 UNTUK 409 CONFLICT ---
                 showSweetAlert('Info Absensi', message, 'info');
-                // --- AKHIR GANTI ---
 
                 qrScanResult.textContent = message;
-                await stopAndClearScanner(); // Berhenti total jika sudah absen
+                await stopAndClearScanner();
                 qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">${message}</p>`;
-                loadMyTodayAttendance(); // Refresh tampilan dan akan memicu stopAndClearScanner lagi
+                loadMyTodayAttendance();
             } else {
-                // Untuk error lainnya, bisa tetap pakai Toastify error
                 showToast(`Absensi gagal: ${message}`, 'error');
                 qrScanResult.textContent = `Gagal Absen: ${message}.`;
 
-                // Hentikan scanner jika ada error serius atau non-transient
-                await stopAndClearScanner(); // Hentikan scanner setiap kali ada error agar tidak looping
+                await stopAndClearScanner();
                 qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal absen: ${message}. Harap coba lagi atau hubungi admin.</p>`;
             }
         } finally {
@@ -255,12 +246,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function onScanFailure(error) {
-        // console.warn(`Scan gagal: ${error}`); // Biarkan kosong agar tidak terlalu banyak notifikasi
+        // console.warn(`Scan gagal: ${error}`);
     }
 
     async function startScanner() {
-        // Jika scanner sudah aktif dan diinisialisasi, jangan lakukan apa-apa
-        if (html5QrCodeInstance && isScannerActivelyScanning) { // Gunakan isScannerActivelyScanning
+        if (html5QrCodeInstance && isScannerActivelyScanning) {
             console.log("Scanner sudah berjalan.");
             return;
         }
@@ -272,10 +262,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // Pastikan untuk menghentikan dan membersihkan scanner sebelum memulai yang baru
-            await stopAndClearScanner(); // Panggil helper function
+            await stopAndClearScanner();
 
-            // Menggunakan Html5Qrcode dari global scope
             if (typeof Html5Qrcode === 'undefined' || !Html5Qrcode.getCameras) {
                 qrScanResult.textContent = "Browser tidak mendukung akses kamera atau Html5Qrcode tidak dimuat dengan benar.";
                 qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Browser Anda tidak mendukung akses kamera atau izin ditolak.</p>';
@@ -301,12 +289,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             cameraSelect.classList.remove("hidden");
             cameraSelect.value = defaultCameraId;
 
-            // Pastikan event listener hanya ditambahkan sekali atau di-remove dulu
             cameraSelect.removeEventListener("change", handleCameraChange);
             cameraSelect.addEventListener("change", handleCameraChange);
 
-            // Menggunakan Html5Qrcode dari global scope
-            html5QrCodeInstance = new Html5Qrcode("reader"); // Re-initialize instance
+            html5QrCodeInstance = new Html5Qrcode("reader");
 
             await html5QrCodeInstance.start(
                 {
@@ -325,8 +311,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 onScanFailure
             );
             qrScanResult.textContent = "Pindai QR Code untuk Absen...";
-            isScannerInitialized = true; // Set flag setelah berhasil inisialisasi
-            isScannerActivelyScanning = true; // Set flag bahwa scanner sedang aktif
+            isScannerInitialized = true;
+            isScannerActivelyScanning = true;
             console.log("Scanner berhasil dimulai.");
 
         } catch (err) {
@@ -334,8 +320,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             qrScanResult.textContent = `Gagal memulai scanner: ${err.message}`;
             qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat scanner: ${err.message}. Pastikan kamera diizinkan.</p>`;
             cameraSelect.classList.add("hidden");
-            isScannerInitialized = false; // Pastikan flag di-reset jika gagal
-            isScannerActivelyScanning = false; // Pastikan flag di-reset jika gagal
+            isScannerInitialized = false;
+            isScannerActivelyScanning = false;
         }
     }
 
@@ -346,10 +332,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     async function restartScanner(cameraId) {
         try {
-            await stopAndClearScanner(); // Selalu hentikan dan bersihkan sebelum restart
+            await stopAndClearScanner();
 
-            // Menggunakan Html5Qrcode dari global scope
-            html5QrCodeInstance = new Html5Qrcode("reader"); // Buat instance baru
+            html5QrCodeInstance = new Html5Qrcode("reader");
 
             await html5QrCodeInstance.start(
                 {
@@ -368,9 +353,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 onScanFailure
             );
             qrScanResult.textContent = "Pindai QR Code untuk Absen...";
-            showToast("Kamera berhasil diganti.", "info"); // Bisa tetap pakai toast untuk ini
+            showToast("Kamera berhasil diganti.", "info");
             isScannerInitialized = true;
-            isScannerActivelyScanning = true; // Set flag
+            isScannerActivelyScanning = true;
             console.log("Scanner berhasil di-restart dengan kamera baru.");
 
         } catch (err) {
@@ -378,7 +363,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             qrScanResult.textContent = `Gagal mengganti kamera: ${err.message}`;
             qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal mengganti kamera: ${err.message}</p>`;
             isScannerInitialized = false;
-            isScannerActivelyScanning = false; // Set flag
+            isScannerActivelyScanning = false;
         }
     }
 
@@ -387,7 +372,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const currentUser = authService.getCurrentUser();
         if (!currentUser || !currentUser.id) {
             showToast('Gagal memuat status absensi: User tidak terautentikasi.', 'error');
-            // Jika tidak terautentikasi, pastikan scanner tidak aktif
             await stopAndClearScanner();
             return;
         }
@@ -400,30 +384,25 @@ document.addEventListener("DOMContentLoaded", async () => {
             updateAttendanceStatusUI(todayAttendance);
 
             // Logika untuk scanner QR
-            // Kapan scanner HARUS berhenti atau tidak dimulai?
+            // Scanner HARUS berhenti jika sudah ada record absensi untuk hari ini
             const shouldStopScanner = todayAttendance &&
                 (todayAttendance.status === 'Hadir' ||
-                    todayAttendance.status === 'Telat' ||
-                    todayAttendance.status === 'Sakit' ||
-                    todayAttendance.status === 'Cuti' ||
-                    todayAttendance.status === 'Izin' ||
-                    (todayAttendance.check_in && todayAttendance.check_out)); // Tambahkan kondisi jika sudah check-in dan check-out
+                 todayAttendance.status === 'Telat' ||
+                 todayAttendance.status === 'Sakit' ||
+                 todayAttendance.status === 'Cuti' ||
+                 todayAttendance.status === 'Izin'); // Cukup cek apakah ada record untuk hari ini
 
             if (shouldStopScanner) {
-                // Jika sudah absen atau status non-aktif scan, hentikan scanner
                 await stopAndClearScanner();
                 let messageText = '';
-                if (todayAttendance.check_in && todayAttendance.check_out) {
-                    messageText = `Anda sudah check-in dan check-out hari ini.`;
-                } else if (todayAttendance.check_in && !todayAttendance.check_out) {
-                    messageText = `Anda sudah absen masuk hari ini.`;
-                } else if (todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat') {
+                // Pesan disederhanakan karena tidak ada check-out di sini
+                if (todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat') {
                     messageText = `Anda sudah absen masuk hari ini (${todayAttendance.status}).`;
                 } else {
                     messageText = `Anda memiliki status hari ini: ${todayAttendance.status}.`;
                 }
                 qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">${messageText}</p>`;
-                showToast(messageText, 'info'); // Atau showSweetAlert jika ingin notifikasi ini juga
+                showToast(messageText, 'info');
             } else {
                 // Jika belum ada absensi yang lengkap, aktifkan scanner
                 startScanner();
@@ -440,13 +419,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             checkInTimeSpan.textContent = 'Gagal memuat';
             attendanceStatusSpan.textContent = 'Error';
             attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
-            // Jika ada error dalam memuat absensi, tetap coba mulai scanner,
-            // kecuali jika error tersebut menandakan kondisi yang tidak memungkinkan scanner
             startScanner();
         }
     }
 
-    // --- Fungsi untuk Mengambil Data Profil Karyawan (DIJAGA, yang lainnya dihapus) ---
     const fetchEmployeeProfileData = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -591,7 +567,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const response = await authService.changePassword(oldPassword, newPassword);
                 changePasswordSuccessMessage.textContent = response.message || "Password berhasil diubah!";
                 changePasswordSuccessMessage.classList.remove("hidden");
-                showToast("Password berhasil diubah!", "success"); // Bisa diganti SweetAlert jika mau
+                showToast("Password berhasil diubah!", "success");
 
                 setTimeout(() => {
                     changePasswordModal.classList.remove("active");
@@ -603,7 +579,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const errorMessage = error.message || "Gagal mengubah password. Silakan coba lagi.";
                 changePasswordErrorMessage.textContent = errorMessage;
                 changePasswordErrorMessage.classList.remove("hidden");
-                showToast(errorMessage, "error"); // Bisa diganti SweetAlert jika mau
+                showToast(errorMessage, "error");
             }
         });
     }
