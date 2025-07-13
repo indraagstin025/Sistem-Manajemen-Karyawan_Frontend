@@ -1,4 +1,3 @@
-
 import { authService } from '../Services/AuthServices.js';
 import AttendanceService from '../Services/AttendanceServices.js';
 import { initializeSidebar } from "../components/sidebarHandler.js";
@@ -28,81 +27,76 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Sekarang inisialisasi semua modul
     initializeSidebar();
-    // `showToast` sudah dideklarasikan, jadi aman untuk digunakan di sini
     QRCodeManager.initialize({ toastCallback: showToast });
     initializeLogout({ preLogoutCallback: QRCodeManager.close });
     
 
-    // --- SISA KODE ANDA (TIDAK ADA PERUBAHAN) ---
+    // --- SISA KODE ANDA ---
     const userAvatar = document.getElementById('userAvatar');
     const userDropdown = document.getElementById('userDropdown');
     const dropdownMenu = document.getElementById('dropdownMenu');
     const attendanceListBody = document.getElementById('attendance-list-body');
     const attendanceEmptyState = document.getElementById('attendance-empty-state');
 
+    // Sesuaikan formatTime: Cukup kembalikan string apa adanya dari backend
+    // Karena backend sudah memformatnya menjadi "HH:MM AM/PM"
     const formatTime = (timeString) => {
-        if (!timeString) return '-';
-        return new Date(timeString).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
+        return timeString || '-';
     };
-const loadTodaysAttendance = async () => {
-    attendanceListBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">Memuat data kehadiran...</td></tr>`;
-    attendanceEmptyState.classList.add('hidden');
 
-    try {
-        const attendanceData = await AttendanceService.getTodaysAttendance();
-        
-        if (attendanceData && attendanceData.length > 0) {
-            attendanceListBody.innerHTML = '';
-
-            for (const attendance of attendanceData) {
-                const row = document.createElement('tr');
-                const photoUrl = await getUserPhotoBlobUrl(attendance.user_id, attendance.user_name, 40);
-
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                            <img class="h-10 w-10 rounded-full mr-3 object-cover" src="${photoUrl}" alt="${attendance.user_name}">
-                            <div class="text-sm font-medium text-gray-900">${attendance.user_name || 'N/A'}</div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900">${attendance.user_department || 'N/A'}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900">${attendance.user_position || 'N/A'}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900">${formatTime(attendance.check_in)}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900">${formatTime(attendance.check_out)}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            attendance.status === 'Hadir' ? 'bg-green-100 text-green-800' :
-                            attendance.status === 'Telat' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                        }">
-                            ${attendance.status}
-                        </span>
-                    </td>
-                `;
-                attendanceListBody.appendChild(row);
-            }
-        } else {
-            attendanceListBody.innerHTML = '';
-            attendanceEmptyState.classList.remove('hidden');
-        }
-    } catch (error) {
-        console.error('Error loading today\'s attendance:', error);
-        attendanceListBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-sm text-red-500">Gagal memuat data kehadiran. ${error.message || ''}</td></tr>`;
+    const loadTodaysAttendance = async () => {
+        attendanceListBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">Memuat data kehadiran...</td></tr>`; // Ubah colspan menjadi 5
         attendanceEmptyState.classList.add('hidden');
-    }
-};
+
+        try {
+            const attendanceData = await AttendanceService.getTodaysAttendance();
+            
+            if (attendanceData && attendanceData.length > 0) {
+                attendanceListBody.innerHTML = '';
+
+                for (const attendance of attendanceData) {
+                    const row = document.createElement('tr');
+                    // Pastikan getUserPhotoBlobUrl menangani kasus user_id tidak valid atau foto tidak ada dengan baik
+                    const photoUrl = await getUserPhotoBlobUrl(attendance.user_id, attendance.user_name, 40);
+
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img class="h-10 w-10 rounded-full mr-3 object-cover" src="${photoUrl}" alt="${attendance.user_name}">
+                                <div class="text-sm font-medium text-gray-900">${attendance.user_name || 'N/A'}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${attendance.user_department || 'N/A'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${attendance.user_position || 'N/A'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${formatTime(attendance.check_in)}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                attendance.status === 'Hadir' ? 'bg-green-100 text-green-800' :
+                                attendance.status === 'Telat' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                            }">
+                                ${attendance.status}
+                            </span>
+                        </td>
+                    `;
+                    attendanceListBody.appendChild(row);
+                }
+            } else {
+                attendanceListBody.innerHTML = '';
+                attendanceEmptyState.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error loading today\'s attendance:', error);
+            attendanceListBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-sm text-red-500">Gagal memuat data kehadiran. ${error.message || ''}</td></tr>`; // Ubah colspan menjadi 5
+            attendanceEmptyState.classList.add('hidden');
+        }
+    };
 
 
     const initializeAuth = () => {
@@ -111,7 +105,7 @@ const loadTodaysAttendance = async () => {
             window.location.href = '/src/pages/Auth/login.html';
             return;
         }
-        if (user.role !== 'admin') {
+        if (user.role !== 'admin') { // Ini adalah file admin dashboard, jadi cek peran admin
             alert('Akses ditolak. Anda tidak memiliki izin sebagai admin.');
             window.location.href = '/src/pages/Auth/login.html';
             return;
