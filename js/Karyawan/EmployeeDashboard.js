@@ -24,6 +24,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
+    const html5QrCode = new Html5Qrcode("reader");
+
 
     const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
 
