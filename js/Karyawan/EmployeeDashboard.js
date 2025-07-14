@@ -110,66 +110,91 @@ document.addEventListener("DOMContentLoaded", async () => {
         return timeString || '-';
     }
 
-    // Menyesuaikan fungsi updateAttendanceStatusUI untuk hanya fokus pada Check-in
-    function updateAttendanceStatusUI(attendance) {
-        const today = new Date().toLocaleDateString('id-ID', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        currentDateSpan.textContent = today;
-        attendanceStatusSpan.className = '';
-        todayAttendanceStatusSummary.classList.remove('text-gray-900', 'text-green-600', 'text-red-600', 'text-orange-600', 'text-blue-600');
+function updateAttendanceStatusUI(attendance) {
+    const today = new Date().toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    currentDateSpan.textContent = today;
+    attendanceStatusSpan.className = '';
+    todayAttendanceStatusSummary.classList.remove(
+        'text-gray-900', 'text-green-600', 'text-red-600', 'text-orange-600', 'text-blue-600'
+    );
 
-        if (attendance) {
-            todayAttendanceStatusSummary.textContent = attendance.status;
-            if (attendance.status === 'Hadir') {
-                todayAttendanceStatusSummary.classList.add('text-green-600');
-            } else if (attendance.status === 'Telat') {
-                todayAttendanceStatusSummary.classList.add('text-orange-600');
-            } else if (attendance.status === 'Sakit' || attendance.status === 'Cuti' || attendance.status === 'Izin') {
-                todayAttendanceStatusSummary.classList.add('text-blue-600');
-            } else {
-                todayAttendanceStatusSummary.classList.add('text-gray-900');
-            }
+    const mapStatusLabel = (status) => {
+        if (status === "Tidak Absen") return "Belum Absen";
+        return status;
+    };
 
-            checkInTimeSpan.textContent = formatTime(attendance.check_in);
-            attendanceStatusSpan.textContent = attendance.status;
+    if (attendance) {
+        const displayStatus = mapStatusLabel(attendance.status);
+        todayAttendanceStatusSummary.textContent = displayStatus;
 
-            if (attendance.status === 'Hadir') {
-                attendanceStatusSpan.classList.add('text-green-600', 'font-semibold');
-            } else if (attendance.status === 'Telat') {
-                attendanceStatusSpan.classList.add('text-orange-600', 'font-semibold');
-            } else if (attendance.status === 'Sakit' || attendance.status === 'Cuti' || attendance.status === 'Izin') {
-                checkInTimeSpan.textContent = '-';
-                attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold');
-            } else {
-                attendanceStatusSpan.classList.add('text-gray-600', 'font-semibold');
-            }
-
-            // HAPUS ATAU KOMENTARI BARIS INI: checkOutDisplay dan checkOutTimeSpan TIDAK ADA LAGI
-            // checkOutDisplay.classList.add('hidden');
-            // checkOutTimeSpan.textContent = '';
-
-            if (attendance.note) {
-                attendanceNoteDisplay.classList.remove('hidden');
-                attendanceNoteSpan.textContent = attendance.note;
-            } else {
-                attendanceNoteDisplay.classList.add('hidden');
-                attendanceNoteSpan.textContent = '';
-            }
-        } else {
-            todayAttendanceStatusSummary.textContent = "Belum Absen";
+        if (attendance.status === 'Hadir') {
+            todayAttendanceStatusSummary.classList.add('text-green-600');
+        } else if (attendance.status === 'Telat') {
+            todayAttendanceStatusSummary.classList.add('text-orange-600');
+        } else if (
+            attendance.status === 'Sakit' ||
+            attendance.status === 'Cuti' ||
+            attendance.status === 'Izin'
+        ) {
+            todayAttendanceStatusSummary.classList.add('text-blue-600');
+        } else if (
+            attendance.status === 'Tidak Absen' ||
+            attendance.status === 'Belum Absen'
+        ) {
             todayAttendanceStatusSummary.classList.add('text-red-600');
-
-            checkInTimeSpan.textContent = '-';
-            attendanceStatusSpan.textContent = 'Belum Absen';
-            attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
-            // HAPUS ATAU KOMENTARI BARIS INI: checkOutDisplay TIDAK ADA LAGI
-            // checkOutDisplay.classList.add('hidden');
-            attendanceNoteDisplay.classList.add('hidden');
+        } else {
+            todayAttendanceStatusSummary.classList.add('text-gray-900');
         }
+
+        checkInTimeSpan.textContent = formatTime(attendance.check_in);
+        attendanceStatusSpan.textContent = displayStatus;
+
+        if (attendance.status === 'Hadir') {
+            attendanceStatusSpan.classList.add('text-green-600', 'font-semibold');
+        } else if (attendance.status === 'Telat') {
+            attendanceStatusSpan.classList.add('text-orange-600', 'font-semibold');
+        } else if (
+            attendance.status === 'Sakit' ||
+            attendance.status === 'Cuti' ||
+            attendance.status === 'Izin'
+        ) {
+            checkInTimeSpan.textContent = '-';
+            attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold');
+        } else if (
+            attendance.status === 'Tidak Absen' ||
+            attendance.status === 'Belum Absen'
+        ) {
+            checkInTimeSpan.textContent = '-';
+            attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
+        } else {
+            attendanceStatusSpan.classList.add('text-gray-600', 'font-semibold');
+        }
+
+        if (attendance.note) {
+            attendanceNoteDisplay.classList.remove('hidden');
+            attendanceNoteSpan.textContent = attendance.note;
+        } else {
+            attendanceNoteDisplay.classList.add('hidden');
+            attendanceNoteSpan.textContent = '';
+        }
+    } else {
+        // Jika tidak ada absensi sama sekali
+        todayAttendanceStatusSummary.textContent = "Belum Absen";
+        todayAttendanceStatusSummary.classList.add('text-red-600');
+
+        checkInTimeSpan.textContent = '-';
+        attendanceStatusSpan.textContent = 'Belum Absen';
+        attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
+
+        attendanceNoteDisplay.classList.add('hidden');
+        attendanceNoteSpan.textContent = '';
     }
+}
+
 
     // Fungsi helper untuk menghentikan dan membersihkan scanner
     async function stopAndClearScanner() {
