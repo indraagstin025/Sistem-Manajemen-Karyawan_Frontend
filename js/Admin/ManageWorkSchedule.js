@@ -1,3 +1,5 @@
+// /js/Admin/ManageWorkSchedule.js
+
 import { Calendar } from "fullcalendar";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -7,6 +9,7 @@ import idLocale from "@fullcalendar/core/locales/id";
 import WorkScheduleServices from "../Services/WorkScheduleServices.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  // --- Pengambilan Elemen DOM ---
   const scheduleFormModal = document.getElementById("scheduleFormModal");
   const closeScheduleModalBtn = document.getElementById("closeScheduleModalBtn");
   const workScheduleForm = document.getElementById("workScheduleForm");
@@ -20,11 +23,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveScheduleBtn = document.getElementById("save-schedule-btn");
   const cancelScheduleBtn = document.getElementById("cancel-schedule-btn");
   const deleteScheduleBtn = document.getElementById("delete-schedule-btn");
+  const manualAddScheduleBtn = document.getElementById("manualAddScheduleBtn"); // Tombol baru
 
   let calendar;
   let currentEvent = null;
 
+  // --- Fungsi Modal ---
   const openScheduleModal = (mode = "create", event = null, dateInfo = null) => {
+    scheduleFormModal.classList.remove("hidden");
     scheduleFormModal.classList.add("active");
     userIdInput.readOnly = false;
     scheduleDateInput.readOnly = false;
@@ -32,18 +38,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (mode === "create") {
       formModalTitle.textContent = "Tambah Jadwal Kerja Baru";
-      scheduleIdInput.value = "";
-      userIdInput.value = "";
-      noteInput.value = "";
-
+      workScheduleForm.reset(); // Cara lebih simpel untuk membersihkan form
+      scheduleIdInput.value = ""; // Pastikan ID kosong
+      startTimeInput.value = "09:00";
+      endTimeInput.value = "17:00";
       if (dateInfo) {
         scheduleDateInput.value = dateInfo.dateStr;
-        startTimeInput.value = "09:00";
-        endTimeInput.value = "17:00";
-      } else {
-        scheduleDateInput.value = "";
-        startTimeInput.value = "";
-        endTimeInput.value = "";
       }
     } else if (mode === "edit" && event) {
       formModalTitle.textContent = "Edit Jadwal Kerja";
@@ -62,51 +62,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const closeScheduleModal = () => {
     scheduleFormModal.classList.remove("active");
+    scheduleFormModal.classList.add("hidden");
     workScheduleForm.reset();
     currentEvent = null;
-    feather.replace();
   };
 
-  closeScheduleModalBtn.addEventListener("click", closeScheduleModal);
-  cancelScheduleBtn.addEventListener("click", closeScheduleModal);
-  scheduleFormModal.addEventListener("click", (e) => {
-    if (e.target === scheduleFormModal) {
-      closeScheduleModal();
-    }
-  });
-
-  const fetchAndRenderSchedules = async (info = null) => {
+  // --- Logika Kalender ---
+  const fetchAndRenderSchedules = async (info) => {
     try {
-      let filters = {};
-      if (info) {
-        filters.start_date = info.startStr.split("T")[0];
-        filters.end_date = info.endStr.split("T")[0];
-      } else {
-        if (calendar) {
-          const currentView = calendar.view;
-          filters.start_date = currentView.activeStart.toISOString().split("T")[0];
-          filters.end_date = currentView.activeEnd.toISOString().split("T")[0];
-        } else {
-          const today = new Date();
-          filters.start_date = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
-          filters.end_date = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split("T")[0];
-        }
-      }
-
-      const filterUserIdVal = document.getElementById("filter-user-id") ? document.getElementById("filter-user-id").value : "";
-      if (filterUserIdVal) {
-        filters.user_id = filterUserIdVal;
-      }
+      const filters = {
+        start_date: info.startStr.split("T")[0],
+        end_date: info.endStr.split("T")[0],
+      };
 
       const response = await WorkScheduleServices.getAllWorkSchedules(filters);
-      const schedules = response.data;
+      const schedules = response.data || []; // Pastikan response.data tidak null
 
-      if (calendar) {
-        calendar.removeAllEvents();
-      }
-
-      const events = schedules.map((s) => ({
-        id: s.id,
+      return schedules.map((s) => ({
+        id: s.ID, // Pastikan menggunakan 'ID' (sesuai struct Go)
         title: `${s.start_time}-${s.end_time} (${s.user_id})`,
         start: `${s.date}T${s.start_time}`,
         end: `${s.date}T${s.end_time}`,
@@ -114,16 +87,13 @@ document.addEventListener("DOMContentLoaded", () => {
           userId: s.user_id,
           note: s.note,
         },
-
         backgroundColor: "#38b2ac",
         borderColor: "#38b2ac",
       }));
-      if (calendar) {
-        calendar.addEventSource(events);
-      }
     } catch (error) {
       console.error("Error fetching work schedules:", error);
-      showAlert("Gagal memuat jadwal kerja.", "error");
+      alert("Gagal memuat jadwal kerja.");
+      return []; // Kembalikan array kosong jika gagal
     }
   };
 
@@ -140,24 +110,10 @@ document.addEventListener("DOMContentLoaded", () => {
     editable: true,
     selectable: true,
     eventDisplay: "block",
-
-    datesSet: (info) => {
-      fetchAndRenderSchedules(info);
-    },
+    events: fetchAndRenderSchedules, // Gunakan 'events' sebagai fungsi
 
     select: (info) => {
-      const selectedDate = info.startStr.split("T")[0];
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, "0");
-      const currentDay = currentDate.getDate().toString().padStart(2, "0");
-      const today = `${currentYear}-${currentMonth}-${currentDay}`;
-
-      if (selectedDate < today) {
-        showAlert("Tidak bisa membuat jadwal di tanggal yang sudah lewat!", "warning");
-        calendar.unselect();
-        return;
-      }
+      // Izinkan admin membuat jadwal dengan mengklik tanggal
       openScheduleModal("create", null, info);
       calendar.unselect();
     },
@@ -167,115 +123,98 @@ document.addEventListener("DOMContentLoaded", () => {
     },
 
     eventDrop: async (info) => {
+      // Update via Drag & Drop
       const event = info.event;
-      const newDate = event.start.toISOString().split("T")[0];
-      const newStartTime = event.start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-      const newEndTime = event.end ? event.end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : newStartTime;
-
-      const scheduleData = {
-        user_id: event.extendedProps.userId,
-        date: newDate,
-        start_time: newStartTime,
-        end_time: newEndTime,
+      const updatePayload = {
+        start_time: event.start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        end_time: event.end ? event.end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "",
         note: event.extendedProps.note || "",
       };
 
       try {
-        await WorkScheduleServices.updateWorkSchedule(event.id, scheduleData);
-        showAlert("Jadwal berhasil diperbarui!", "success");
+        await WorkScheduleServices.updateWorkSchedule(event.id, updatePayload);
+        alert("Jadwal berhasil diperbarui!");
       } catch (error) {
-        console.error("Error updating work schedule via drag-and-drop:", error);
-        showAlert("Gagal memperbarui jadwal: " + (error.response?.data?.error || error.message), "error");
-        info.revert();
+        console.error("Error updating schedule via drag:", error);
+        alert("Gagal memperbarui jadwal: " + (error.response?.data?.error || error.message));
+        info.revert(); // Kembalikan event ke posisi semula jika gagal
       }
     },
-
-    eventResize: async (info) => {
-      const event = info.event;
-      const newStartTime = event.start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-      const newEndTime = event.end ? event.end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : newStartTime;
-
-      const scheduleData = {
-        user_id: event.extendedProps.userId,
-        date: event.start.toISOString().split("T")[0],
-        start_time: newStartTime,
-        end_time: newEndTime,
-        note: event.extendedProps.note || "",
-      };
-
-      try {
-        await WorkScheduleServices.updateWorkSchedule(event.id, scheduleData);
-        showAlert("Durasi jadwal berhasil diperbarui!", "success");
-      } catch (error) {
-        console.error("Error updating work schedule via resize:", error);
-        showAlert("Gagal memperbarui durasi jadwal: " + (error.response?.data?.error || error.message), "error");
-        info.revert();
-      }
-    },
+    
+    // Anda bisa menambahkan eventResize di sini dengan logika yang sama seperti eventDrop
   });
 
   calendar.render();
 
+  // --- Event Listeners untuk Tombol & Form ---
+  
+  // ✅ Pemicu untuk Tombol "Tambah Jadwal Kerja"
+  manualAddScheduleBtn.addEventListener("click", () => {
+    openScheduleModal("create");
+  });
+
+  closeScheduleModalBtn.addEventListener("click", closeScheduleModal);
+  cancelScheduleBtn.addEventListener("click", closeScheduleModal);
+  scheduleFormModal.addEventListener("click", (e) => {
+    if (e.target === scheduleFormModal) {
+      closeScheduleModal();
+    }
+  });
+
+  // ✅ Logika SUBMIT FORM yang sudah diperbaiki
   workScheduleForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    const scheduleData = {
-      user_id: userIdInput.value,
-      date: scheduleDateInput.value,
-      start_time: startTimeInput.value,
-      end_time: endTimeInput.value,
-      note: noteInput.value,
-    };
+    saveScheduleBtn.disabled = true; // Nonaktifkan tombol
 
     try {
       if (scheduleIdInput.value) {
-        await WorkScheduleServices.updateWorkSchedule(scheduleIdInput.value, scheduleData);
-        showAlert("Jadwal kerja berhasil diperbarui!", "success");
+        // --- LOGIKA UPDATE ---
+        const updatePayload = {
+          start_time: startTimeInput.value,
+          end_time: endTimeInput.value,
+          note: noteInput.value,
+        };
+        await WorkScheduleServices.updateWorkSchedule(scheduleIdInput.value, updatePayload);
+        alert("Jadwal kerja berhasil diperbarui!");
       } else {
-        const createdSchedule = await WorkScheduleServices.createWorkSchedule(scheduleData);
-        showAlert("Jadwal kerja berhasil ditambahkan!", "success");
-
-        calendar.addEvent({
-          id: createdSchedule.data.id,
-          title: `${createdSchedule.data.start_time}-${createdSchedule.data.end_time} (${createdSchedule.data.user_id})`,
-          start: `${createdSchedule.data.date}T${createdSchedule.data.start_time}`,
-          end: `${createdSchedule.data.date}T${createdSchedule.data.end_time}`,
-          extendedProps: {
-            userId: createdSchedule.data.user_id,
-            note: createdSchedule.data.note,
-          },
-          backgroundColor: "#38b2ac",
-          borderColor: "#38b2ac",
-        });
+        // --- LOGIKA CREATE ---
+        const scheduleData = {
+          user_id: userIdInput.value,
+          date: scheduleDateInput.value,
+          start_time: startTimeInput.value,
+          end_time: endTimeInput.value,
+          note: noteInput.value,
+        };
+        await WorkScheduleServices.createWorkSchedule(scheduleData);
+        alert("Jadwal kerja berhasil ditambahkan!");
       }
+      
       closeScheduleModal();
+      calendar.refetchEvents(); // ✨ Muat ulang data kalender setelah sukses!
+      
     } catch (error) {
       console.error("Error saving work schedule:", error);
-      showAlert("Gagal menyimpan jadwal kerja. " + (error.response?.data?.error || error.message), "error");
+      alert("Gagal menyimpan jadwal kerja. " + (error.response?.data?.error || error.message));
+    } finally {
+      saveScheduleBtn.disabled = false; // Aktifkan kembali tombol
     }
   });
-
+  
+  // --- LOGIKA DELETE ---
   deleteScheduleBtn.addEventListener("click", async () => {
     if (currentEvent && confirm("Apakah Anda yakin ingin menghapus jadwal ini?")) {
+      deleteScheduleBtn.disabled = true;
       try {
         await WorkScheduleServices.deleteWorkSchedule(currentEvent.id);
-        currentEvent.remove();
-        showAlert("Jadwal kerja berhasil dihapus!", "success");
+        currentEvent.remove(); // Optimistic UI update
+        alert("Jadwal kerja berhasil dihapus!");
         closeScheduleModal();
       } catch (error) {
         console.error("Error deleting work schedule:", error);
-        showAlert("Gagal menghapus jadwal kerja. " + (error.response?.data?.error || error.message), "error");
+        alert("Gagal menghapus jadwal kerja. " + (error.response?.data?.error || error.message));
+      } finally {
+        deleteScheduleBtn.disabled = false;
       }
     }
   });
-
-  const filterUserIdInput = document.getElementById("filter-user-id");
-  const applyFilterBtn = document.getElementById("apply-filter");
-
-  if (applyFilterBtn) {
-    applyFilterBtn.addEventListener("click", () => {
-      calendar.refetchEvents();
-    });
-  } else {
-  }
 });

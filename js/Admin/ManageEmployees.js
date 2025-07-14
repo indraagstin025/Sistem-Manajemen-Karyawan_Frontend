@@ -68,6 +68,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }, 3000);
     };
 
+    // Event listener untuk tombol manual tambah jadwal
+const manualAddScheduleBtn = document.getElementById("manualAddScheduleBtn");
+if (manualAddScheduleBtn) {
+  manualAddScheduleBtn.addEventListener("click", () => {
+    openScheduleModal("create"); // Buka modal form dengan mode 'create'
+  });
+}
+
+
     const showModalMessage = (message, type = "success", targetErrorDiv, targetSuccessDiv) => {
         targetErrorDiv.classList.add("hidden");
         targetSuccessDiv.classList.add("hidden");
