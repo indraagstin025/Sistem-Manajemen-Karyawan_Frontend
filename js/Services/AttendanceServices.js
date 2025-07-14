@@ -21,6 +21,7 @@ const getUser = () => {
 };
 
 
+
 const AttendanceService = {
     /**
      * @description Generate QR Code for today (Admin only)
@@ -52,6 +53,15 @@ const AttendanceService = {
             throw error;
         }
     },
+
+    getMyTodayAttendance: async () => {
+    try {
+        const response = await apiClient.get('/attendance/my-today');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+},
 
     /**
      * @description Scan a QR code for check-in/check-out

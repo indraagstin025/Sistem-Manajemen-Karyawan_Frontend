@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         editable: true,
         selectable: true,
-
+        displayEventTime: false,
         eventSources: [
             // Sumber 1: Jadwal Kerja dari Backend
             {

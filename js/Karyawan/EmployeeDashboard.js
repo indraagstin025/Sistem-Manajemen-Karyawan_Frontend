@@ -110,91 +110,52 @@ document.addEventListener("DOMContentLoaded", async () => {
         return timeString || '-';
     }
 
-function updateAttendanceStatusUI(attendance) {
-    const today = new Date().toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    currentDateSpan.textContent = today;
-    attendanceStatusSpan.className = '';
-    todayAttendanceStatusSummary.classList.remove(
-        'text-gray-900', 'text-green-600', 'text-red-600', 'text-orange-600', 'text-blue-600'
-    );
+// EmployeeDashboard.js
 
-    const mapStatusLabel = (status) => {
-        if (status === "Tidak Absen") return "Belum Absen";
-        return status;
-    };
+function updateAttendanceStatusUI(attendance) {
+    const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+    currentDateSpan.textContent = today;
+    attendanceStatusSpan.className = ''; // Reset class
+    todayAttendanceStatusSummary.className = 'text-lg font-bold'; // Reset class dasar
 
     if (attendance) {
-        const displayStatus = mapStatusLabel(attendance.status);
+        const displayStatus = attendance.status;
         todayAttendanceStatusSummary.textContent = displayStatus;
 
-        if (attendance.status === 'Hadir') {
+        // Logika pewarnaan baru
+        if (displayStatus === 'Tepat Waktu') {
             todayAttendanceStatusSummary.classList.add('text-green-600');
-        } else if (attendance.status === 'Telat') {
-            todayAttendanceStatusSummary.classList.add('text-orange-600');
-        } else if (
-            attendance.status === 'Sakit' ||
-            attendance.status === 'Cuti' ||
-            attendance.status === 'Izin'
-        ) {
+            attendanceStatusSpan.classList.add('text-green-600', 'font-semibold');
+        } else if (displayStatus === 'Terlambat') {
+            todayAttendanceStatusSummary.classList.add('text-orange-500'); // Warna oranye untuk terlambat
+            attendanceStatusSpan.classList.add('text-orange-500', 'font-semibold');
+        } else if (['Sakit', 'Cuti', 'Izin'].includes(displayStatus)) {
             todayAttendanceStatusSummary.classList.add('text-blue-600');
-        } else if (
-            attendance.status === 'Tidak Absen' ||
-            attendance.status === 'Belum Absen'
-        ) {
+            attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold');
+            checkInTimeSpan.textContent = '-'; // Tidak ada jam check-in
+        } else { // Termasuk "Belum Absen" atau lainnya
             todayAttendanceStatusSummary.classList.add('text-red-600');
-        } else {
-            todayAttendanceStatusSummary.classList.add('text-gray-900');
+            attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
+            checkInTimeSpan.textContent = '-';
+        }
+        
+        // Perbarui jam check-in jika ada
+        if (attendance.check_in) {
+             checkInTimeSpan.textContent = formatTime(attendance.check_in);
         }
 
-        checkInTimeSpan.textContent = formatTime(attendance.check_in);
         attendanceStatusSpan.textContent = displayStatus;
 
-        if (attendance.status === 'Hadir') {
-            attendanceStatusSpan.classList.add('text-green-600', 'font-semibold');
-        } else if (attendance.status === 'Telat') {
-            attendanceStatusSpan.classList.add('text-orange-600', 'font-semibold');
-        } else if (
-            attendance.status === 'Sakit' ||
-            attendance.status === 'Cuti' ||
-            attendance.status === 'Izin'
-        ) {
-            checkInTimeSpan.textContent = '-';
-            attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold');
-        } else if (
-            attendance.status === 'Tidak Absen' ||
-            attendance.status === 'Belum Absen'
-        ) {
-            checkInTimeSpan.textContent = '-';
-            attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
-        } else {
-            attendanceStatusSpan.classList.add('text-gray-600', 'font-semibold');
-        }
-
-        if (attendance.note) {
-            attendanceNoteDisplay.classList.remove('hidden');
-            attendanceNoteSpan.textContent = attendance.note;
-        } else {
-            attendanceNoteDisplay.classList.add('hidden');
-            attendanceNoteSpan.textContent = '';
-        }
     } else {
-        // Jika tidak ada absensi sama sekali
+        // Jika tidak ada record absensi sama sekali
         todayAttendanceStatusSummary.textContent = "Belum Absen";
         todayAttendanceStatusSummary.classList.add('text-red-600');
 
         checkInTimeSpan.textContent = '-';
         attendanceStatusSpan.textContent = 'Belum Absen';
         attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
-
-        attendanceNoteDisplay.classList.add('hidden');
-        attendanceNoteSpan.textContent = '';
     }
 }
-
 
     // Fungsi helper untuk menghentikan dan membersihkan scanner
     async function stopAndClearScanner() {
@@ -236,7 +197,7 @@ function updateAttendanceStatusUI(attendance) {
         }
 
         try {
-            const response = await AttendanceService.scanQR(decodedText, currentUser.id);
+            const response = await AttendanceService.scanQR(decodedText);
 
             showSweetAlert('Absensi Berhasil!', response.message, 'success');
 
@@ -393,60 +354,53 @@ function updateAttendanceStatusUI(attendance) {
     }
 
 
-    async function loadMyTodayAttendance() {
-        const currentUser = authService.getCurrentUser();
-        if (!currentUser || !currentUser.id) {
-            showToast('Gagal memuat status absensi: User tidak terautentikasi.', 'error');
+// EmployeeDashboard.js
+
+async function loadMyTodayAttendance() {
+    // Pindahkan pengecekan user ke atas agar dilakukan pertama kali
+    const currentUser = authService.getCurrentUser();
+    if (!currentUser || !currentUser.id) {
+        showToast('Gagal memuat status absensi: User tidak terautentikasi.', 'error');
+        await stopAndClearScanner();
+        return;
+    }
+
+    try {
+        // Panggil service BARU yang lebih efisien, HANYA SEKALI.
+        // Ini akan mengembalikan satu objek absensi hari ini, atau 'null' jika tidak ada.
+        const todayAttendance = await AttendanceService.getMyTodayAttendance();
+
+        // Perbarui tampilan UI berdasarkan hasil dari API call.
+        updateAttendanceStatusUI(todayAttendance);
+
+        // Logika untuk menentukan apakah scanner perlu dijalankan atau tidak.
+        // Ini sudah benar, hanya perlu menggunakan hasil dari API call yang efisien.
+        const shouldStopScanner = todayAttendance && 
+            ['Tepat Waktu', 'Terlambat', 'Sakit', 'Cuti', 'Izin'].includes(todayAttendance.status);
+
+        if (shouldStopScanner) {
             await stopAndClearScanner();
-            return;
-        }
-
-        try {
-            const history = await AttendanceService.getMyHistory();
-            const today = new Date().toISOString().slice(0, 10);
-            const todayAttendance = history.find(att => att.date === today);
-
-            updateAttendanceStatusUI(todayAttendance);
-
-            // Logika untuk scanner QR
-            // Scanner HARUS berhenti jika sudah ada record absensi untuk hari ini
-            const shouldStopScanner = todayAttendance &&
-                (todayAttendance.status === 'Hadir' ||
-                 todayAttendance.status === 'Telat' ||
-                 todayAttendance.status === 'Sakit' ||
-                 todayAttendance.status === 'Cuti' ||
-                 todayAttendance.status === 'Izin');
-
-            if (shouldStopScanner) {
-                await stopAndClearScanner();
-                let messageText = '';
-                // Pesan disederhanakan karena tidak ada check-out di sini
-                if (todayAttendance.status === 'Hadir' || todayAttendance.status === 'Telat') {
-                    messageText = `Anda sudah absen masuk hari ini (${todayAttendance.status}).`;
-                } else {
-                    messageText = `Anda memiliki status hari ini: ${todayAttendance.status}.`;
-                }
-                qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">${messageText}</p>`;
-                showToast(messageText, 'info');
+            let messageText = '';
+            if (todayAttendance.status === 'Tepat Waktu' || todayAttendance.status === 'Terlambat') {
+                messageText = `Anda sudah absen masuk hari ini (${todayAttendance.status}).`;
             } else {
-                // Jika belum ada absensi yang lengkap, aktifkan scanner
-                startScanner();
+                messageText = `Anda memiliki status hari ini: ${todayAttendance.status}.`;
             }
-
-        } catch (error) {
-            console.error('Error loading my today attendance:', error);
-            showToast(`Gagal memuat status absensi: ${error.message}`, 'error');
-            currentDateSpan.textContent = new Date().toLocaleDateString('id-ID', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            checkInTimeSpan.textContent = 'Gagal memuat';
-            attendanceStatusSpan.textContent = 'Error';
-            attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
+            qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">${messageText}</p>`;
+            showToast(messageText, 'info');
+        } else {
+            // Jika belum ada absensi yang valid, aktifkan scanner.
             startScanner();
         }
+
+    } catch (error) {
+        // Tangani jika API call gagal
+        console.error('Error loading my today attendance:', error);
+        showToast(`Gagal memuat status absensi: ${error.message}`, 'error');
+        updateAttendanceStatusUI(null); // Tampilkan status "Belum Absen" jika error
+        startScanner(); // Coba jalankan scanner jika gagal memuat status
     }
+}
 
     const fetchEmployeeProfileData = async () => {
         try {
