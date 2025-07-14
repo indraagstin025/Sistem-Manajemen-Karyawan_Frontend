@@ -8,10 +8,12 @@
     { "source": "/admin/list-attendance", "destination": "/list_attendance.html" },
     { "source": "/admin/manage-departments", "destination": "/manage_departments.html" },
     { "source": "/admin/manage-employees", "destination": "/manage_employees.html" },
+    { "source": "/admin/manage-work-schedules", "destination": "/manage_work_schedules.html"},
 
     { "source": "/karyawan/dashboard", "destination": "/employee_dashboard.html" },
     { "source": "/karyawan/profile", "destination": "/employee_profile.html" },
     { "source": "/karyawan/request-leave", "destination": "/request_leave.html" },
-    { "source": "/karyawan/attendance-history", "destination": "/attendance_history.html" }
+    { "source": "/karyawan/attendance-history", "destination": "/attendance_history.html" },
+    { "source": "/karyawan/my-work-schedules", "destination": "/my_work_schedules.html" }
   ]
 }

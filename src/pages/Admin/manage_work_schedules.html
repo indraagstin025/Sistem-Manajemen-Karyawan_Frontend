@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manajemen Jadwal Kerja - HR-System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <link rel="stylesheet" href="/style/input.css" />
+
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .dropdown-menu {
+        transition: all 0.2s ease-out;
+        opacity: 0;
+        transform: scale(0.95);
+        display: none;
+      }
+      .dropdown-menu.active {
+        display: block;
+        opacity: 1;
+        transform: scale(1);
+      }
+      #mobileSidebar {
+        transition: opacity 0.3s ease-out;
+      }
+      #mobileSidebarPanel {
+        transition: transform 0.3s ease-out;
+      }
+
+      /* Gaya untuk form modal */
+      .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.6);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
+      }
+      .modal-overlay.active {
+          opacity: 1;
+          visibility: visible;
+          transition: opacity 0.3s ease-out, visibility 0s linear 0s;
+      }
+      .modal-content {
+          background-color: white;
+          padding: 2.5rem;
+          border-radius: 0.75rem;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          transform: translateY(-20px);
+          opacity: 0;
+          transition: all 0.3s ease-out;
+          max-width: 600px; /* Lebar modal bisa disesuaikan */
+          width: 90%;
+      }
+      .modal-overlay.active .modal-content {
+          transform: translateY(0);
+          opacity: 1;
+      }
+      .form-group {
+        margin-bottom: 1rem;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #2d3748;
+      }
+      .form-group input[type="text"],
+      .form-group input[type="date"],
+      .form-group input[type="time"],
+      .form-group textarea {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #cbd5e0;
+          border-radius: 0.5rem;
+          font-size: 1rem;
+          color: #2d3748;
+          background-color: #fff;
+      }
+      .form-buttons {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 1.5rem;
+      }
+      .form-buttons button {
+          padding: 0.75rem 1.5rem;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          transition: all 0.2s ease-out;
+          cursor: pointer;
+      }
+      .form-buttons .save-btn {
+          background-color: #38b2ac; /* teal-500 */
+          color: white;
+      }
+      .form-buttons .save-btn:hover {
+          background-color: #319795; /* teal-600 */
+      }
+      .form-buttons .cancel-btn {
+          background-color: #e2e8f0; /* gray-200 */
+          color: #4a5568; /* gray-700 */
+          margin-left: 0.75rem;
+      }
+      .form-buttons .cancel-btn:hover {
+          background-color: #cbd5e0; /* gray-300 */
+      }
+      .form-buttons .delete-btn {
+          background-color: #ef4444; /* red-500 */
+          color: white;
+          margin-right: auto; /* Dorong ke kiri */
+      }
+      .form-buttons .delete-btn:hover {
+          background-color: #dc2626; /* red-600 */
+      }
+    </style>
+  </head>
+  <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
+    <div class="flex min-h-screen">
+      <aside class="hidden md:flex flex-col w-64 bg-white shadow-xl border-r border-gray-200 py-6">
+        <div class="flex items-center justify-center h-16 mb-8">
+          <a href="/admin_dashboard.html" class="text-3xl font-extrabold text-teal-600">HR-System</a>
+        </div>
+        <nav class="flex flex-col flex-grow px-4">
+          <a href="/admin_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-semibold text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
+          </a>
+          <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="users" class="w-5 h-5 mr-3"></i><span>Manajemen Karyawan</span>
+          </a>
+          <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="user-plus" class="w-5 h-5 mr-3"></i><span>Tambah Karyawan</span>
+          </a>
+          <a href="/manage_departments.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="grid" class="w-5 h-5 mr-3"></i><span>Manajemen Departemen</span>
+          </a>
+          <a href="/add_department.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="plus-square" class="w-5 h-5 mr-3"></i><span>Tambah Departemen</span>
+          </a>
+          <button type="button" id="generate-qr-menu-btn" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="qr-code" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
+          </button>
+          <a href="/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Laporan Absensi</span>
+          </a>
+          <a href="/admin_leave_requests.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Pengajuan Cuti & Izin</span>
+          </a>
+          <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
+          </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span>
+          </a>
+          <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
+            <a href="#" id="logoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
+              <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
+            </a>
+          </div>
+        </nav>
+      </aside>
+
+      <div class="flex flex-col flex-grow">
+        <header class="h-16 bg-white shadow-md flex items-center justify-between px-6 border-b border-gray-200 z-10">
+          <div class="flex items-center">
+            <button class="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 mr-4" id="sidebarToggle">
+              <i data-feather="menu" class="w-6 h-6"></i>
+            </button>
+            <h1 class="text-2xl font-bold text-gray-900">Manajemen Jadwal Kerja</h1>
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="relative group" id="userDropdown">
+              <img
+                id="userAvatar"
+                class="h-10 w-10 rounded-full object-cover cursor-pointer border-2 border-gray-200 hover:border-teal-500 transition-colors duration-200"
+                src="https://placehold.co/40x40/E2E8F0/4A5568?text=AD"
+                alt="User Avatar"
+              />
+              <div id="dropdownMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 dropdown-menu z-20">
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil</a>
+                <div class="border-t border-gray-100 my-1"></div>
+                <a href="#" id="dropdownLogoutButton" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Keluar</a>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
+            <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+                <h3 class="font-semibold text-gray-800 mb-4 text-xl">Kalender Jadwal Kerja</h3>
+                <div id='calendar' style="height: 600px;"></div> </div>
+        </main>
+      </div>
+    </div>
+
+    <div id="scheduleFormModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="form-modal-title" class="text-2xl font-bold text-gray-900">Tambah Jadwal Kerja</h2>
+                <button id="closeScheduleModalBtn" class="text-gray-500 hover:text-gray-700">
+                    <i data-feather="x" class="w-7 h-7"></i>
+                </button>
+            </div>
+            <form id="workScheduleForm">
+                <input type="hidden" id="schedule-id">
+                <div class="form-group">
+                    <label for="user-id">User ID Karyawan:</label>
+                    <input type="text" id="user-id" placeholder="Masukkan User ID Karyawan" required/>
+                </div>
+                <div class="form-group">
+                    <label for="schedule-date">Tanggal:</label>
+                    <input type="date" id="schedule-date" required/>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label for="start-time">Jam Mulai:</label>
+                        <input type="time" id="start-time" required/>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-time">Jam Selesai:</label>
+                        <input type="time" id="end-time" required/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="note">Catatan (Opsional):</label>
+                    <textarea id="note" rows="3" placeholder="Tambahkan catatan jika ada..."></textarea>
+                </div>
+                
+                <div class="form-buttons">
+                    <button type="button" id="delete-schedule-btn" class="delete-btn hidden">Hapus</button>
+                    <button type="submit" id="save-schedule-btn" class="save-btn">Simpan</button>
+                    <button type="button" id="cancel-schedule-btn" class="cancel-btn">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div id="mobileSidebar" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden opacity-0">
+      <div class="w-64 bg-white h-full shadow-xl flex flex-col transform -translate-x-full" id="mobileSidebarPanel">
+        <div class="flex items-center justify-between h-16 bg-teal-600 text-white px-4">
+          <a href="#" class="text-2xl font-bold">HR-System</a>
+          <button id="closeSidebar" class="text-white hover:text-gray-200 focus:outline-none">
+            <i data-feather="x" class="w-6 h-6"></i>
+          </button>
+        </div>
+        <nav class="flex flex-col flex-grow p-4">
+          <a href="/admin_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
+            <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
+          </a>
+          <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="users" class="w-5 h-5 mr-3"></i><span>Manajemen Karyawan</span>
+          </a>
+          <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="user-plus" class="w-5 h-5 mr-3"></i><span>Tambah Karyawan</span>
+          </a>
+          <a href="/manage_departments.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="grid" class="w-5 h-5 mr-3"></i><span>Manajemen Departemen</span>
+          </a>
+          <a href="/add_department.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="plus-square" class="w-5 h-5 mr-3"></i><span>Tambah Departemen</span>
+          </a>
+          <button type="button" id="generate-qr-menu-btn-mobile" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="qr-code" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
+          </button>
+          <a href="/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Laporan Absensi</span> </a>
+          <a href="/admin_leave_requests.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Pengajuan Cuti & Izin</span>
+          </a>
+          <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
+          </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span> </a>
+          <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
+            <a href="#" id="logoutButtonMobile" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl">
+              <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
+            </a>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <script type="module" src="/js/Admin/ManageWorkSchedule.js"></script>
+    <script type="module" src="/js/components/sidebarHandler.js"></script>
+    <script type="module" src="/js/components/logoutHandler.js"></script>
+    <script>
+      feather.replace();
+    </script>
+  </body>
+</html>

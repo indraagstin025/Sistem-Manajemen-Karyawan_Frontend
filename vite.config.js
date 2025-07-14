@@ -50,11 +50,13 @@ export default defineConfig({
         list_attendance: resolve(__dirname, 'src/pages/Admin/list_attendance.html'),
         manage_departments: resolve(__dirname, 'src/pages/Admin/manage_departments.html'),
         manage_employees: resolve(__dirname, 'src/pages/Admin/manage_employees.html'),
+        manage_work_schedules: resolve(__dirname,'src/pages/Admin/manage_work_schedules.html'),
         // Karyawan
         employee_dashboard: resolve(__dirname, 'src/pages/Karyawan/employee_dashboard.html'),
         employee_profile: resolve(__dirname, 'src/pages/Karyawan/employee_profile.html'),
         request_leave: resolve(__dirname, 'src/pages/Karyawan/request_leave.html'),
         attendance_history: resolve(__dirname, 'src/pages/Karyawan/attendance_history.html'),
+        my_work_schedules: resolve(__dirname, 'src/pages/Karyawan/my_work_schedules.html')
       }
     }
   },
