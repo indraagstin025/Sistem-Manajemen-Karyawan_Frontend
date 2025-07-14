@@ -1,15 +1,6 @@
-// src/js/Services/LeaveRequestsServices.js
+import apiClient from './apiClient'; 
 
-import apiClient from './apiClient'; // Import apiClient yang sudah dibuat
-
-// Hapus API_BASE_URL dan getToken karena apiClient dan interceptor menanganinya
-// Hapus juga getUser jika tidak ada fungsi yang secara eksplisit membutuhkannya di sini
-// const API_BASE_URL = 'http://localhost:3000/api/v1';
-// const getToken = () => localStorage.getItem('token');
-// const getUser = () => { /* ... */ };
-
-
-export const LeaveRequestService = { // Tetap gunakan export const untuk konsistensi
+export const LeaveRequestService = { 
     /**
      * Mengambil semua pengajuan cuti/sakit. Hanya untuk admin.
      * @returns {Promise<Array>} Daftar pengajuan cuti/sakit.
@@ -83,6 +74,3 @@ export const LeaveRequestService = { // Tetap gunakan export const untuk konsist
     },
 };
 
-// Pertahankan export const untuk konsistensi
-// Jika `export default` diperlukan oleh kode Anda, pastikan sesuai.
-// export default LeaveRequestService;

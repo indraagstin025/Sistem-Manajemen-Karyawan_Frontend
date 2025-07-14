@@ -267,71 +267,71 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // --- Event Listener Submit Formulir Pengajuan Cuti/Izin ---
-    leaveRequestForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        formMessage.classList.add("hidden");
-        formMessage.textContent = '';
+let isSubmitting = false;
 
-        const formData = new FormData();
-        formData.append("request_type", requestTypeInput.value);
-        formData.append("start_date", startDateInput.value);
-        formData.append("end_date", endDateInput.value);
-        formData.append("reason", reasonInput.value);
+leaveRequestForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-        const file = attachmentInput.files[0];
-        if (file) {
-            // Validasi ukuran file
-            if (file.size > 2 * 1024 * 1024) { // 2MB
-                showToast("Ukuran file terlalu besar! Maksimal 2MB.", "error");
-                formMessage.textContent = "Ukuran file terlalu besar! Maksimal 2MB.";
-                formMessage.classList.remove("hidden");
-                formMessage.classList.add("error");
-                return;
-            }
-            formData.append("attachment", file); // Tambahkan file ke FormData
-        } else if (requestTypeInput.value === 'Sakit' && attachmentInput.hasAttribute('required')) {
-            showToast("Lampiran (surat dokter) wajib untuk pengajuan Sakit.", "error");
-            formMessage.textContent = "Lampiran (surat dokter) wajib untuk pengajuan Sakit.";
+    if (isSubmitting) return; // Cegah klik ganda
+    isSubmitting = true;
+
+    formMessage.classList.add("hidden");
+    formMessage.textContent = '';
+
+    const formData = new FormData();
+    formData.append("request_type", requestTypeInput.value);
+    formData.append("start_date", startDateInput.value);
+    formData.append("end_date", endDateInput.value);
+    formData.append("reason", reasonInput.value);
+
+    const file = attachmentInput.files[0];
+    if (file) {
+        if (file.size > 2 * 1024 * 1024) {
+            showToast("Ukuran file terlalu besar! Maksimal 2MB.", "error");
+            formMessage.textContent = "Ukuran file terlalu besar! Maksimal 2MB.";
             formMessage.classList.remove("hidden");
             formMessage.classList.add("error");
+            isSubmitting = false; // Jangan lupa reset jika gagal validasi!
             return;
         }
+        formData.append("attachment", file);
+    } else if (requestTypeInput.value === 'Sakit' && attachmentInput.hasAttribute('required')) {
+        showToast("Lampiran (surat dokter) wajib untuk pengajuan Sakit.", "error");
+        formMessage.textContent = "Lampiran (surat dokter) wajib untuk pengajuan Sakit.";
+        formMessage.classList.remove("hidden");
+        formMessage.classList.add("error");
+        isSubmitting = false;
+        return;
+    }
 
-        try {
-            // Token tidak perlu lagi di sini. Interceptor akan menanganinya
-            // const token = localStorage.getItem("token"); 
-            // if (!token) { showToast("Sesi tidak valid. Harap login kembali...", "error"); setTimeout(() => authService.logout(), 2000); return; }
+    try {
+        const response = await LeaveRequestService.createLeaveRequest(formData);
+        showToast(response.message || "Pengajuan berhasil dikirim!", "success");
 
-            // Panggil service untuk mengirim pengajuan (parameter token dihapus)
-            const response = await LeaveRequestService.createLeaveRequest(formData); 
-            
-            showToast(response.message || "Pengajuan berhasil dikirim!", "success");
-            formMessage.textContent = "Pengajuan berhasil dikirim dan menunggu persetujuan admin.";
-            formMessage.classList.remove("hidden");
-            formMessage.classList.remove("error");
-            formMessage.classList.add("success");
-            
-            leaveRequestForm.reset(); // Reset form setelah berhasil
-            attachmentSection.classList.add('hidden'); // Sembunyikan lagi lampiran
-            attachmentInput.removeAttribute('required');
+        formMessage.textContent = "Pengajuan berhasil dikirim dan menunggu persetujuan admin.";
+        formMessage.classList.remove("hidden", "error");
+        formMessage.classList.add("success");
 
-            // Muat ulang riwayat pengajuan setelah berhasil
-            loadLeaveHistory();
+        leaveRequestForm.reset();
+        attachmentSection.classList.add('hidden');
+        attachmentInput.removeAttribute('required');
+        loadLeaveHistory();
+    } catch (error) {
+        console.error("Error submitting leave request:", error);
+        const errorMessage = error.message || "Gagal mengirim pengajuan. Silakan coba lagi.";
+        showToast(errorMessage, "error");
+        formMessage.textContent = errorMessage;
+        formMessage.classList.remove("hidden", "success");
+        formMessage.classList.add("error");
 
-        } catch (error) {
-            console.error("Error submitting leave request:", error);
-            const errorMessage = error.message || "Gagal mengirim pengajuan. Silakan coba lagi.";
-            showToast(errorMessage, "error");
-            formMessage.textContent = errorMessage;
-            formMessage.classList.remove("hidden");
-            formMessage.classList.remove("success");
-            formMessage.classList.add("error");
-            // Perbarui kondisi error untuk redirect logout (gunakan error.status dari interceptor)
-            if (error.status === 401 || error.status === 403) {
-                setTimeout(() => authService.logout(), 2000);
-            }
+        if (error.status === 401 || error.status === 403) {
+            setTimeout(() => authService.logout(), 2000);
         }
-    });
+    } finally {
+        isSubmitting = false; // Pastikan status submit direset
+    }
+});
+
 
 
     // --- Change Password Modal Logic (disalin dari EmployeeDashboard.js) ---
