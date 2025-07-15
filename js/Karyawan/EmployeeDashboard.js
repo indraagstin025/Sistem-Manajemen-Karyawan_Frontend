@@ -394,21 +394,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      let cameraIdToUse = null;
+let cameraIdToUse = null;
 
-      // Coba cari berdasarkan nama kamera (label)
-      const rearByLabel = cameras.find((c) => /back|rear|environment/i.test(c.label));
+// Cari kamera belakang berdasarkan label (lebih andal)
+const rearByLabel = cameras.find(c =>
+    /back|rear|environment/i.test(c.label)
+);
 
-      if (rearByLabel) {
-        cameraIdToUse = rearByLabel.id;
-        console.log("Menggunakan kamera belakang berdasarkan label:", rearByLabel.label);
-      } else if (cameras.length > 1) {
-        cameraIdToUse = cameras[1].id; // Asumsi kamera ke-2 adalah belakang
-        console.warn("Menggunakan kamera kedua karena tidak dapat mendeteksi kamera belakang.");
-      } else {
-        cameraIdToUse = cameras[0].id;
-        console.warn("Hanya ada satu kamera. Menggunakan default:", cameras[0].label);
-      }
+if (rearByLabel) {
+    cameraIdToUse = rearByLabel.id;
+    console.log("Fullscreen: Kamera belakang berdasarkan label:", rearByLabel.label);
+} else if (cameras.length > 1) {
+    cameraIdToUse = cameras[1].id; // fallback ke kamera kedua
+    console.warn("Fullscreen: Gunakan kamera kedua karena tidak ada label belakang.");
+} else {
+    cameraIdToUse = cameras[0].id;
+    console.warn("Fullscreen: Hanya ada satu kamera.");
+}
+
 
       if (rearCamera) {
         cameraIdToUse = rearCamera.id;
@@ -426,22 +429,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
 
-      await html5QrCodeFullInstance.start(
-        { deviceId: { exact: cameraIdToUse } },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-        },
-        async (decodedText) => {
-          showToast("QR Code terdeteksi. Memproses absensi...", "info");
-          // Hentikan scanner segera setelah deteksi berhasil
-          await html5QrCodeFullInstance.stop();
-          // Sembunyikan modal setelah scan
-          fullscreenContainer.classList.add("hidden");
-          // Panggil fungsi utama absensi
-          await onScanSuccess(decodedText, null);
-        },
+html5QrCodeFull.start(
+    { deviceId: { exact: cameraIdToUse } },
+    {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+    },
+    async (decodedText) => {
+        await html5QrCodeFull.stop();
+        fullscreenContainer.classList.add('hidden');
+        showToast("QR Code terdeteksi. Memproses absensi...", "info");
+        onScanSuccess(decodedText, null);
+    },
         (err) => {
           // onScanFailure bisa diabaikan atau log jika perlu
           // console.warn("[Fullscreen Scanner] Scan gagal:", err);
