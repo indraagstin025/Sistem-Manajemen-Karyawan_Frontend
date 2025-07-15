@@ -30,6 +30,21 @@ const WorkScheduleServices = {
     },
 
     /**
+     * **Fungsi baru**: Mendapatkan detail satu aturan jadwal kerja berdasarkan ID.
+     * Digunakan oleh Admin untuk mengisi form edit.
+     * @param {string} scheduleId - ID dari aturan jadwal kerja yang ingin diambil.
+     */
+    getWorkScheduleById: async (scheduleId) => {
+        try {
+            // Memanggil endpoint backend yang baru ditambahkan: GET /api/v1/work-schedules/:id
+            const response = await apiClient.get(`/work-schedules/${scheduleId}`);
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    /**
      * Memperbarui aturan jadwal kerja (hanya Admin).
      */
     updateWorkSchedule: async (scheduleId, scheduleData) => {
@@ -54,14 +69,13 @@ const WorkScheduleServices = {
     },
 
     /**
-     * Fungsi baru untuk mendapatkan daftar hari libur dari backend.
+     * Fungsi untuk mendapatkan daftar hari libur dari backend.
      * @param {string} year - Tahun yang ingin dicari.
      */
     getHolidays: async (year) => {
         try {
             const response = await apiClient.get(`/holidays?year=${year}`);
-            // Backend sudah mengembalikan data dalam format { data: [...] } atau langsung array [...]
-            // Sesuaikan jika perlu, di sini kita asumsikan backend langsung mengembalikan array.
+            // Backend sudah mengembalikan data dalam format yang bisa langsung digunakan oleh FullCalendar.
             return response.data; 
         } catch (error) {
             throw error;

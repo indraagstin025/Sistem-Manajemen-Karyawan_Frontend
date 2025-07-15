@@ -1,191 +1,381 @@
+// js/Admin/ManageDepartments.js
+
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js"; // Import fungsi sidebar
+import { initializeLogout } from "../components/logoutHandler.js"; // Import fungsi logout
+import { QRCodeManager } from "../components/qrCodeHandler.js"; // Import QRCodeManager
+import Swal from 'sweetalert2'; // Import SweetAlert2
+import Toastify from 'toastify-js'; // Import Toastify jika masih digunakan oleh QRCodeManager
 
-document.addEventListener("DOMContentLoaded", () => {
-  // feather.replace(); // Pindahkan ini jika Anda memusatkannya di initializeSidebar()
-  initializeSidebar(); // Panggil fungsi sidebar yang sudah diimpor
-
-  const departmentTableBody = document.getElementById("departmentTableBody");
-  const loadingMessage = document.getElementById("loadingMessage");
-  const departmentListError = document.getElementById("departmentListError");
-  const departmentListSuccess = document.getElementById("departmentListSuccess");
-  const paginationInfo = document.getElementById("paginationInfo");
-  const prevPageBtn = document.getElementById("prevPageBtn");
-  const nextPageBtn = document.getElementById("nextPageBtn");
-  const searchInput = document.getElementById("searchInput");
-  const editDepartmentModal = document.getElementById("editDepartmentModal");
-  const closeEditDepartmentModalBtn = document.getElementById("closeEditDepartmentModalBtn");
-  const cancelEditDepartmentBtn = document.getElementById("cancelEditDepartmentBtn");
-  const editDepartmentForm = document.getElementById("editDepartmentForm");
-  const editDepartmentErrorMessage = document.getElementById("editDepartmentErrorMessage");
-  const editDepartmentSuccessMessage = document.getElementById("editDepartmentSuccessMessage");
-  const editDepartmentId = document.getElementById("editDepartmentId");
-  const editDepartmentName = document.getElementById("editDepartmentName");
-
-  let currentPage = 1;
-
-  const showGlobalMessage = (message, type = "success") => {
-    departmentListSuccess.classList.add("hidden");
-    departmentListError.classList.add("hidden");
-    if (type === "success") {
-      departmentListSuccess.textContent = message;
-      departmentListSuccess.classList.remove("hidden");
-    } else {
-      departmentListError.textContent = message;
-      departmentListError.classList.remove("hidden");
-    }
-    setTimeout(() => {
-      departmentListSuccess.classList.add("hidden");
-      departmentListError.classList.add("hidden");
-    }, 3000);
-  };
-
-  const showModalMessage = (message, type = "success") => {
-    editDepartmentErrorMessage.classList.add("hidden");
-    editDepartmentSuccessMessage.classList.add("hidden");
-    if (type === "success") {
-        editDepartmentSuccessMessage.textContent = message;
-        editDepartmentSuccessMessage.classList.remove("hidden");
-    } else {
-        editDepartmentErrorMessage.textContent = message;
-        editDepartmentErrorMessage.classList.remove("hidden");
-    }
-  };
-  
-  const token = localStorage.getItem("token");
-  if (!token) {
-    showGlobalMessage("Anda tidak terautentikasi. Silakan login ulang.", "error");
-    setTimeout(() => (window.location.href = "/src/pages/login.html"), 2000);
-    return;
-  }
-
-  const fetchDepartments = async () => {
-    departmentTableBody.innerHTML = "";
-    loadingMessage.classList.remove("hidden");
-    try {
-      const departments = await departmentService.getAllDepartments(token);
-      loadingMessage.classList.add("hidden");
-
-      if (departments && departments.length > 0) {
-        renderDepartments(departments);
-        paginationInfo.textContent = `Menampilkan ${departments.length} dari ${departments.length} departemen`;
-        prevPageBtn.disabled = true;
-        nextPageBtn.disabled = true;
-      } else {
-        departmentTableBody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">Tidak ada data departemen.</td></tr>';
-        paginationInfo.textContent = "Menampilkan 0 dari 0 departemen";
-        prevPageBtn.disabled = true;
-        nextPageBtn.disabled = true;
-      }
-    } catch (error) {
-      loadingMessage.classList.add("hidden");
-      let errorMessage = "Gagal memuat data departemen.";
-      if (error.status === 401 || error.status === 403) {
-        errorMessage = "Sesi Anda berakhir. Silakan login kembali.";
-        setTimeout(() => authService.logout(), 2000);
-      }
-      showGlobalMessage(errorMessage, "error");
-    }
-  };
-
-  const renderDepartments = (departments) => {
-    departmentTableBody.innerHTML = "";
-    departments.forEach((dept) => {
-      const row = document.createElement("tr");
-      row.className = "border-b border-gray-100";
-      const createdAt = new Date(dept.created_at).toLocaleDateString("id-ID", {
-        year: "numeric", month: "long", day: "numeric",
-      });
-      row.innerHTML = `
-        <td class="px-4 py-3">${dept.name}</td>
-        <td class="px-4 py-3">${createdAt}</td>
-        <td class="px-4 py-3">
-          <button class="edit-btn text-blue-600 hover:text-blue-800 mr-2" title="Edit" data-id="${dept.id}" data-name="${dept.name}">
-            <i data-feather="edit" class="w-5 h-5"></i>
-          </button>
-          <button class="delete-btn text-red-600 hover:text-red-800" title="Hapus" data-id="${dept.id}" data-name="${dept.name}">
-            <i data-feather="trash-2" class="w-5 h-5"></i>
-          </button>
-        </td>
-      `;
-      departmentTableBody.appendChild(row);
+document.addEventListener("DOMContentLoaded", async () => {
+    // Inisialisasi komponen global
+    feather.replace(); // Memastikan Feather Icons dirender di seluruh halaman
+    initializeSidebar(); // Menginisialisasi fungsionalitas sidebar mobile
+    initializeLogout({ // Menginisialisasi semua tombol logout
+        preLogoutCallback: () => {
+            // Callback opsional untuk menutup modal QR sebelum logout
+            if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {
+                QRCodeManager.close();
+            }
+        }
     });
-    feather.replace();
 
-    document.querySelectorAll(".edit-btn").forEach((button) => {
-      button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
+    // Menginisialisasi QRCodeManager jika tombol generate QR ada di halaman ini
+    QRCodeManager.initialize({
+        toastCallback: (message, type) => {
+            // Fungsi callback untuk menampilkan notifikasi dari QRCodeManager menggunakan Toastify
+            let backgroundColor;
+            if (type === "success") {
+                backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
+            } else if (type === "error") {
+                backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
+            } else { // info
+                backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
+            }
+        
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right", // Posisi notifikasi Toastify
+                style: { background: backgroundColor, borderRadius: "8px" },
+            }).showToast();
+        },
     });
-    document.querySelectorAll(".delete-btn").forEach((button) => {
-      button.addEventListener("click", (e) => handleDelete(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
-    });
-  };
 
-  const openEditModal = (departmentId, departmentName) => {
-    editDepartmentErrorMessage.classList.add("hidden");
-    editDepartmentSuccessMessage.classList.add("hidden");
-    editDepartmentId.value = departmentId;
-    editDepartmentName.value = departmentName;
-    editDepartmentModal.classList.remove("hidden");
-  };
+    // --- Seleksi Elemen DOM ---
+    const departmentTableBody = document.getElementById("departmentTableBody");
+    const loadingMessage = document.getElementById("loadingMessage");
+    const departmentListError = document.getElementById("departmentListError");
+    const departmentListSuccess = document.getElementById("departmentListSuccess");
+    const paginationInfo = document.getElementById("paginationInfo");
+    const prevPageBtn = document.getElementById("prevPageBtn");
+    const nextPageBtn = document.getElementById("nextPageBtn");
+    const searchInput = document.getElementById("searchInput");
 
-  const closeEditModal = () => {
-    editDepartmentModal.classList.add("hidden");
-    editDepartmentForm.reset();
-  };
+    // Elemen modal edit
+    const editDepartmentModal = document.getElementById("editDepartmentModal");
+    const closeEditDepartmentModalBtn = document.getElementById("closeEditDepartmentModalBtn");
+    const cancelEditDepartmentBtn = document.getElementById("cancelEditDepartmentBtn");
+    const editDepartmentForm = document.getElementById("editDepartmentForm");
+    const editDepartmentErrorMessage = document.getElementById("editDepartmentErrorMessage");
+    const editDepartmentSuccessMessage = document.getElementById("editDepartmentSuccessMessage");
 
-  const handleDelete = async (departmentId, departmentName) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus departemen "${departmentName}"?`)) {
-      return;
-    }
-    try {
-      await departmentService.deleteDepartment(departmentId, token);
-      showGlobalMessage(`Departemen "${departmentName}" berhasil dihapus!`, "success");
-      fetchDepartments();
-    } catch (error) {
-      showGlobalMessage(error.message || "Gagal menghapus departemen.", "error");
-    }
-  };
+    // Input form edit
+    const editDepartmentId = document.getElementById("editDepartmentId");
+    const editDepartmentName = document.getElementById("editDepartmentName");
 
-  if (closeEditDepartmentModalBtn) closeEditDepartmentModalBtn.addEventListener("click", closeEditModal);
-  if (cancelEditDepartmentBtn) cancelEditDepartmentBtn.addEventListener("click", closeEditModal);
-  if (editDepartmentModal) {
-    editDepartmentModal.addEventListener("click", (e) => {
-      if (e.target === editDepartmentModal) closeEditModal();
-    });
-  }
+    // Dropdown pengguna di header (untuk menampilkan foto profil) - ID yang sama dengan admin_dashboard
+    const userAvatarNav = document.getElementById("userAvatar");
+    const userDropdownContainer = document.getElementById("userDropdown"); 
+    const dropdownMenu = document.getElementById("dropdownMenu"); 
 
-  if (editDepartmentForm) {
-    editDepartmentForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const departmentId = editDepartmentId.value;
-      const updatedName = editDepartmentName.value.trim();
+    let currentPage = 1;
+    const itemsPerPage = 10; // Mendefinisikan item per halaman untuk paginasi sisi klien
+    let allDepartmentsData = []; // Untuk menyimpan semua data departemen yang diambil
+    let filteredDepartmentsData = []; // Untuk menyimpan data departemen yang sudah difilter/dicari
+    let currentSearchQuery = ""; // Menyimpan query pencarian saat ini
 
-      if (!updatedName) {
-        showModalMessage("Nama departemen tidak boleh kosong.", "error");
-        return;
-      }
-      try {
-        await departmentService.updateDepartment(departmentId, { name: updatedName }, token);
-        showModalMessage("Departemen berhasil diupdate!", "success");
+
+    // --- Fungsi Notifikasi (SweetAlert2 untuk pesan penting) ---
+    const showSweetAlert = (title, message, icon = "success", showConfirmButton = false, timer = 2000) => {
+        Swal.fire({
+            title: title,
+            html: message, 
+            icon: icon,
+            showConfirmButton: showConfirmButton,
+            timer: timer,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                if (timer > 0) {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            }
+        });
+    };
+
+    // Fungsi untuk memuat foto profil admin di header
+    const loadUserProfile = async () => {
+        try {
+            const user = await authService.getCurrentUser();
+            if (user && user.photo_url && userAvatarNav) {
+                userAvatarNav.src = user.photo_url;
+            } else if (userAvatarNav) {
+                // Menggunakan default avatar yang sudah ada di HTML
+                userAvatarNav.src = "/assets/default-avatar.png"; 
+            }
+        } catch (error) {
+            console.error("Gagal memuat profil pengguna:", error);
+            if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
+        }
+    };
+
+
+    const fetchDepartments = async () => {
+        departmentTableBody.innerHTML = "";
+        loadingMessage.classList.remove("hidden");
+        departmentListError.classList.add("hidden"); 
+        departmentListSuccess.classList.add("hidden"); 
+
+        try {
+            // Memanggil getAllDepartments tanpa token, asumsikan authService/interceptor mengelola
+            const departments = await departmentService.getAllDepartments(); 
+            loadingMessage.classList.add("hidden");
+
+            if (!Array.isArray(departments)) {
+                console.warn("Peringatan: API tidak mengembalikan array departemen. Menerima:", departments);
+                allDepartmentsData = []; // Pastikan ini adalah array
+            } else {
+                allDepartmentsData = departments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Urutkan
+            }
+            
+            applyFilterAndRender(); // Terapkan filter dan render
+
+        } catch (error) {
+            loadingMessage.classList.add("hidden");
+            let errorMessage = "Gagal memuat data departemen.";
+            if (error.status === 401 || error.status === 403) {
+                errorMessage = "Sesi Anda berakhir atau Anda tidak memiliki izin. Silakan login kembali.";
+                setTimeout(() => authService.logout(), 2000);
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            showSweetAlert('Error Data', errorMessage, 'error', true);
+        }
+    };
+
+    const applyFilterAndRender = () => {
+        // Filter berdasarkan pencarian
+        filteredDepartmentsData = allDepartmentsData.filter(dept => 
+            dept.name.toLowerCase().includes(currentSearchQuery.toLowerCase())
+        );
+
+        // Jika tidak ada hasil setelah filter
+        if (filteredDepartmentsData.length === 0) {
+            departmentTableBody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">Tidak ada data departemen yang ditemukan.</td></tr>';
+            paginationInfo.textContent = "Menampilkan 0 dari 0 departemen";
+            prevPageBtn.disabled = true;
+            nextPageBtn.disabled = true;
+        } else {
+            renderDepartments(filteredDepartmentsData);
+            updatePaginationControls(filteredDepartmentsData.length);
+        }
+    };
+
+
+    const renderDepartments = (departmentsToRender) => {
+        departmentTableBody.innerHTML = "";
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedDepartments = departmentsToRender.slice(startIndex, endIndex);
+
+        if (paginatedDepartments.length === 0 && currentPage > 1) {
+            // Jika halaman saat ini kosong setelah filter/hapus, kembali ke halaman sebelumnya
+            currentPage--;
+            applyFilterAndRender();
+            return;
+        }
+
+
+        paginatedDepartments.forEach((dept) => {
+            const row = document.createElement("tr");
+            row.className = "border-b border-gray-100 hover:bg-gray-50"; // Tambah hover effect
+            const createdAt = new Date(dept.created_at).toLocaleDateString("id-ID", {
+                year: "numeric", month: "long", day: "numeric",
+            });
+            row.innerHTML = `
+                <td class="px-4 py-3 text-sm font-medium text-gray-900">${dept.name}</td>
+                <td class="px-4 py-3 text-sm text-gray-700">${createdAt}</td>
+                <td class="px-4 py-3 text-sm flex items-center space-x-2">
+                    <button class="edit-btn text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 rounded-md hover:bg-blue-50" title="Edit" data-id="${dept.id}" data-name="${dept.name}">
+                        <i data-feather="edit" class="w-5 h-5"></i>
+                    </button>
+                    <button class="delete-btn text-red-600 hover:text-red-800 transition-colors duration-200 p-1 rounded-md hover:bg-red-50" title="Hapus" data-id="${dept.id}" data-name="${dept.name}">
+                        <i data-feather="trash-2" class="w-5 h-5"></i>
+                    </button>
+                </td>
+            `;
+            departmentTableBody.appendChild(row);
+        });
+        feather.replace(); // Memastikan ikon dirender setelah elemen baru ditambahkan
+
+        document.querySelectorAll(".edit-btn").forEach((button) => {
+            button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
+        });
+        document.querySelectorAll(".delete-btn").forEach((button) => {
+            button.addEventListener("click", (e) => handleDelete(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
+        });
+    };
+
+    const updatePaginationControls = (totalFilteredItems) => {
+        const totalPages = Math.ceil(totalFilteredItems / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage + 1;
+        const endIndex = Math.min(currentPage * itemsPerPage, totalFilteredItems);
+        
+        paginationInfo.textContent = `Menampilkan ${startIndex}-${endIndex} dari ${totalFilteredItems} departemen`;
+
+        prevPageBtn.disabled = currentPage === 1;
+        nextPageBtn.disabled = currentPage >= totalPages;
+    };
+
+
+    const openEditModal = (departmentId, departmentName) => {
+        editDepartmentErrorMessage.classList.add("hidden");
+        editDepartmentSuccessMessage.classList.add("hidden");
+        editDepartmentId.value = departmentId;
+        editDepartmentName.value = departmentName;
+        // Tampilkan modal dengan class "active" untuk transisi CSS
+        editDepartmentModal.classList.remove("hidden");
+        setTimeout(() => editDepartmentModal.classList.add("active"), 10); // Memberi waktu agar transisi bekerja
+    };
+
+    const closeEditModal = () => {
+        editDepartmentModal.classList.remove("active");
         setTimeout(() => {
-          closeEditModal();
-          fetchDepartments();
-        }, 1500);
-      } catch (error) {
-        showModalMessage(error.message || "Gagal mengupdate departemen.", "error");
-      }
-    });
-  }
+            editDepartmentModal.classList.add("hidden");
+            editDepartmentForm.reset();
+        }, 300); // Sesuaikan dengan durasi transisi CSS
+    };
 
-  // --- Logout Button Listener (Jika ada di ManageDepartments.js) ---
-  const logoutButton = document.getElementById("logoutButton");
-  if (logoutButton) {
-      logoutButton.addEventListener("click", (event) => {
-          event.preventDefault();
-          authService.logout();
-      });
-  }
+    // Event listeners untuk tombol tutup modal edit dan overlay
+    if (closeEditDepartmentModalBtn) closeEditDepartmentModalBtn.addEventListener("click", closeEditModal);
+    if (cancelEditDepartmentBtn) cancelEditDepartmentBtn.addEventListener("click", closeEditModal);
+    if (editDepartmentModal) {
+        editDepartmentModal.addEventListener("click", (event) => {
+            if (event.target === editDepartmentModal) { // Jika klik pada overlay
+                closeEditModal();
+            }
+        });
+    }
 
-  fetchDepartments();
+    const handleDelete = async (departmentId, departmentName) => {
+        Swal.fire({
+            title: `Hapus ${departmentName}?`,
+            text: "Tindakan ini tidak dapat dibatalkan! Departemen ini akan dihapus secara permanen.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Ya, hapus!",
+            cancelButtonText: "Batal"
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    // departmentService.deleteDepartment tidak lagi menerima token, asumsikan di interceptor
+                    await departmentService.deleteDepartment(departmentId); 
+                    
+                    Swal.fire({
+                        title: "Terhapus!",
+                        text: `Departemen "${departmentName}" berhasil dihapus.`,
+                        icon: "success",
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                    // Setelah penghapusan, muat ulang data departemen untuk update tabel
+                    fetchDepartments(); 
+                } catch (error) {
+                    console.error("Gagal menghapus departemen:", error);
+                    let errorMessage = "Terjadi kesalahan saat menghapus departemen. Silakan coba lagi.";
+                    if (error.status === 401 || error.status === 403) {
+                        errorMessage = "Anda tidak memiliki izin untuk menghapus departemen ini.";
+                        setTimeout(() => authService.logout(), 2000);
+                    } else if (error.message) {
+                        errorMessage = error.message;
+                    }
+
+                    Swal.fire({
+                        title: "Gagal",
+                        text: errorMessage,
+                        icon: "error",
+                        confirmButtonText: "OK"
+                    });
+                }
+            }
+        });
+    };
+
+    if (editDepartmentForm) {
+        editDepartmentForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            editDepartmentErrorMessage.classList.add("hidden");
+            editDepartmentSuccessMessage.classList.add("hidden");
+
+            const departmentId = editDepartmentId.value;
+            const updatedName = editDepartmentName.value.trim();
+
+            if (!updatedName) {
+                showSweetAlert("Validasi Gagal", "Nama departemen tidak boleh kosong.", "error");
+                return;
+            }
+            try {
+                // departmentService.updateDepartment tidak lagi menerima token, asumsikan di interceptor
+                await departmentService.updateDepartment(departmentId, { name: updatedName });
+                showSweetAlert("Berhasil!", "Departemen berhasil diupdate!", "success", false, 1500);
+                setTimeout(() => {
+                    closeEditModal();
+                    fetchDepartments(); // Muat ulang daftar departemen setelah update
+                }, 1500);
+            } catch (error) {
+                console.error("Gagal mengupdate departemen:", error);
+                let errorMessage = "Terjadi kesalahan saat mengupdate departemen. Silakan coba lagi.";
+                if (error.details) {
+                    if (Array.isArray(error.details)) {
+                        errorMessage = error.details.map((err) => `${err.Field || "Error"}: ${err.Msg}`).join("<br>");
+                    } else if (typeof error.details === "string") {
+                        errorMessage = error.details;
+                    }
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                showSweetAlert("Gagal Update", errorMessage, "error", true);
+                if (error.status === 401 || error.status === 403) {
+                    setTimeout(() => authService.logout(), 2000);
+                }
+            }
+        });
+    }
+
+    // Event listeners untuk paginasi
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                applyFilterAndRender(); // Render ulang dengan halaman baru
+            }
+        });
+    }
+
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener("click", () => {
+            const totalPages = Math.ceil(filteredDepartmentsData.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                applyFilterAndRender(); // Render ulang dengan halaman baru
+            }
+        });
+    }
+
+    // Event listener untuk search input
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener("input", () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearchQuery = searchInput.value;
+                currentPage = 1; // Reset halaman ke 1 saat pencarian baru
+                applyFilterAndRender(); // Terapkan filter dan render ulang
+            }, 500); // Debounce 500ms
+        });
+    }
+
+    // --- Inisialisasi Halaman ---
+    // Memuat foto profil pengguna di header
+    loadUserProfile();
+    // Memuat daftar departemen pertama kali
+    fetchDepartments();
 });

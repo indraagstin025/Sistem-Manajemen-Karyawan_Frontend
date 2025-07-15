@@ -8,32 +8,109 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode.js/qrcode.min.js"></script> 
     <link rel="stylesheet" href="/style/input.css"> 
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
         }
-        /* Custom styles for dropdown animation */
-        .group:hover .group-hover\:block {
+        /* Gaya untuk dropdown */
+        .dropdown-menu {
+            transition: all 0.2s ease-out;
+            opacity: 0;
+            transform: scale(0.95);
+            display: none; /* Sembunyikan secara default */
+        }
+        .dropdown-menu.active {
             display: block;
             opacity: 1;
             transform: scale(1);
         }
-        .group-hover\:block {
-            transition: all 0.2s ease-out;
-            opacity: 0;
-            transform: scale(0.95);
+
+        /* Gaya untuk Sidebar Mobile */
+        #mobileSidebar {
+            transition: opacity 0.3s ease-out;
         }
+        #mobileSidebarPanel {
+            transition: transform 0.3s ease-out;
+        }
+
+        /* Gaya untuk Modal (menggunakan active class untuk transisi) */
         .modal {
-            background-color: rgba(0, 0, 0, 0.5); /* Overlay */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
+        }
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease-out, visibility 0s linear 0s;
         }
         .modal-content {
-            animation: fadeInScale 0.3s ease-out;
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+            max-width: 600px; /* Batasi lebar modal */
+            width: 90%;
         }
-        @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+        .modal.active .modal-content {
+            transform: translateY(0);
+            opacity: 1;
         }
+
+        /* Gaya untuk Modal QR Code (diperlukan jika ManageDepartments.js mengimpor QRCodeManager) */
+        .qr-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Overlay gelap */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Pastikan di atas elemen lain */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, visibility 0s linear 0.3s; /* Transisi opacity, dan visibility setelah transisi selesai */
+        }
+        .qr-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease-out, visibility 0s linear 0s; /* Tampilkan segera */
+        }
+        .qr-modal-content {
+            background-color: white;
+            padding: 2.5rem; /* p-10 */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-2xl */
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+            max-width: 400px; /* Batasi lebar modal */
+            width: 90%;
+            text-align: center; /* Tengah konten modal */
+        }
+        .qr-modal-overlay.active .qr-modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Style tabel dan responsive */
         .table-auto {
             width: 100%;
             border-collapse: collapse;
@@ -57,12 +134,28 @@
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
+        /* Custom scrollbar untuk main content */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
 
     <div class="flex min-h-screen">
-        <aside class="flex flex-col w-64 bg-white shadow-xl border-r border-gray-200 py-6 fixed h-full z-30">
+        <aside class="hidden md:flex flex-col w-64 bg-white shadow-xl border-r border-gray-200 py-6">
             <div class="flex items-center justify-center h-16 mb-8">
                 <a href="/admin_dashboard.html" class="text-3xl font-extrabold text-teal-600">HR-System</a>
             </div>
@@ -82,17 +175,20 @@
                 <a href="/add_department.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
                     <i data-feather="plus-square" class="w-5 h-5 mr-3"></i><span>Tambah Departemen</span>
                 </a>
-                <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Absensi</span>
+                <button type="button" id="generate-qr-menu-btn" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+                    <i data-feather="qr-code" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
+                </button>
+                <a href="/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+                    <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Laporan Absensi</span>
+                </a>
+                <a href="/admin_leave_requests.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+                    <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Pengajuan Cuti & Izin</span>
+                </a>
+                <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+                    <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
                 </a>
                 <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
                     <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span>
-                </a>
-                <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Cuti & Izin</span>
-                </a>
-                <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="settings" class="w-5 h-5 mr-3"></i><span>Pengaturan</span>
                 </a>
                 <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
                     <a href="#" id="logoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
@@ -102,7 +198,7 @@
             </nav>
         </aside>
 
-        <div class="flex flex-col flex-grow ml-64">
+        <div class="flex flex-col flex-grow">
             <header class="h-16 bg-white shadow-md flex items-center justify-between px-6 border-b border-gray-200 z-10">
                 <div class="flex items-center">
                     <button class="md:hidden text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 mr-4" id="sidebarToggle">
@@ -118,18 +214,16 @@
                         <input type="text" id="searchInput" placeholder="Cari departemen..." class="py-2 pl-10 pr-4 block w-48 rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
                     </div>
                     
-                    <button class="text-gray-500 hover:text-teal-600 relative">
-                        <i data-feather="bell" class="w-6 h-6"></i>
-                        <span class="absolute top-0 right-0 -mt-1 -mr-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full ring-2 ring-white">3</span>
-                    </button>
-
-                    <div class="relative group">
-                        <img class="h-10 w-10 rounded-full object-cover cursor-pointer border-2 border-gray-200 group-hover:border-teal-500 transition-colors duration-200" src="https://placehold.co/40x40/E2E8F0/4A5568?text=AD" alt="User Avatar">
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 hidden group-hover:block z-20">
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil</a>
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Pengaturan</a>
+                    <div class="relative" id="userDropdown">
+                        <img
+                            id="userAvatar"
+                            class="h-10 w-10 rounded-full object-cover cursor-pointer border-2 border-gray-200 hover:border-teal-500 transition-colors duration-200"
+                            src="/assets/default-avatar.png" alt="User Avatar"
+                        />
+                        <div id="dropdownMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 dropdown-menu z-20">
+                            <a href="/admin_profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil</a>
                             <div class="border-t border-gray-100 my-1"></div>
-                            <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Keluar</a>
+                            <a href="#" id="dropdownLogoutButton" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Keluar</a>
                         </div>
                     </div>
                 </div>
@@ -137,9 +231,9 @@
 
             <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
                 <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-gray-900">Daftar Departemen</h2>
-                        <a href="/src/pages/Admin/add_department.html" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2 transition-all duration-200">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-900 mb-2 sm:mb-0">Daftar Departemen</h2>
+                        <a href="/add_department.html" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md flex items-center space-x-2 transition-all duration-200">
                             <i data-feather="plus" class="w-5 h-5"></i>
                             <span>Tambah Departemen</span>
                         </a>
@@ -165,7 +259,7 @@
                         </table>
                     </div>
 
-                    <div class="flex justify-between items-center mt-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mt-6 space-y-3 sm:space-y-0">
                         <span class="text-sm text-gray-600" id="paginationInfo">Menampilkan 0 dari 0 departemen</span>
                         <div class="flex space-x-2">
                             <button id="prevPageBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-300 transition-colors">Sebelumnya</button>
@@ -177,7 +271,6 @@
         </div>
     </div>
 
-    <!-- Edit Department Modal -->
     <div id="editDepartmentModal" class="modal fixed inset-0 z-50 items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-auto overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6">
@@ -210,50 +303,70 @@
         </div>
     </div>
 
-    <!-- Mobile Sidebar (tetap sama) -->
-    <div id="mobileSidebar" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden md:hidden opacity-0 transition-opacity duration-300 ease-out">
-        <div class="w-64 bg-white h-full shadow-xl flex flex-col transform -translate-x-full transition-transform duration-300 ease-out" id="mobileSidebarPanel">
-            <div class="flex items-center justify-between h-16 bg-teal-600 text-white px-4">
-                <a href="#" class="text-2xl font-bold">HR-System</a>
-                <button id="closeSidebar" class="text-white hover:text-gray-200 focus:outline-none">
-                    <i data-feather="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            <nav class="flex flex-col flex-grow p-4">
-                <a href="/admin_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
-                </a>
-                <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="users" class="w-5 h-5 mr-3"></i><span>Manajemen Karyawan</span>
-                </a>
-                <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="user-plus" class="w-5 h-5 mr-3"></i><span>Tambah Karyawan</span>
-                </a>
-                <a href="/manage_departments.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
-                    <i data-feather="grid" class="w-5 h-5 mr-3"></i><span>Manajemen Departemen</span>
-                </a>
-                <a href="/add_department.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="plus-square" class="w-5 h-5 mr-3"></i><span>Tambah Departemen</span>
-                </a>
-                <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Absensi</span>
-                </a>
-                <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span>
-                </a>
-                <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Cuti & Izin</span>
-                </a>
-                <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-                    <i data-feather="settings" class="w-5 h-5 mr-3"></i><span>Pengaturan</span>
-                </a>
-                <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
-                    <a href="#" id="logoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
-                        <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
-                    </a>
-                </div>
-            </nav>
+    <div id="qrCodeModal" class="qr-modal-overlay hidden">
+      <div class="qr-modal-content flex flex-col items-center">
+        <div class="flex justify-between items-center w-full mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">QR Code Absensi</h2>
+          <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+            <i data-feather="x" class="w-7 h-7"></i>
+          </button>
         </div>
+
+        <div id="modal-qr-code-display" class="w-full max-w-[256px] h-auto p-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4 min-h-[256px]">
+          <div id="qrcode-canvas-container"></div> 
+          <span id="modal-qr-placeholder" class="text-gray-500 text-center">Memuat QR Code...</span>
+        </div>
+        <p id="modal-qr-expires-at" class="text-sm text-gray-500 mt-0 mb-4"></p>
+
+        <div class="flex space-x-3 mt-2">
+          <button type="button" id="modal-generate-qr-btn" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors duration-200">Refresh QR Code</button>
+          <button type="button" id="modal-close-qr-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200">Tutup QR</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="mobileSidebar" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden opacity-0">
+      <div class="w-64 bg-white h-full shadow-xl flex flex-col transform -translate-x-full" id="mobileSidebarPanel">
+        <div class="flex items-center justify-between h-16 bg-teal-600 text-white px-4">
+          <a href="#" class="text-2xl font-bold">HR-System</a>
+          <button id="closeSidebar" class="text-white hover:text-gray-200 focus:outline-none">
+            <i data-feather="x" class="w-6 h-6"></i>
+          </button>
+        </div>
+        <nav class="flex flex-col flex-grow p-4">
+          <a href="/admin_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
+          </a>
+          <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="users" class="w-5 h-5 mr-3"></i><span>Manajemen Karyawan</span>
+          </a>
+          <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="user-plus" class="w-5 h-5 mr-3"></i><span>Tambah Karyawan</span>
+          </a>
+          <a href="/manage_departments.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
+            <i data-feather="grid" class="w-5 h-5 mr-3"></i><span>Manajemen Departemen</span>
+          </a>
+          <a href="/add_department.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="plus-square" class="w-5 h-5 mr-3"></i><span>Tambah Departemen</span>
+          </a>
+          <button type="button" id="generate-qr-menu-btn-mobile" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="qr-code" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
+          </button>
+          <a href="/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Laporan Absensi</span> </a>
+          <a href="/admin_leave_requests.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Pengajuan Cuti & Izin</span>
+          </a>
+          <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
+          </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span> </a>
+          <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
+            <a href="#" id="mobileLogoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl">
+              <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
+            </a>
+          </div>
+        </nav>
+      </div>
     </div>
     <script type="module" src="/js/Admin/ManageDepartments.js"></script> 
 </body>

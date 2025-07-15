@@ -8,17 +8,51 @@ import idLocale from "@fullcalendar/core/locales/id";
 
 // Impor service yang sudah kita sesuaikan
 import WorkScheduleServices from "../Services/WorkScheduleServices.js";
+import { authService } from "../Services/AuthServices.js"; // Diperlukan untuk loadUserProfile
 
-// Import fungsi initializeSidebar dari sidebarHandler.js
+// Import komponen modular untuk sidebar, logout, dan QR Code
 import { initializeSidebar } from "../components/sidebarHandler.js";
-// Import fungsi initializeLogout dari logoutHandler.js
 import { initializeLogout } from "../components/logoutHandler.js";
+import { QRCodeManager } from "../components/qrCodeHandler.js"; // Import QRCodeManager
+import Swal from 'sweetalert2'; // Import SweetAlert2
+import Toastify from 'toastify-js'; // Import Toastify jika masih ingin menggunakannya untuk notifikasi spesifik
 
-document.addEventListener("DOMContentLoaded", () => {
-    // --- Inisialisasi Sidebar dan Logout ---
-    initializeSidebar();
-    initializeLogout(); // Panggil fungsi untuk menginisialisasi semua tombol logout
-    feather.replace(); // Memastikan ikon dirender, bisa dipanggil di sini atau di sidebarHandler
+document.addEventListener("DOMContentLoaded", async () => { // Gunakan async karena ada await di loadUserProfile
+    // --- Inisialisasi Komponen Global ---
+    feather.replace(); // Memastikan ikon dirender di seluruh halaman
+    initializeSidebar(); // Menginisialisasi fungsionalitas sidebar mobile
+    initializeLogout({ // Menginisialisasi semua tombol logout
+        preLogoutCallback: () => {
+            // Callback opsional untuk menutup modal QR sebelum logout
+            if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {
+                QRCodeManager.close();
+            }
+        }
+    });
+
+    // Menginisialisasi QRCodeManager
+    QRCodeManager.initialize({
+        toastCallback: (message, type) => {
+            // Fungsi callback untuk menampilkan notifikasi dari QRCodeManager menggunakan Toastify
+            let backgroundColor;
+            if (type === "success") {
+                backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
+            } else if (type === "error") {
+                backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
+            } else { // info
+                backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
+            }
+        
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right", // Posisi notifikasi Toastify
+                style: { background: backgroundColor, borderRadius: "8px" },
+            }).showToast();
+        },
+    });
 
     // --- Pengambilan Elemen DOM ---
     const scheduleFormModal = document.getElementById("scheduleFormModal");
@@ -41,28 +75,46 @@ document.addEventListener("DOMContentLoaded", () => {
     const weekdayCheckboxes = document.querySelectorAll(".weekday-checkbox");
     const recurrenceUntilInput = document.getElementById("recurrence-until");
 
-    // Elemen untuk QR Code Modal (jika ada di halaman ini)
-    const generateQrMenuBtn = document.getElementById("generate-qr-menu-btn");
-    const generateQrMenuBtnMobile = document.getElementById("generate-qr-menu-btn-mobile");
-    const qrCodeModal = document.getElementById("qrCodeModal"); // Asumsikan modal QR ada
-    const closeModalBtn = document.getElementById("closeModalBtn"); // Tombol tutup modal QR
-    const modalGenerateQrBtn = document.getElementById("modal-generate-qr-btn"); // Tombol refresh QR
-    const modalCloseQrBtn = document.getElementById("modal-close-qr-btn"); // Tombol tutup QR di modal
-    const modalQrCodeImage = document.getElementById("modal-qr-code-image");
-    const modalQrPlaceholder = document.getElementById("modal-qr-placeholder");
-    const modalQrExpiresAt = document.getElementById("modal-qr-expires-at");
-
-    // Elemen untuk Dropdown Pengguna
-    const userDropdown = document.getElementById('userDropdown');
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    const userAvatar = document.getElementById('userAvatar');
-    // const dropdownLogoutButton = document.getElementById('dropdownLogoutButton'); // Tidak perlu lagi diambil di sini
-    // const logoutButton = document.getElementById('logoutButton'); // Tidak perlu lagi diambil di sini
-    // const logoutButtonMobile = document.getElementById('mobileLogoutButton'); // Tidak perlu lagi diambil di sini
+    // Elemen untuk Dropdown Pengguna di header
+    const userAvatarNav = document.getElementById('userAvatar'); // Pastikan ada ID ini
+    const userDropdownContainer = document.getElementById('userDropdown'); // Container utama dropdown
+    const dropdownMenu = document.getElementById('dropdownMenu'); // Elemen menu dropdown
 
     let calendar;
-    let currentEvent = null;
-    let qrCodeInterval; // Untuk menyimpan ID interval QR Code
+    // currentEvent tidak lagi dibutuhkan secara langsung karena kita akan fetch detail rule.
+
+    // --- Fungsi Notifikasi (SweetAlert2 untuk pesan penting) ---
+    const showSweetAlert = (title, message, icon = "success", showConfirmButton = false, timer = 2000) => {
+        Swal.fire({
+            title: title,
+            html: message, 
+            icon: icon,
+            showConfirmButton: showConfirmButton,
+            timer: timer,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                if (timer > 0) {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            }
+        });
+    };
+
+    // Fungsi untuk memuat foto profil admin di header
+    const loadUserProfile = async () => {
+        try {
+            const user = await authService.getCurrentUser();
+            if (user && user.photo_url && userAvatarNav) {
+                userAvatarNav.src = user.photo_url;
+            } else if (userAvatarNav) {
+                userAvatarNav.src = "/assets/default-avatar.png"; 
+            }
+        } catch (error) {
+            console.error("Gagal memuat profil pengguna:", error);
+            if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
+        }
+    };
 
     // --- Logika untuk Opsi Perulangan ---
     recurrenceFreqInput.addEventListener("change", () => {
@@ -70,6 +122,8 @@ document.addEventListener("DOMContentLoaded", () => {
             weeklyOptionsDiv.classList.remove("hidden");
         } else {
             weeklyOptionsDiv.classList.add("hidden");
+            // Uncheck semua checkbox hari saat beralih dari WEEKLY
+            weekdayCheckboxes.forEach(cb => cb.checked = false);
         }
     });
 
@@ -83,8 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 .filter(cb => cb.checked)
                 .map(cb => cb.value);
             if (selectedDays.length === 0) {
-                alert("Pilih minimal satu hari untuk jadwal mingguan.");
-                return "";
+                showSweetAlert("Validasi Gagal", "Pilih minimal satu hari untuk jadwal mingguan.", "warning");
+                return ""; // Mengembalikan string kosong untuk menghentikan proses
             }
             rule += `;BYDAY=${selectedDays.join(",")}`;
         }
@@ -96,10 +150,12 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     
     // --- Fungsi Modal Jadwal Kerja ---
-    const openScheduleModal = (mode = "create", event = null) => {
+    const openScheduleModal = (mode = "create", scheduleRule = null) => { // Mengubah event menjadi scheduleRule untuk kejelasan
         scheduleFormModal.classList.remove("hidden");
-        scheduleFormModal.classList.add("active");
-        deleteScheduleBtn.classList.add("hidden");
+        // Memberi sedikit waktu agar transisi CSS bekerja dengan baik
+        setTimeout(() => scheduleFormModal.classList.add("active"), 10); 
+        
+        deleteScheduleBtn.classList.add("hidden"); // Sembunyikan tombol delete secara default
 
         if (mode === "create") {
             formModalTitle.textContent = "Tambah Jadwal Kerja";
@@ -109,110 +165,57 @@ document.addEventListener("DOMContentLoaded", () => {
             scheduleDateInput.value = new Date().toISOString().split('T')[0]; // Set default date to today
             startTimeInput.value = "09:00";
             endTimeInput.value = "17:00";
-            // Uncheck all weekday checkboxes for new schedule
             weekdayCheckboxes.forEach(cb => cb.checked = false);
             recurrenceFreqInput.value = "NONE";
             recurrenceUntilInput.value = "";
-        } else if (mode === "edit" && event) {
-            formModalTitle.textContent = "Edit Jadwal Kerja";
-            scheduleIdInput.value = event.id;
-            scheduleDateInput.value = event.startStr ? event.startStr.split('T')[0] : '';
-            startTimeInput.value = event.startStr ? event.startStr.split('T')[1].substring(0, 5) : '';
-            endTimeInput.value = event.endStr ? event.endStr.split('T')[1].substring(0, 5) : '';
-            noteInput.value = event.extendedProps.note || '';
+        } else if (mode === "edit" && scheduleRule) {
+            formModalTitle.textContent = "Edit Aturan Jadwal Kerja";
+            scheduleIdInput.value = scheduleRule.id;
+            scheduleDateInput.value = scheduleRule.date;
+            startTimeInput.value = scheduleRule.start_time.substring(0, 5);
+            endTimeInput.value = scheduleRule.end_time.substring(0, 5);
+            noteInput.value = scheduleRule.note || '';
 
-            // Handle recurrence for editing (assuming we only edit single occurrences for now)
-            recurrenceFreqInput.value = "NONE";
-            weeklyOptionsDiv.classList.add("hidden");
-            weekdayCheckboxes.forEach(cb => cb.checked = false);
-            recurrenceUntilInput.value = "";
+            // Isi ulang bagian perulangan berdasarkan recurrence_rule
+            const ruleParts = scheduleRule.recurrence_rule ? scheduleRule.recurrence_rule.split(';') : [];
+            let freq = 'NONE';
+            let byDay = [];
+            let until = '';
 
-            currentEvent = event;
-            deleteScheduleBtn.classList.remove("hidden");
+            ruleParts.forEach(part => {
+                if (part.startsWith('FREQ=')) {
+                    freq = part.replace('FREQ=', '');
+                } else if (part.startsWith('BYDAY=')) {
+                    byDay = part.replace('BYDAY=', '').split(',');
+                } else if (part.startsWith('UNTIL=')) {
+                    until = part.replace('UNTIL=', '').substring(0, 8); // YYYYMMDD
+                }
+            });
+
+            recurrenceFreqInput.value = freq;
+            if (freq === 'WEEKLY') {
+                weeklyOptionsDiv.classList.remove('hidden');
+                weekdayCheckboxes.forEach(cb => {
+                    cb.checked = byDay.includes(cb.value);
+                });
+            } else {
+                weeklyOptionsDiv.classList.add('hidden');
+                weekdayCheckboxes.forEach(cb => cb.checked = false);
+            }
+            recurrenceUntilInput.value = until ? `${until.substring(0,4)}-${until.substring(4,6)}-${until.substring(6,8)}` : '';
+
+            deleteScheduleBtn.classList.remove("hidden"); // Tampilkan tombol delete untuk mode edit
         }
     };
     
     const closeScheduleModal = () => {
         scheduleFormModal.classList.remove("active");
-        // Beri sedikit waktu untuk transisi sebelum menyembunyikan sepenuhnya
         setTimeout(() => {
             scheduleFormModal.classList.add("hidden");
             workScheduleForm.reset();
-            currentEvent = null;
+            // currentEvent = null; // Tidak perlu reset currentEvent jika tidak lagi di-cache
         }, 300); // Sesuaikan dengan durasi transisi CSS
     };
-
-    // --- Fungsi Modal QR Code (Disalin dari Dashboard.js) ---
-    const qrCodeModalOverlay = document.getElementById("qrCodeModal");
-    const qrCodeImage = document.getElementById("modal-qr-code-image");
-    const qrPlaceholder = document.getElementById("modal-qr-placeholder");
-    const qrExpiresAt = document.getElementById("modal-qr-expires-at");
-
-    const openQrModal = () => {
-        qrCodeModalOverlay.classList.remove("hidden");
-        qrCodeModalOverlay.classList.add("active");
-        generateQrCode(); // Panggil fungsi untuk generate QR saat modal dibuka
-    };
-
-    const closeQrModal = () => {
-        qrCodeModalOverlay.classList.remove("active");
-        clearInterval(qrCodeInterval); // Hentikan interval saat modal ditutup
-        setTimeout(() => {
-            qrCodeModalOverlay.classList.add("hidden");
-            qrCodeImage.src = ""; // Bersihkan gambar
-            qrCodeImage.classList.add("hidden", "opacity-0", "scale-95");
-            qrPlaceholder.classList.remove("hidden");
-            qrExpiresAt.textContent = "";
-        }, 300);
-    };
-
-    const generateQrCode = async () => {
-        qrCodeImage.classList.add("hidden", "opacity-0", "scale-95");
-        qrPlaceholder.classList.remove("hidden");
-        qrExpiresAt.textContent = "Memuat QR Code...";
-        clearInterval(qrCodeInterval); // Hentikan interval sebelumnya jika ada
-
-        try {
-            // Asumsi ada layanan AttendanceServices atau serupa untuk QR Code
-            // Misalnya: const response = await AttendanceServices.generateQrCode();
-            // Untuk demonstrasi, kita gunakan placeholder dan timer
-            const dummyQrData = "https://example.com/attendance/scan?token=ABCD123";
-            const dummyExpiryTime = new Date(Date.now() + 60 * 1000); // Expire in 1 minute
-
-            qrCodeImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(dummyQrData)}`;
-            
-            qrCodeImage.onload = () => {
-                qrPlaceholder.classList.add("hidden");
-                qrCodeImage.classList.remove("hidden", "opacity-0", "scale-95");
-                qrCodeImage.classList.add("opacity-100", "scale-100");
-            };
-
-            // Update expiry time every second
-            qrCodeInterval = setInterval(() => {
-                const now = new Date();
-                const timeLeft = dummyExpiryTime.getTime() - now.getTime();
-
-                if (timeLeft <= 0) {
-                    qrExpiresAt.textContent = "QR Code telah kedaluwarsa. Silakan refresh.";
-                    clearInterval(qrCodeInterval);
-                    // Mungkin juga sembunyikan gambar QR atau tampilkan pesan "kedaluwarsa" di QR nya
-                    qrCodeImage.classList.add("hidden", "opacity-0", "scale-95");
-                    qrPlaceholder.classList.remove("hidden");
-                    return;
-                }
-
-                const minutes = Math.floor(timeLeft / (1000 * 60));
-                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                qrExpiresAt.textContent = `Kedaluwarsa dalam: ${minutes}m ${seconds}s`;
-            }, 1000);
-
-        } catch (error) {
-            console.error("Error generating QR code:", error);
-            qrPlaceholder.textContent = "Gagal memuat QR Code.";
-            qrExpiresAt.textContent = "Coba lagi nanti.";
-        }
-    };
-
 
     // --- Inisialisasi Kalender dengan eventSources ---
     const calendarEl = document.getElementById("calendar");
@@ -238,28 +241,34 @@ document.addEventListener("DOMContentLoaded", () => {
                             end_date: info.endStr.split("T")[0],
                         };
                         const response = await WorkScheduleServices.getAllWorkSchedules(filters);
-                        // Backend sudah memberikan jadwal yang bersih (tanpa hari libur)
+                        
                         return (response.data || []).map(s => ({
-                            id: s.id,
+                            id: s.id, // Ini adalah ID dari aturan jadwal
                             title: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}`, // Format HH:mm
                             start: s.date, // Tanggal saja karena time sudah di title
                             extendedProps: { 
                                 start_time: s.start_time,
                                 end_time: s.end_time,
                                 note: s.note,
-                                recurrence_rule: s.recurrence_rule, // Simpan aturan perulangan
+                                recurrence_rule: s.recurrence_rule, 
                             },
-                            allDay: true, // Karena hanya menampilkan tanggal di grid bulan/minggu
+                            allDay: true, // Untuk tampil di dayGridMonth/Week
                             color: '#38b2ac', // Warna jadwal kerja
                             textColor: 'white',
-                            display: 'block', // Default display
+                            display: 'block', 
                         }));
                     } catch (error) {
                         console.error("Error fetching work schedules:", error);
+                        // Tampilkan SweetAlert untuk error fetching schedules
+                        showSweetAlert('Error Fetching Schedules', `Gagal memuat jadwal kerja: ${error.message || "Terjadi kesalahan."}`, 'error', true);
+                        if (error.status === 401 || error.status === 403) {
+                            // Cek jika error autentikasi, langsung logout
+                            setTimeout(() => authService.logout(), 2000);
+                        }
                         return [];
                     }
                 },
-                color: '#38b2ac', // Warna jadwal kerja
+                color: '#38b2ac', // Warna jadwal kerja default
                 textColor: 'white',
             },
 
@@ -270,14 +279,16 @@ document.addEventListener("DOMContentLoaded", () => {
                         const year = info.start.getFullYear();
                         const holidays = await WorkScheduleServices.getHolidays(year);
                         return (holidays || []).map(holiday => ({
-                            title: holiday.Name, // Sesuaikan dengan field dari backend
-                            start: holiday.Date, // Sesuaikan dengan field dari backend
+                            title: holiday.Name, 
+                            start: holiday.Date, 
                             allDay: true,
-                            display: 'background',
+                            display: 'background', // Tampilkan sebagai background event
                             color: '#ff9f89', // Warna untuk hari libur (background)
                         }));
                     } catch (error) {
                         console.error("Error fetching holidays:", error);
+                        // Tampilkan SweetAlert untuk error fetching holidays
+                        showSweetAlert('Error Fetching Holidays', `Gagal memuat hari libur: ${error.message || "Terjadi kesalahan."}`, 'error', true);
                         return [];
                     }
                 }
@@ -285,52 +296,38 @@ document.addEventListener("DOMContentLoaded", () => {
         ],
 
         select: (info) => {
+            // Ketika user memilih rentang tanggal di kalender
             openScheduleModal("create");
             scheduleDateInput.value = info.startStr.split("T")[0]; // Ambil hanya tanggal
-            calendar.unselect();
+            calendar.unselect(); // Batalkan seleksi di kalender
         },
         eventClick: async (info) => {
-            // Ketika event diklik, kita akan membuka modal untuk edit
-            // Karena FullCalendar hanya memberikan event occurrence, kita harus fetch detail aturan dari backend
+            // Ketika event jadwal kerja diklik
+            // Ambil ID aturan dari event FullCalendar
+            const scheduleRuleId = info.event.id;
+
+            if (info.event.display === 'background') { // Jangan buka modal untuk hari libur (background events)
+                showSweetAlert('Info Hari Libur', `Hari libur: ${info.event.title}`, 'info');
+                return;
+            }
+
             try {
-                // Asumsi info.event.id adalah ID dari aturan jadwal kerja yang sebenarnya
-                const scheduleRuleId = info.event.id;
+                // Panggil service untuk mendapatkan detail aturan jadwal dari backend
                 const response = await WorkScheduleServices.getWorkScheduleById(scheduleRuleId);
                 const scheduleRule = response.data; // Ini harus detail aturan dari backend
 
                 if (scheduleRule) {
-                    formModalTitle.textContent = "Edit Aturan Jadwal Kerja";
-                    scheduleIdInput.value = scheduleRule.id;
-                    scheduleDateInput.value = scheduleRule.date;
-                    startTimeInput.value = scheduleRule.start_time.substring(0, 5);
-                    endTimeInput.value = scheduleRule.end_time.substring(0, 5);
-                    noteInput.value = scheduleRule.note || '';
-
-                    // Isi ulang bagian perulangan
-                    recurrenceFreqInput.value = scheduleRule.recurrence_rule.split(';')[0].replace('FREQ=', '') || 'NONE';
-                    if (recurrenceFreqInput.value === 'WEEKLY') {
-                        weeklyOptionsDiv.classList.remove('hidden');
-                        const byDayMatch = scheduleRule.recurrence_rule.match(/BYDAY=([A-Z,]+)/);
-                        const selectedDays = byDayMatch ? byDayMatch[1].split(',') : [];
-                        weekdayCheckboxes.forEach(cb => {
-                            cb.checked = selectedDays.includes(cb.value);
-                        });
-                    } else {
-                        weeklyOptionsDiv.classList.add('hidden');
-                        weekdayCheckboxes.forEach(cb => cb.checked = false);
-                    }
-                    const untilMatch = scheduleRule.recurrence_rule.match(/UNTIL=(\d{8})/);
-                    recurrenceUntilInput.value = untilMatch ? `${untilMatch[1].substring(0,4)}-${untilMatch[1].substring(4,6)}-${untilMatch[1].substring(6,8)}` : '';
-
-                    deleteScheduleBtn.classList.remove("hidden"); // Tampilkan tombol delete
-                    openScheduleModal("edit", scheduleRule); // Pass the rule data
+                    openScheduleModal("edit", scheduleRule); // Buka modal dengan mode edit dan data aturan
                 } else {
-                    alert("Detail jadwal tidak ditemukan.");
+                    showSweetAlert("Data Tidak Ditemukan", "Detail jadwal tidak ditemukan.", "error");
                 }
 
             } catch (error) {
                 console.error("Error fetching schedule for edit:", error);
-                alert("Gagal memuat detail jadwal untuk diedit. " + (error.response?.data?.error || error.message));
+                showSweetAlert("Gagal Memuat Jadwal", `Gagal memuat detail jadwal untuk diedit: ${error.message || "Terjadi kesalahan."}`, "error", true);
+                if (error.status === 401 || error.status === 403) {
+                    setTimeout(() => authService.logout(), 2000);
+                }
             }
         },
     });
@@ -343,8 +340,11 @@ document.addEventListener("DOMContentLoaded", () => {
     cancelScheduleBtn.addEventListener("click", closeScheduleModal);
 
     // Event Listener untuk tombol Generate QR Code (Desktop & Mobile)
+    const generateQrMenuBtn = document.getElementById("generate-qr-menu-btn");
+    const generateQrMenuBtnMobile = document.getElementById("generate-qr-menu-btn-mobile");
+
     if (generateQrMenuBtn) {
-        generateQrMenuBtn.addEventListener("click", openQrModal);
+        generateQrMenuBtn.addEventListener("click", () => QRCodeManager.open());
     }
     if (generateQrMenuBtnMobile) {
         generateQrMenuBtnMobile.addEventListener("click", () => {
@@ -358,95 +358,114 @@ document.addEventListener("DOMContentLoaded", () => {
                     mobileSidebar.classList.add("hidden");
                 }, 300);
             }
-            openQrModal();
+            QRCodeManager.open();
         });
     }
 
-    // Event Listener untuk tombol di QR Code Modal
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener("click", closeQrModal);
-    }
-    if (modalGenerateQrBtn) {
-        modalGenerateQrBtn.addEventListener("click", generateQrCode);
-    }
-    if (modalCloseQrBtn) { // Jika ada tombol close terpisah di dalam modal QR
-        modalCloseQrBtn.addEventListener("click", closeQrModal);
-    }
+    // Event Listener untuk tombol di QR Code Modal (dikelola oleh QRCodeManager)
+    // ID tombol closeModalBtn, modalGenerateQrBtn, modalCloseQrBtn otomatis dikelola oleh QRCodeManager
+    // kita hanya perlu memastikan ID tersebut ada di HTML
 
-    // Event Listener untuk Dropdown Pengguna
-    if (userAvatar) {
-        userAvatar.addEventListener('click', () => {
-            dropdownMenu.classList.toggle('active');
+    // Event Listener untuk Dropdown Pengguna di Header
+    if (userDropdownContainer) {
+        userDropdownContainer.addEventListener("click", (event) => {
+            // Hentikan propagasi event untuk mencegah document.click menutupnya
+            event.stopPropagation(); 
+            dropdownMenu.classList.toggle("active");
         });
 
-        // Tutup dropdown saat klik di luar
-        document.addEventListener('click', (event) => {
-            if (!userDropdown.contains(event.target) && !dropdownMenu.contains(event.target)) {
-                dropdownMenu.classList.remove('active');
+        // Tutup dropdown saat klik di luar area dropdown
+        document.addEventListener("click", (event) => {
+            if (!userDropdownContainer.contains(event.target)) {
+                dropdownMenu.classList.remove("active");
             }
         });
     }
 
-    // Tidak perlu lagi handleLogout di sini karena sudah ditangani oleh initializeLogout
-    // dan tombol-tombol logout sudah diproses oleh querySelectorAll di logoutHandler.js
-
+    // --- Submit Form Jadwal Kerja ---
     workScheduleForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         saveScheduleBtn.disabled = true;
 
         const scheduleId = scheduleIdInput.value;
-        const recurrenceRule = generateRecurrenceRule(); // Pastikan ini dipanggil sebelum payload
-
-        // Validasi minimal 1 hari dipilih untuk mingguan
-        if (recurrenceFreqInput.value === "WEEKLY" && generateRecurrenceRule() === "") {
-             alert("Pilih minimal satu hari untuk jadwal mingguan.");
+        const recurrenceRule = generateRecurrenceRule(); 
+        
+        // Penting: Pastikan generateRecurrenceRule tidak mengembalikan string kosong jika WEEKLY dan tidak ada hari dipilih
+        // generateRecurrenceRule sudah menampilkan SweetAlert, jadi kita hanya perlu cek hasilnya
+        if (recurrenceFreqInput.value === "WEEKLY" && !recurrenceRule) {
              saveScheduleBtn.disabled = false;
-             return;
+             return; 
         }
+
 
         const payload = {
             date: scheduleDateInput.value,
             start_time: startTimeInput.value,
             end_time: endTimeInput.value,
             note: noteInput.value,
-            recurrence_rule: recurrenceRule, // Sertakan aturan perulangan di payload
+            recurrence_rule: recurrenceRule, 
         };
 
         try {
             if (scheduleId) {
-                // Jika ada scheduleId, ini adalah update
+                // Update jadwal
                 await WorkScheduleServices.updateWorkSchedule(scheduleId, payload);
-                alert("Aturan jadwal kerja berhasil diperbarui!");
+                showSweetAlert("Berhasil!", "Aturan jadwal kerja berhasil diperbarui!", "success", false, 1500);
             } else {
-                // Jika tidak ada scheduleId, ini adalah pembuatan baru
+                // Buat jadwal baru
                 await WorkScheduleServices.createWorkSchedule(payload);
-                alert("Aturan jadwal kerja berhasil disimpan!");
+                showSweetAlert("Berhasil!", "Aturan jadwal kerja berhasil disimpan!", "success", false, 1500);
             }
             closeScheduleModal();
-            calendar.refetchEvents(); // Muat ulang semua event
+            calendar.refetchEvents(); // Muat ulang semua event di kalender
         } catch (error) {
             console.error("Error saving/updating work schedule:", error);
-            alert("Gagal menyimpan/memperbarui jadwal kerja. " + (error.response?.data?.error || error.message));
+            const errorMessage = error.response?.data?.error || error.message || "Terjadi kesalahan saat menyimpan/memperbarui jadwal.";
+            showSweetAlert("Gagal!", errorMessage, "error", true);
+            if (error.status === 401 || error.status === 403) {
+                setTimeout(() => authService.logout(), 2000);
+            }
         } finally {
             saveScheduleBtn.disabled = false;
         }
     });
 
+    // --- Delete Jadwal Kerja ---
     deleteScheduleBtn.addEventListener("click", async () => {
         const scheduleId = scheduleIdInput.value;
-        if (scheduleId && confirm("Anda yakin ingin menghapus aturan jadwal ini? Penghapusan akan berlaku untuk semua kejadian di masa mendatang.")) {
-            deleteScheduleBtn.disabled = true;
-            try {
-                await WorkScheduleServices.deleteWorkSchedule(scheduleId);
-                alert("Aturan jadwal kerja berhasil dihapus!");
-                closeScheduleModal();
-                calendar.refetchEvents();
-            } catch (error) {
-                console.error("Error deleting work schedule:", error);
-                alert("Gagal menghapus jadwal kerja. " + (error.response?.data?.error || error.message));
-            } finally {
-                deleteScheduleBtn.disabled = false;
+        if (!scheduleId) return; // Pastikan ada ID
+
+        Swal.fire({
+            title: "Anda yakin ingin menghapus?",
+            text: "Aturan jadwal ini akan dihapus secara permanen, termasuk semua kejadian di masa mendatang.",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Ya, Hapus!",
+            cancelButtonText: "Batal"
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                deleteScheduleBtn.disabled = true;
+                try {
+                    await WorkScheduleServices.deleteWorkSchedule(scheduleId);
+                    showSweetAlert("Terhapus!", "Aturan jadwal kerja berhasil dihapus!", "success", false, 1500);
+                    closeScheduleModal();
+                    calendar.refetchEvents(); // Muat ulang event di kalender
+                } catch (error) {
+                    console.error("Error deleting work schedule:", error);
+                    const errorMessage = error.response?.data?.error || error.message || "Terjadi kesalahan saat menghapus jadwal.";
+                    showSweetAlert("Gagal!", errorMessage, "error", true);
+                    if (error.status === 401 || error.status === 403) {
+                        setTimeout(() => authService.logout(), 2000);
+                    }
+                } finally {
+                    deleteScheduleBtn.disabled = false;
+                }
             }
-        }
+        });
     });
+
+    // --- Inisialisasi Halaman ---
+    loadUserProfile(); // Muat foto profil pengguna di header
 });
