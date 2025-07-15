@@ -31,20 +31,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     const userDropdownContainer = document.getElementById("userDropdown");
 
     // QR Scanner elements
-    const qrScannerContainer = document.getElementById('reader');
-    const qrScanResult = document.getElementById('qr-scan-result');
-    const cameraSelect = document.getElementById('camera-select'); // Akan disembunyikan
+    const qrScanResult = document.getElementById('qr-scan-result'); // ✅ Ini yang ditambahkan ke HTML
 
-    let html5QrCodeInstance = null;
-    let isProcessingScan = false;
-    let isScannerInitialized = false;
-    let isScannerActivelyScanning = false;
-
+    // Elemen untuk detail absensi hari ini
     const currentDateSpan = document.getElementById('current-date');
     const checkInTimeSpan = document.getElementById('check-in-time');
     const attendanceStatusSpan = document.getElementById('attendance-status');
     const attendanceNoteDisplay = document.getElementById('attendance-note-display');
     const attendanceNoteSpan = document.getElementById('attendance-note');
+
+    let html5QrCodeInstance = null; // Instance untuk scanner utama (jika ada, saat ini tidak digunakan)
+    let html5QrCodeFullInstance = null; // Instance khusus untuk fullscreen scanner
+    let isProcessingScan = false;
+    let isScannerActivelyScanning = false;
 
 
     // --- Fungsi Utilitas ---
@@ -59,8 +58,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             timer: timer,
             timerProgressBar: true,
             didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer)
-                toast.addEventListener('mouseleave', Swal.resumeTimer)
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
             }
         });
     }
@@ -100,62 +99,66 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function updateAttendanceStatusUI(attendance) {
         const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-        currentDateSpan.textContent = today;
-        attendanceStatusSpan.className = '';
-        todayAttendanceStatusSummary.className = 'text-lg font-bold';
+        if (currentDateSpan) currentDateSpan.textContent = today;
+        if (attendanceStatusSpan) attendanceStatusSpan.className = '';
+        if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.className = 'text-lg font-bold';
 
         if (attendance) {
             const displayStatus = attendance.status;
-            todayAttendanceStatusSummary.textContent = displayStatus;
+            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.textContent = displayStatus;
 
             if (displayStatus === 'Tepat Waktu') {
-                todayAttendanceStatusSummary.classList.add('text-green-600');
-                attendanceStatusSpan.classList.add('text-green-600', 'font-semibold');
+                if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add('text-green-600');
+                if (attendanceStatusSpan) attendanceStatusSpan.classList.add('text-green-600', 'font-semibold');
             } else if (displayStatus === 'Terlambat') {
-                todayAttendanceStatusSummary.classList.add('text-orange-500');
-                attendanceStatusSpan.classList.add('text-orange-500', 'font-semibold');
+                if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add('text-orange-500');
+                if (attendanceStatusSpan) attendanceStatusSpan.classList.add('text-orange-500', 'font-semibold');
             } else if (['Sakit', 'Cuti', 'Izin'].includes(displayStatus)) {
-                todayAttendanceStatusSummary.classList.add('text-blue-600');
-                attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold');
-                checkInTimeSpan.textContent = '-';
+                if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add('text-blue-600');
+                if (attendanceStatusSpan) attendanceStatusSpan.classList.add('text-blue-600', 'font-semibold');
+                if (checkInTimeSpan) checkInTimeSpan.textContent = '-';
             } else {
-                todayAttendanceStatusSummary.classList.add('text-red-600');
-                attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
-                checkInTimeSpan.textContent = '-';
+                if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add('text-red-600');
+                if (attendanceStatusSpan) attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
+                if (checkInTimeSpan) checkInTimeSpan.textContent = '-';
             }
             
             if (attendance.check_in) {
-                 checkInTimeSpan.textContent = formatTime(attendance.check_in);
+                 if (checkInTimeSpan) checkInTimeSpan.textContent = formatTime(attendance.check_in);
             }
 
-            attendanceStatusSpan.textContent = displayStatus;
+            if (attendanceStatusSpan) attendanceStatusSpan.textContent = displayStatus;
 
         } else {
-            todayAttendanceStatusSummary.textContent = "Belum Absen";
-            todayAttendanceStatusSummary.classList.add('text-red-600');
+            if (todayAttendanceStatusSummary) {
+                todayAttendanceStatusSummary.textContent = "Belum Absen";
+                todayAttendanceStatusSummary.classList.add('text-red-600');
+            }
 
-            checkInTimeSpan.textContent = '-';
-            attendanceStatusSpan.textContent = 'Belum Absen';
-            attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
+            if (checkInTimeSpan) checkInTimeSpan.textContent = '-';
+            if (attendanceStatusSpan) {
+                attendanceStatusSpan.textContent = 'Belum Absen';
+                attendanceStatusSpan.classList.add('text-red-600', 'font-semibold');
+            }
         }
     }
 
     async function stopAndClearScanner() {
-        if (html5QrCodeInstance && isScannerActivelyScanning) {
+        if (html5QrCodeFullInstance && html5QrCodeFullInstance.isScanning) { // ✅ Pastikan 'isScanning' adalah properti yang benar
             try {
-                await html5QrCodeInstance.stop();
-                await html5QrCodeInstance.clear();
+                await html5QrCodeFullInstance.stop();
+                await html5QrCodeFullInstance.clear(); // Clear juga diperlukan untuk membersihkan elemen internal
                 console.log("Scanner dihentikan dan dibersihkan.");
             } catch (err) {
                 console.warn("Gagal menghentikan/membersihkan scanner:", err);
             }
             isScannerActivelyScanning = false;
         }
-        qrScannerContainer.innerHTML = '';
-        qrScanResult.textContent = '';
-        cameraSelect.classList.add('hidden'); // Sembunyikan select kamera
-        isScannerInitialized = false;
-        html5QrCodeInstance = null;
+        const readerFullDiv = document.getElementById('readerFull');
+        if (readerFullDiv) readerFullDiv.innerHTML = '';
+        if (qrScanResult) qrScanResult.textContent = '';
+        isScannerInitialized = false; // Ini mungkin tidak perlu jika hanya untuk full screen
+        html5QrCodeFullInstance = null;
     }
 
     async function onScanSuccess(decodedText, decodedResult) {
@@ -166,12 +169,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         isProcessingScan = true;
 
         console.log(`QR Code terdeteksi: ${decodedText}`);
-        qrScanResult.textContent = `Memproses...`;
+        if (qrScanResult) qrScanResult.textContent = `Memproses...`;
 
         const currentUser = authService.getCurrentUser();
         if (!currentUser || !currentUser.id) {
             showSweetAlert('Error Autentikasi', 'User tidak terautentikasi. Silakan login kembali.', 'error', true);
-            qrScanResult.textContent = 'Error: User tidak terautentikasi.';
+            if (qrScanResult) qrScanResult.textContent = 'Error: User tidak terautentikasi.';
             await stopAndClearScanner();
             isProcessingScan = false;
             return;
@@ -194,9 +197,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                 `
             });
 
-            qrScanResult.textContent = response.message;
+            if (qrScanResult) qrScanResult.textContent = response.message;
             await stopAndClearScanner();
-            qrScannerContainer.innerHTML = '<p class="text-gray-500 mt-8">Absensi berhasil!</p>';
+            const readerFullDiv = document.getElementById('readerFull');
+            if (readerFullDiv) readerFullDiv.innerHTML = '<p class="text-gray-500 mt-8">Absensi berhasil!</p>';
             loadMyTodayAttendance();
 
         } catch (error) {
@@ -223,9 +227,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 `
             });
 
-            qrScanResult.textContent = `Gagal Absen: ${message}.`;
+            if (qrScanResult) qrScanResult.textContent = `Gagal Absen: ${message}.`;
             await stopAndClearScanner();
-            qrScannerContainer.innerHTML = `<p class="text-${icon === 'info' ? 'blue' : 'red'}-600 mt-8">Absensi gagal: ${message}. Harap coba lagi atau hubungi admin.</p>`;
+            const readerFullDiv = document.getElementById('readerFull');
+            if (readerFullDiv) readerFullDiv.innerHTML = `<p class="text-${icon === 'info' ? 'blue' : 'red'}-600 mt-8">Absensi gagal: ${message}. Harap coba lagi atau hubungi admin.</p>`;
+
             loadMyTodayAttendance();
 
         } finally {
@@ -234,97 +240,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function onScanFailure(error) {
+        // Ini adalah fungsi callback untuk setiap frame yang gagal mendeteksi QR.
+        // Sebaiknya tidak menampilkan toast atau SweetAlert di sini, karena akan terlalu sering.
         // console.warn(`Scan gagal: ${error}`);
     }
 
+    // Fungsi startScanner asli yang tidak digunakan karena sekarang ada openFullscreenScanner
+    // Komentar ini mengindikasikan bahwa ini tidak aktif.
+    /*
     async function startScanner() {
-    if (html5QrCodeInstance && isScannerActivelyScanning) {
-        console.log("Scanner sudah berjalan.");
-        return;
+        // ... (kode lama) ...
     }
+    */
 
-    try {
-        if (!qrScannerContainer) {
-            console.error("Elemen 'reader' tidak ditemukan di DOM.");
-            qrScanResult.textContent = "Error: Elemen scanner tidak ditemukan.";
-            showSweetAlert('Error Inisialisasi', 'Elemen scanner tidak ditemukan di halaman.', 'error', true);
-            return;
-        }
-
-        await stopAndClearScanner();
-
-        if (typeof Html5Qrcode === 'undefined' || !Html5Qrcode.getCameras) {
-            qrScanResult.textContent = "Browser tidak mendukung akses kamera atau Html5Qrcode tidak dimuat dengan benar.";
-            qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Browser Anda tidak mendukung akses kamera atau izin ditolak.</p>';
-            showSweetAlert('Error Kamera', 'Browser Anda tidak mendukung akses kamera atau izin ditolak.', 'error', true);
-            return;
-        }
-
-        const cameras = await Html5Qrcode.getCameras();
-        if (cameras.length === 0) {
-            qrScanResult.textContent = "Tidak ada kamera tersedia.";
-            qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Tidak ada kamera yang ditemukan di perangkat Anda.</p>';
-            showSweetAlert('Kamera Tidak Ditemukan', 'Tidak ada kamera yang ditemukan di perangkat Anda.', 'error', true);
-            return;
-        }
-
-        let cameraIdToUse = null;
-
-        // PRIORITAS 1: Cari kamera dengan facingMode 'environment' (kamera belakang)
-        const rearCamera = cameras.find(camera => camera.facingMode === 'environment');
-        if (rearCamera) {
-            cameraIdToUse = rearCamera.id;
-            console.log("Kamera belakang 'environment' ditemukan:", rearCamera.label || rearCamera.id);
-        } else {
-            // PRIORITAS 2: Jika 'environment' tidak ditemukan, cari kamera yang BUKAN 'user' (kamera depan)
-            const nonUserCamera = cameras.find(camera => camera.facingMode !== 'user');
-            if (nonUserCamera) {
-                cameraIdToUse = nonUserCamera.id;
-                console.log("Kamera non-'user' ditemukan (kemungkinan belakang):", nonUserCamera.label || nonUserCamera.id);
-            } else {
-                // PRIORITAS 3: Jika semua di atas gagal, gunakan kamera pertama yang tersedia (ini bisa depan atau belakang)
-                cameraIdToUse = cameras[0].id;
-                console.warn("Tidak dapat menentukan kamera belakang. Menggunakan kamera pertama yang tersedia:", cameras[0].label || cameras[0].id);
-            }
-        }
-        
-        // Sembunyikan elemen cameraSelect (sesuai permintaan sebelumnya untuk menyembunyikannya)
-        cameraSelect.classList.add("hidden");
-
-        html5QrCodeInstance = new Html5Qrcode("reader");
-
-        await html5QrCodeInstance.start(
-            {
-                deviceId: {
-                    exact: cameraIdToUse // Gunakan ID kamera yang sudah ditentukan
-                }
-            }, {
-                fps: 10,
-                qrbox: {
-                    width: 250,
-                    height: 250
-                },
-                aspectRatio: 1.0
-            },
-            onScanSuccess,
-            onScanFailure
-        );
-        qrScanResult.textContent = "Pindai QR Code untuk Absen...";
-        isScannerInitialized = true;
-        isScannerActivelyScanning = true;
-        console.log("Scanner berhasil dimulai.");
-        showToast('Kamera Berhasil Dibuka!', 'success'); // Toastify di tengah untuk notifikasi kamera
-
-    } catch (err) {
-        console.error("Gagal memulai scanner:", err);
-        qrScanResult.textContent = `Gagal memulai scanner: ${err.message}`;
-        qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat scanner: ${err.message}. Pastikan kamera diizinkan.</p>`;
-        cameraSelect.classList.add("hidden");
-        isScannerInitialized = false;
-        isScannerActivelyScanning = false;
-        showSweetAlert('Gagal Membuka Kamera', `Gagal memulai scanner: ${err.message}. Pastikan kamera diizinkan dan tidak sedang digunakan aplikasi lain.`, 'error', true);
-    }
-}
 
     async function loadMyTodayAttendance() {
         const currentUser = authService.getCurrentUser();
@@ -349,17 +277,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                 } else {
                     messageText = `Anda memiliki status hari ini: ${todayAttendance.status}.`;
                 }
-                qrScannerContainer.innerHTML = `<p class="text-gray-500 mt-8">${messageText}</p>`;
+                const readerFullDiv = document.getElementById('readerFull');
+                if (readerFullDiv) readerFullDiv.innerHTML = `<p class="text-gray-500 mt-8">${messageText}</p>`;
                 showSweetAlert('Status Absensi', messageText, 'info');
             } else {
-                startScanner();
+                console.log("Belum absen, scanner akan dimulai saat tombol 'Scan QR Code' diklik.");
             }
 
         } catch (error) {
             console.error('Error loading my today attendance:', error);
             showSweetAlert('Error Memuat Status Absensi', `Gagal memuat status absensi: ${error.message}.`, 'error', true);
             updateAttendanceStatusUI(null);
-            startScanner();
         }
     }
 
@@ -395,28 +323,29 @@ document.addEventListener("DOMContentLoaded", async () => {
                 try {
                     const blob = await userService.getProfilePhoto(user.id);
                     const photoUrl = URL.createObjectURL(blob);
-                    profilePhoto.src = photoUrl;
+                    if (profilePhoto) profilePhoto.src = photoUrl;
                     if (userAvatarNav) {
                         userAvatarNav.src = photoUrl;
                         userAvatarNav.alt = employeeData.name;
                     }
-                } catch {
-                    const fallback = "https://via.placeholder.com/80/4A5568/E2E8F0?text=ME";
-                    profilePhoto.src = fallback;
+                } catch (e) {
+                    console.error("Error fetching profile photo:", e);
+                    const fallback = "https://via.placeholder.com/96x96/E2E8F0/4A5568?text=ME";
+                    if (profilePhoto) profilePhoto.src = fallback;
                     if (userAvatarNav) {
                         userAvatarNav.src = fallback;
                         userAvatarNav.alt = employeeData.name;
                     }
                 }
 
-                employeeName.textContent = employeeData.name;
-                employeePosition.textContent = employeeData.position || "-";
-                employeeDepartment.textContent = employeeData.department || "-";
+                if (employeeName) employeeName.textContent = employeeData.name;
+                if (employeePosition) employeePosition.textContent = employeeData.position || "-";
+                if (employeeDepartment) employeeDepartment.textContent = employeeData.department || "-";
 
                 if (employeeData.annual_leave_balance !== undefined && employeeData.annual_leave_balance !== null) {
-                    remainingLeave.textContent = `${employeeData.annual_leave_balance} Hari`;
+                    if (remainingLeave) remainingLeave.textContent = `${employeeData.annual_leave_balance} Hari`;
                 } else {
-                    remainingLeave.textContent = `N/A`;
+                    if (remainingLeave) remainingLeave.textContent = `N/A`;
                 }
             }
             return employeeData;
@@ -439,72 +368,136 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
 
-    // === FULLSCREEN QR SCANNER HANDLING ===
-window.openFullscreenScanner = async function () {
-    const fullscreenContainer = document.getElementById('qrFullscreenContainer');
-    const scannerElement = document.createElement('div');
-    scannerElement.setAttribute('id', 'readerFull');
-    scannerElement.classList.add('w-full', 'h-full');
-    fullscreenContainer.innerHTML = ''; // Bersihkan isi lama (jika ada)
-    fullscreenContainer.appendChild(scannerElement);
+    // === FULLSCREEN QR SCANNER HANDLING (Updated and Cleaned) ===
+    window.openFullscreenScanner = async function () {
+        const fullscreenContainer = document.getElementById('qrFullscreenContainer');
+        const readerFullDiv = document.getElementById('readerFull');
+        const closeButton = document.getElementById('closeScannerBtn');
+        const qrScanResultText = document.getElementById('qr-scan-result');
 
-    // Tombol tutup
-    const closeButton = document.createElement('button');
-    closeButton.setAttribute('id', 'closeScannerBtn');
-    closeButton.innerText = '✕ Tutup';
-    closeButton.className = 'absolute top-4 right-4 text-white bg-red-600 px-4 py-2 rounded-lg shadow hover:bg-red-700 transition-all';
-    fullscreenContainer.appendChild(closeButton);
+        // Pastikan semua elemen penting ditemukan
+        if (!readerFullDiv || !closeButton || !fullscreenContainer || !qrScanResultText) {
+            console.error("Salah satu elemen penting untuk fullscreen scanner tidak ditemukan.");
+            showSweetAlert('Error Inisialisasi', 'Elemen scanner tidak lengkap di halaman. Pastikan ID HTML sudah benar.', 'error', true);
+            return;
+        }
 
-    fullscreenContainer.classList.remove('hidden');
+        // Tampilkan modal dan reset kontennya
+        fullscreenContainer.classList.remove('hidden');
+        readerFullDiv.innerHTML = ''; // Kosongkan div readerFull
+        qrScanResultText.textContent = "Memulai kamera..."; // Pesan awal
 
-    const html5QrCodeFull = new Html5Qrcode("readerFull");
-
-    const cameras = await Html5Qrcode.getCameras();
-    if (cameras && cameras.length) {
-        const cameraId = cameras.find(cam => cam.facingMode === 'environment')?.id || cameras[0].id;
-
-        html5QrCodeFull.start(
-            { deviceId: { exact: cameraId } },
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            },
-            async (decodedText) => {
-                await html5QrCodeFull.stop();
-                fullscreenContainer.classList.add('hidden');
-                showToast("QR Code terdeteksi. Memproses absensi...", "info");
-
-                // Reuse fungsi onScanSuccess dari kode sebelumnya
-                onScanSuccess(decodedText, null);
-            },
-            (err) => {
-                // onScanFailure bisa diabaikan atau log jika perlu
+        // Pastikan tidak ada instance scanner lama yang aktif dan menghentikannya
+        if (html5QrCodeFullInstance && html5QrCodeFullInstance.isScanning) {
+            try {
+                await html5QrCodeFullInstance.stop();
+                console.log("Scanner sebelumnya dihentikan sebelum memulai yang baru.");
+            } catch (e) {
+                console.warn("Gagal menghentikan scanner sebelumnya:", e);
             }
-        );
+        }
+        
+        // Buat instance baru setiap kali modal dibuka
+        html5QrCodeFullInstance = new Html5Qrcode(readerFullDiv.id);
 
-        // Event: Klik tombol tutup
-        closeButton.addEventListener("click", async () => {
-            await html5QrCodeFull.stop();
+        try {
+            const cameras = await Html5Qrcode.getCameras();
+            if (!cameras || cameras.length === 0) {
+                qrScanResultText.textContent = `Tidak ada kamera tersedia.`;
+                showSweetAlert('Kamera Tidak Ditemukan', 'Tidak ada kamera yang ditemukan di perangkat Anda.', 'error', true);
+                fullscreenContainer.classList.add('hidden');
+                return;
+            }
+
+            let cameraIdToUse = null;
+
+            // PRIORITAS 1: Cari kamera dengan facingMode 'environment' (kamera belakang)
+            const rearCamera = cameras.find(camera => camera.facingMode === 'environment');
+            if (rearCamera) {
+                cameraIdToUse = rearCamera.id;
+                console.log("[Fullscreen Scanner] Kamera belakang 'environment' ditemukan:", rearCamera.label || rearCamera.id);
+            } else {
+                // PRIORITAS 2: Jika 'environment' tidak ditemukan, cari kamera yang BUKAN 'user' (kamera depan)
+                const nonUserCamera = cameras.find(camera => camera.facingMode !== 'user');
+                if (nonUserCamera) {
+                    cameraIdToUse = nonUserCamera.id;
+                    console.log("[Fullscreen Scanner] Kamera non-'user' ditemukan (kemungkinan belakang):", nonUserCamera.label || nonUserCamera.id);
+                } else {
+                    // PRIORITAS 3: Jika semua di atas gagal, gunakan kamera pertama yang tersedia
+                    cameraIdToUse = cameras[0].id;
+                    console.warn("[Fullscreen Scanner] Tidak dapat menentukan kamera belakang. Menggunakan kamera pertama yang tersedia:", cameras[0].label || cameras[0].id);
+                }
+            }
+
+            await html5QrCodeFullInstance.start(
+                { deviceId: { exact: cameraIdToUse } },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                },
+                async (decodedText) => {
+                    showToast("QR Code terdeteksi. Memproses absensi...", "info");
+                    // Hentikan scanner segera setelah deteksi berhasil
+                    await html5QrCodeFullInstance.stop();
+                    // Sembunyikan modal setelah scan
+                    fullscreenContainer.classList.add('hidden');
+                    // Panggil fungsi utama absensi
+                    await onScanSuccess(decodedText, null);
+                },
+                (err) => {
+                    // onScanFailure bisa diabaikan atau log jika perlu
+                    // console.warn("[Fullscreen Scanner] Scan gagal:", err);
+                }
+            );
+            isScannerActivelyScanning = true;
+            qrScanResultText.textContent = "Pindai QR Code untuk Absen...";
+            console.log("[Fullscreen Scanner] Scanner berhasil dimulai.");
+            showToast('Kamera Berhasil Dibuka!', 'success');
+
+        } catch (err) {
+            console.error("[Fullscreen Scanner] Gagal memulai scanner:", err);
+            qrScanResultText.textContent = `Gagal memuat scanner: ${err.message}.`;
+            readerFullDiv.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat scanner: ${err.message}. Pastikan kamera diizinkan.</p>`;
+            showSweetAlert('Gagal Membuka Kamera', `Gagal memulai scanner: ${err.message}. Pastikan kamera diizinkan dan tidak sedang digunakan aplikasi lain.`, 'error', true);
             fullscreenContainer.classList.add('hidden');
-        });
-
-    } else {
-        fullscreenContainer.innerHTML = `<p class="text-white mt-10">Tidak ada kamera tersedia.</p>`;
-    }
-};
-
+            isScannerActivelyScanning = false;
+        }
+    };
 
 
     // --- Event Listeners UI Umum ---
     if (userDropdownContainer) {
-        userDropdownContainer.addEventListener("click", () => {
-            dropdownMenu.classList.toggle("active");
+        userDropdownContainer.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (dropdownMenu) dropdownMenu.classList.toggle("active");
         });
         document.addEventListener("click", (event) => {
-            if (!userDropdownContainer.contains(event.target)) {
+            if (dropdownMenu && userDropdownContainer && !userDropdownContainer.contains(event.target) && !dropdownMenu.contains(event.target)) {
                 dropdownMenu.classList.remove("active");
             }
+        });
+    }
+
+    // Event listener untuk tombol tutup scanner fullscreen
+    const closeScannerBtn = document.getElementById('closeScannerBtn');
+    if (closeScannerBtn) {
+        closeScannerBtn.addEventListener("click", async () => {
+            const fullscreenContainer = document.getElementById('qrFullscreenContainer');
+            if (html5QrCodeFullInstance) {
+                try {
+                    await html5QrCodeFullInstance.stop();
+                    console.log("Scanner fullscreen dihentikan via tombol tutup.");
+                } catch (e) {
+                    console.warn("Gagal menghentikan scanner fullscreen via tombol tutup:", e);
+                }
+            }
+            if (fullscreenContainer) fullscreenContainer.classList.add('hidden');
+            const readerFullDiv = document.getElementById('readerFull');
+            if (readerFullDiv) readerFullDiv.innerHTML = '';
+            if (qrScanResult) qrScanResult.textContent = '';
+            isScannerActivelyScanning = false;
+            html5QrCodeFullInstance = null;
         });
     }
 
