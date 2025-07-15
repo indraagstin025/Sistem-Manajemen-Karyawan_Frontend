@@ -2,12 +2,20 @@
 
 import AttendanceService from '../Services/AttendanceServices.js';
 import { authService } from "../Services/AuthServices.js";
-import { userService } from "../Services/UserServices.js"; // Diperlukan untuk profil avatar di header
+import { userService } from "../Services/UserServices.js"; 
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
+// Import komponen modular untuk sidebar dan logout
+import { initializeSidebar } from "../components/sidebarHandler.js";
+import { initializeLogout } from "../components/logoutHandler.js"; 
+
 document.addEventListener("DOMContentLoaded", async () => {
     feather.replace(); // Inisialisasi ikon Feather
+
+    // --- Inisialisasi Komponen Global ---
+    initializeSidebar(); // Mengelola sidebar mobile
+    initializeLogout(); // Mengelola semua tombol logout dengan SweetAlert2
 
     // --- Seleksi Elemen DOM ---
     const attendanceHistoryTableBody = document.getElementById("attendanceHistoryTableBody");
@@ -15,27 +23,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
-
-    // Tombol Logout
-    const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
-
-    // Sidebar Mobile
-    const sidebarToggle = document.getElementById("sidebarToggle");
-    const mobileSidebar = document.getElementById("mobileSidebar");
-    const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
-    const closeSidebar = document.getElementById("closeSidebar");
-
-    // Change Password Modal elements (disalin dari EmployeeDashboard.js)
-    const changePasswordModal = document.getElementById("changePasswordModal");
-    const openChangePasswordModalBtn = document.getElementById("openChangePasswordModalBtn");
-    const closeChangePasswordModalBtn = document.getElementById("closeChangePasswordModalBtn");
-    const cancelChangePasswordBtn = document.getElementById("cancelChangePasswordBtn");
-    const changePasswordForm = document.getElementById("changePasswordForm");
-    const oldPasswordInput = document.getElementById("oldPassword");
-    const newPasswordInput = document.getElementById("newPassword");
-    const confirmNewPasswordInput = document.getElementById("confirmNewPassword");
-    const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
-    const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage");
 
     // Elemen Paginasi
     const paginationControls = document.getElementById('paginationControls');
@@ -77,24 +64,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     // --- Fungsi untuk memuat data profil karyawan (untuk avatar di header) ---
     const fetchEmployeeProfileDataForHeader = async () => {
         try {
-            // Tidak perlu mendapatkan 'token' secara terpisah lagi di sini
             let user = authService.getCurrentUser();
-            if (!user || !user.id) { // Pastikan user ada dan memiliki ID
-                // Jika tidak ada user atau ID, ini akan ditangani oleh loadAttendanceHistory
-                // atau redirect oleh interceptor jika token expired
+            if (!user || !user.id) {
                 return null;
             }
-            // Parameter 'token' dihapus karena sudah di-handle oleh interceptor apiClient
+            
             const employeeData = await userService.getUserByID(user.id); 
             if (employeeData && userAvatarNav) {
-                // Ganti placehold.co dengan via.placeholder.com atau URL lokal yang valid
                userAvatarNav.src = employeeData.photo || "https://via.placeholder.com/40x40/E2E8F0/4A5568?text=ME";
                 userAvatarNav.alt = employeeData.name;
             }
             return employeeData;
         } catch (error) {
             console.error("Error fetching employee profile data for header:", error);
-            // Tangani error Unauthorized/Forbidden dari interceptor
             if (error.status === 401 || error.status === 403) {
                 showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
                 setTimeout(() => authService.logout(), 2000);
@@ -117,29 +99,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         paginationControls.classList.add('hidden'); // Sembunyikan paginasi saat memuat
 
         try {
-            // Pengecekan user dan token yang lebih ringkas
             const currentUser = authService.getCurrentUser();
             if (!currentUser || currentUser.role !== 'karyawan') {
                 showToast("Akses ditolak. Anda tidak memiliki izin untuk melihat halaman ini.", "error");
                 setTimeout(() => authService.logout(), 2000);
                 return;
             }
-
-            // allAttendanceData = await AttendanceService.getMyHistory(); // Ini sudah benar
-            // allAttendanceData.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            // >>>>>> KODE UNTUK MENGATASI ERROR NULL/SORT (SAMA SEPERTI REQUEST_LEAVE.JS) <<<<<<
+            
             let fetchedData = await AttendanceService.getMyHistory(); 
-            // Pastikan fetchedData adalah array. Jika bukan, set menjadi array kosong.
             if (!Array.isArray(fetchedData)) {
                 console.warn("Peringatan: API /attendance/my-history tidak mengembalikan array. Menerima:", fetchedData);
-                fetchedData = []; // Set menjadi array kosong untuk mencegah error sort
+                fetchedData = []; 
                 showToast("Peringatan: Format data riwayat absensi tidak valid dari server.", "info"); 
             }
             allAttendanceData = fetchedData;
-            allAttendanceData.sort((a, b) => new Date(b.date) - new Date(a.date)); // Urutkan dari terbaru
-            // >>>>>> AKHIR KODE UNTUK MENGATASI ERROR NULL/SORT <<<<<<
-
+            allAttendanceData.sort((a, b) => new Date(b.date) - new Date(a.date)); 
 
             if (allAttendanceData.length === 0) {
                 attendanceHistoryTableBody.innerHTML = `
@@ -166,7 +140,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </tr>
             `;
             showToast(error.message || "Gagal memuat riwayat absensi.", "error");
-            // Perbarui kondisi error untuk redirect logout (gunakan error.status dari interceptor)
             if (error.status === 401 || error.status === 403) {
                 setTimeout(() => authService.logout(), 2000);
             }
@@ -175,7 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- Fungsi untuk merender tabel absensi per halaman ---
     const renderAttendanceTable = (data, page, limit) => {
-        attendanceHistoryTableBody.innerHTML = ''; // Kosongkan tabel
+        attendanceHistoryTableBody.innerHTML = ''; 
         const startIndex = (page - 1) * limit;
         const endIndex = startIndex + limit;
         const paginatedItems = data.slice(startIndex, endIndex);
@@ -183,16 +156,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         paginatedItems.forEach(attendance => {
             const row = attendanceHistoryTableBody.insertRow();
             
-        const date = new Date(attendance.date + 'T00:00:00'); 
-        const formattedDate = date.toLocaleDateString('id-ID', { // <-- PASTIKAN BARIS INI ADA DAN TIDAK DIKOMENTARI
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+            const date = new Date(attendance.date + 'T00:00:00'); 
+            const formattedDate = date.toLocaleDateString('id-ID', { 
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
 
-        let statusDisplayText = attendance.status || '-';
-        let statusClass = 'text-gray-700';
-
+            let statusDisplayText = attendance.status || '-';
+            let statusClass = 'text-gray-700';
 
             switch (attendance.status) {
                 case 'Hadir':
@@ -268,96 +240,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-
-    // --- Change Password Modal Logic (disalin dari EmployeeDashboard.js) ---
-    const resetChangePasswordForm = () => {
-        changePasswordForm.reset();
-        changePasswordErrorMessage.classList.add("hidden");
-        changePasswordSuccessMessage.classList.add("hidden");
-        changePasswordErrorMessage.textContent = "";
-        changePasswordSuccessMessage.textContent = "";
-    };
-
-    if (openChangePasswordModalBtn) {
-        openChangePasswordModalBtn.addEventListener("click", (event) => {
-            event.preventDefault();
-            resetChangePasswordForm();
-            changePasswordModal.classList.remove("hidden");
-            setTimeout(() => changePasswordModal.classList.add("active"), 10);
-            if (dropdownMenu) dropdownMenu.classList.remove("active");
-        });
-    }
-
-    if (closeChangePasswordModalBtn) {
-        closeChangePasswordModalBtn.addEventListener("click", () => {
-            changePasswordModal.classList.remove("active");
-            setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
-        });
-    }
-
-    if (cancelChangePasswordBtn) {
-        cancelChangePasswordBtn.addEventListener("click", () => {
-            changePasswordModal.classList.remove("active");
-            setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
-        });
-    }
-
-    if (changePasswordForm) {
-        changePasswordForm.addEventListener("submit", async (event) => {
-            event.preventDefault();
-            changePasswordErrorMessage.classList.add("hidden");
-            changePasswordSuccessMessage.classList.add("hidden");
-            changePasswordErrorMessage.textContent = "";
-            changePasswordSuccessMessage.textContent = "";
-
-            const oldPassword = oldPasswordInput.value;
-            const newPassword = newPasswordInput.value;
-            const confirmNewPassword = confirmNewPasswordInput.value;
-
-            if (newPassword !== confirmNewPassword) {
-                changePasswordErrorMessage.textContent = "Password baru dan konfirmasi password tidak cocok.";
-                changePasswordErrorMessage.classList.remove("hidden");
-                return;
-            }
-
-            if (newPassword.length < 6) {
-                changePasswordErrorMessage.textContent = "Password baru minimal 6 karakter.";
-                changePasswordErrorMessage.classList.remove("hidden");
-                return;
-            }
-
-            const currentUser = authService.getCurrentUser();
-            if (!currentUser || !currentUser.id) { // Tidak perlu lagi cek localStorage.getItem('token')
-                showToast("Sesi tidak valid. Harap login kembali.", "error");
-                setTimeout(() => authService.logout(), 2000);
-                return;
-            }
-            // const token = localStorage.getItem('token'); // <<-- Hapus ini, tidak lagi diperlukan
-
-            try {
-                // Parameter 'token' dihapus
-                await authService.changePassword(oldPassword, newPassword); 
-                changePasswordSuccessMessage.textContent = "Password berhasil diubah!";
-                changePasswordSuccessMessage.classList.remove("hidden");
-                showToast("Password berhasil diubah!", "success");
-
-                setTimeout(() => {
-                    changePasswordModal.classList.remove("active");
-                    setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
-                }, 1500);
-
-            } catch (error) {
-                console.error("Error changing password:", error);
-                const errorMessage = error.message || "Gagal mengubah password. Silakan coba lagi.";
-                changePasswordErrorMessage.textContent = errorMessage;
-                changePasswordErrorMessage.classList.remove("hidden");
-                showToast(errorMessage, "error");
-            }
-        });
-    }
-
-
-    // --- Event Listeners UI Umum ---
+    // --- Event Listeners UI Umum (Dropdown Navigasi Pengguna) ---
     if (userDropdownContainer) {
         userDropdownContainer.addEventListener("click", () => {
             dropdownMenu.classList.toggle("active");
@@ -368,66 +251,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
     }
-
-    allLogoutButtons.forEach(button => {
-        button.addEventListener("click", (event) => {
-            event.preventDefault();
-            showLogoutConfirmation();
-        });
-    });
-
-    // Logika Sidebar Mobile
-    if (sidebarToggle && mobileSidebar && mobileSidebarPanel && closeSidebar) {
-        const showMobileSidebar = () => {
-            mobileSidebar.classList.remove("hidden");
-            setTimeout(() => {
-                mobileSidebar.classList.add("opacity-100");
-                mobileSidebarPanel.classList.remove("-translate-x-full");
-            }, 10);
-        };
-        const hideMobileSidebar = () => {
-            mobileSidebar.classList.remove("opacity-100");
-            mobileSidebarPanel.classList.add("-translate-x-full");
-            setTimeout(() => mobileSidebar.classList.add("hidden"), 300);
-        };
-        sidebarToggle.addEventListener("click", showMobileSidebar);
-        closeSidebar.addEventListener("click", hideMobileSidebar);
-        mobileSidebar.addEventListener("click", (event) => {
-            if (event.target === mobileSidebar) hideMobileSidebar();
-        });
-    }
-
-    const showLogoutConfirmation = () => {
-        const toastNode = document.createElement("div");
-        toastNode.className = "flex flex-col items-center p-2";
-        toastNode.innerHTML = `
-            <p class="font-semibold text-white text-base mb-4">Anda yakin ingin keluar?</p>
-            <div class="flex space-x-3">
-                <button id="confirmLogoutBtn" class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700">Ya, Keluar</button>
-                <button id="cancelLogoutBtn" class="px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-md hover:bg-gray-600">Batal</button>
-            </div>
-        `;
-        const toast = Toastify({ 
-            node: toastNode, 
-            duration: -1, 
-            gravity: "top", 
-            position: "center", 
-            close: true, 
-            style: { 
-                background: "linear-gradient(to right, #4f46e5, #7c3aed)", 
-                borderRadius: "12px",
-                padding: "1rem" 
-            } 
-        }).showToast();
-
-        toastNode.querySelector("#confirmLogoutBtn").addEventListener("click", () => {
-            authService.logout();
-            toast.hideToast();
-        });
-        toastNode.querySelector("#cancelLogoutBtn").addEventListener("click", () => {
-            toast.hideToast();
-        });
-    };
 
     // --- Inisialisasi Halaman ---
     fetchEmployeeProfileDataForHeader(); // Muat data profil untuk avatar di header
