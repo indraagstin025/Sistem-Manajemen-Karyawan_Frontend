@@ -1,6 +1,9 @@
 import { authService, dashboardService } from "../Services/AuthServices.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
+// 💡 TAMBAHKAN INI
+import Toastify from 'toastify-js'; // Import Toastify
+import 'toastify-js/src/toastify.css'; // Import CSS Toastify
 
 document.addEventListener("DOMContentLoaded", () => {
   feather.replace();
@@ -12,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
       info: "linear-gradient(to right, #3b82f6, #2563eb)",
     }[type];
 
+    // Toastify sekarang harus terdefinisi karena diimport
     Toastify({
       text: message,
       duration: 3000,
