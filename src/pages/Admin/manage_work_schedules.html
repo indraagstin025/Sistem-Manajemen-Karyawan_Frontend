@@ -193,17 +193,42 @@
         #calendar {
           height: auto; /* Biarkan tinggi menyesuaikan konten pada layar kecil */
           min-height: 400px; /* Minimal tinggi */
+          padding-bottom: 20px; /* Tambahkan padding bawah agar kalender tidak terlalu mepet */
         }
         /* FullCalendar header toolbar penyesuaian */
         .fc .fc-header-toolbar {
           flex-direction: column;
+          align-items: center; /* Tengahkan item */
+          /* Tambahkan gap atau padding vertikal antara chunks jika perlu */
         }
-        .fc .fc-toolbar-chunk:nth-child(2) { /* Center chunk (title) */
-          order: -1; /* Pindahkan judul ke atas */
-          margin-bottom: 1rem;
+        /* Mengatur urutan dan margin untuk chunks (bagian kiri, tengah, kanan) */
+        .fc .fc-toolbar-chunk:nth-child(1) { /* Default: left chunk (prev,next,today) */
+          order: 2; /* Pindahkan ke bawah judul */
+          margin-top: 1rem; /* Beri jarak dari judul */
         }
+        .fc .fc-toolbar-chunk:nth-child(2) { /* Default: center chunk (title) */
+          order: 1; /* Pindahkan judul ke atas */
+          margin-bottom: 0.5rem; /* Sedikit jarak dari tombol atas */
+        }
+        .fc .fc-toolbar-chunk:nth-child(3) { /* Default: right chunk (views) */
+          order: 3; /* Pindahkan ke paling bawah */
+          margin-top: 1rem; /* Beri jarak dari tombol navigasi */
+        }
+        /* Penyesuaian tampilan tombol-tombol FullCalendar */
         .fc .fc-button-group {
-          flex-wrap: wrap;
+          flex-wrap: wrap; /* Biarkan tombol membungkus ke baris baru */
+          justify-content: center; /* Tengahkan tombol dalam grup */
+          width: 100%; /* Pastikan grup mengambil lebar penuh */
+        }
+        .fc .fc-button {
+            margin: 0.25rem; /* Sedikit margin antar tombol */
+            font-size: 0.8em; /* Kecilkan ukuran font tombol agar muat */
+            padding: 0.5em 0.8em; /* Sesuaikan padding */
+        }
+        .fc-toolbar-title {
+            font-size: 1.5em !important; /* Pastikan judul lebih besar */
+            white-space: normal; /* Izinkan teks judul membungkus */
+            text-align: center; /* Pastikan judul terpusat */
         }
       }
     </style>
@@ -391,10 +416,10 @@
           <a href="/admin_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
           </a>
-          <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+          <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="users" class="w-5 h-5 mr-3"></i><span>Manajemen Karyawan</span>
           </a>
-          <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+          <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="user-plus" class="w-5 h-5 mr-3"></i><span>Tambah Karyawan</span>
           </a>
           <a href="/manage_departments.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
