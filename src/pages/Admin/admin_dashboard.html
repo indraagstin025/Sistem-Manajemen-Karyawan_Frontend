@@ -262,11 +262,10 @@
           </button>
         </div>
 
-        <div id="modal-qr-code-display" class="w-full max-w-[256px] h-auto p-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4 min-h-[256px]">
-          <div id="qrcode-canvas-container"></div> 
-          <span id="modal-qr-placeholder" class="text-gray-500 text-center">Memuat QR Code...</span>
-        </div>
-        <p id="modal-qr-expires-at" class="text-sm text-gray-500 mt-0 mb-4"></p>
+<div id="modal-qr-code-display" class="w-full max-w-[256px] h-auto p-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4 min-h-[256px]">
+  <img id="modal-qr-code-image" class="w-full h-full object-contain hidden" alt="QR Code Absensi">
+  <span id="modal-qr-placeholder" class="text-gray-500 text-center">Memuat QR Code...</span>
+</div>
 
         <div class="flex space-x-3 mt-2">
           <button type="button" id="modal-generate-qr-btn" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors duration-200">Refresh QR Code</button>
