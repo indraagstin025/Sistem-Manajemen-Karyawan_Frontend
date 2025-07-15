@@ -355,6 +355,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // === FULLSCREEN QR SCANNER HANDLING (Updated and Cleaned) ===
   // === FULLSCREEN QR SCANNER HANDLING (Updated and Corrected) ===
+// === FULLSCREEN QR SCANNER HANDLING (REVISI FINAL) ===
 window.openFullscreenScanner = async function () {
     const fullscreenContainer = document.getElementById("qrFullscreenContainer");
     const readerFullDiv = document.getElementById("readerFull");
@@ -367,83 +368,82 @@ window.openFullscreenScanner = async function () {
         return;
     }
 
+    // Reset status setiap kali scanner dibuka
+    isProcessingScan = false;
+
     fullscreenContainer.classList.remove("hidden");
-    readerFullDiv.innerHTML = ""; 
+    readerFullDiv.innerHTML = "";
     qrScanResultText.textContent = "Memulai kamera...";
 
     if (html5QrCodeFullInstance && html5QrCodeFullInstance.isScanning) {
         try {
             await html5QrCodeFullInstance.stop();
-            console.log("Scanner sebelumnya dihentikan sebelum memulai yang baru.");
         } catch (e) {
             console.warn("Gagal menghentikan scanner sebelumnya:", e);
         }
     }
 
-    // Buat instance baru setiap kali modal dibuka
-    html5QrCodeFullInstance = new Html5Qrcode(readerFullDiv.id);
+    html5QrCodeFullInstance = new Html5Qrcode(readerFullDiv.id, {
+        useBarCodeDetectorIfSupported: true, // Optimasi
+    });
 
     try {
         const cameras = await Html5Qrcode.getCameras();
         if (!cameras || cameras.length === 0) {
-            qrScanResultText.textContent = `Tidak ada kamera tersedia.`;
-            showSweetAlert("Kamera Tidak Ditemukan", "Tidak ada kamera yang ditemukan di perangkat Anda.", "error", true);
-            fullscreenContainer.classList.add("hidden");
-            return;
+            throw new Error("Tidak ada kamera yang ditemukan di perangkat Anda.");
         }
 
-        // --- Logika Pemilihan Kamera yang Diperbaiki ---
         let cameraToUse = null;
-
-        // Prioritas 1: Cari kamera belakang berdasarkan kata kunci di labelnya
         const rearCameraByLabel = cameras.find(c => /back|rear|environment/i.test(c.label));
+        const rearCameraByFacingMode = cameras.find(c => c.facingMode === "environment");
+
         if (rearCameraByLabel) {
             cameraToUse = rearCameraByLabel;
             console.log("[Fullscreen Scanner] Prioritas 1: Kamera belakang ditemukan dari label:", cameraToUse.label);
-        } 
-        // Prioritas 2: Jika tidak ada, cari kamera dengan facingMode 'environment'
-        else {
-            const rearCameraByFacingMode = cameras.find(c => c.facingMode === "environment");
-            if (rearCameraByFacingMode) {
-                cameraToUse = rearCameraByFacingMode;
-                console.log("[Fullscreen Scanner] Prioritas 2: Kamera belakang ditemukan dari facingMode.");
-            }
-            // Prioritas 3: Jika masih gagal, gunakan kamera terakhir dalam daftar (seringkali kamera belakang)
-            else if (cameras.length > 1) {
-                cameraToUse = cameras[cameras.length - 1]; // Ambil yang terakhir
-                console.warn("[Fullscreen Scanner] Prioritas 3: Menggunakan kamera terakhir sebagai fallback:", cameraToUse.label);
-            }
-            // Prioritas 4: Jika hanya ada satu kamera
-            else {
-                cameraToUse = cameras[0];
-                console.warn("[Fullscreen Scanner] Prioritas 4: Hanya satu kamera tersedia, menggunakan itu:", cameraToUse.label);
-            }
+        } else if (rearCameraByFacingMode) {
+            cameraToUse = rearCameraByFacingMode;
+            console.log("[Fullscreen Scanner] Prioritas 2: Kamera belakang ditemukan dari facingMode.");
+        } else {
+            cameraToUse = cameras[cameras.length > 1 ? cameras.length - 1 : 0];
+            console.warn("[Fullscreen Scanner] Prioritas 3: Menggunakan kamera fallback:", cameraToUse.label);
         }
-        
-        const cameraIdToUse = cameraToUse.id;
 
-        // ✅ PERBAIKAN: Gunakan `html5QrCodeFullInstance` bukan `html5QrCodeFull`
+        // ✅ PERBAIKAN UTAMA: Logika dipindahkan ke dalam callback ini
         await html5QrCodeFullInstance.start(
-            cameraIdToUse, // Langsung gunakan ID kamera
-            {
+            cameraToUse.id, {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
                 aspectRatio: 1.0,
             },
+            // Ini adalah fungsi callback yang dijalankan SEKALI saat berhasil
             async (decodedText, decodedResult) => {
-                // Berhasil memindai
-                if (isProcessingScan) return;
-                isProcessingScan = true; // Set flag untuk menghindari scan ganda
-
-                await html5QrCodeFullInstance.stop();
-                fullscreenContainer.classList.add('hidden');
-                showToast("QR Code terdeteksi. Memproses absensi...", "info");
+                // 1. Cek flag, jika sedang proses, abaikan (pengaman ganda)
+                if (isProcessingScan) {
+                    return;
+                }
                 
-                // Panggil fungsi onScanSuccess utama Anda
-                onScanSuccess(decodedText, decodedResult); 
+                // 2. LANGSUNG set flag untuk mencegah pemanggilan ganda
+                isProcessingScan = true;
+
+                // 3. LANGSUNG hentikan kamera untuk mencegah scan berulang
+                try {
+                    if (html5QrCodeFullInstance.isScanning) {
+                        await html5QrCodeFullInstance.stop();
+                        console.log("Scanner dihentikan setelah deteksi berhasil.");
+                    }
+                } catch (err) {
+                    console.warn("Gagal menghentikan scanner setelah sukses, tapi tetap lanjut.", err);
+                }
+
+                // 4. Tampilkan pesan ke pengguna & tutup modal
+                showToast("QR Code terdeteksi. Memproses absensi...", "info");
+                fullscreenContainer.classList.add('hidden');
+                
+                // 5. BARU panggil fungsi utama untuk proses ke server
+                onScanSuccess(decodedText, decodedResult);
             },
             (errorMessage) => {
-                // onScanFailure (diabaikan untuk tidak membanjiri log)
+                // Callback untuk kegagalan (dapat diabaikan)
             }
         );
 
@@ -455,13 +455,11 @@ window.openFullscreenScanner = async function () {
     } catch (err) {
         console.error("[Fullscreen Scanner] Gagal memulai scanner:", err);
         qrScanResultText.textContent = `Gagal memuat scanner: ${err.message}.`;
-        readerFullDiv.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat scanner: ${err.message}. Pastikan kamera diizinkan.</p>`;
-        showSweetAlert("Gagal Membuka Kamera", `Gagal memulai scanner: ${err.message}. Pastikan kamera diizinkan dan tidak sedang digunakan aplikasi lain.`, "error", true);
+        showSweetAlert("Gagal Membuka Kamera", `Gagal memulai scanner: ${err.message}.`, "error", true);
         fullscreenContainer.classList.add("hidden");
         isScannerActivelyScanning = false;
     }
 };
-
   // --- Event Listeners UI Umum ---
   if (userDropdownContainer) {
     userDropdownContainer.addEventListener("click", (e) => {
