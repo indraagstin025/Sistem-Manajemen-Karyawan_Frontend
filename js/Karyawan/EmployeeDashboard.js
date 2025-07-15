@@ -439,6 +439,63 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
 
+    // === FULLSCREEN QR SCANNER HANDLING ===
+window.openFullscreenScanner = async function () {
+    const fullscreenContainer = document.getElementById('qrFullscreenContainer');
+    const scannerElement = document.createElement('div');
+    scannerElement.setAttribute('id', 'readerFull');
+    scannerElement.classList.add('w-full', 'h-full');
+    fullscreenContainer.innerHTML = ''; // Bersihkan isi lama (jika ada)
+    fullscreenContainer.appendChild(scannerElement);
+
+    // Tombol tutup
+    const closeButton = document.createElement('button');
+    closeButton.setAttribute('id', 'closeScannerBtn');
+    closeButton.innerText = '✕ Tutup';
+    closeButton.className = 'absolute top-4 right-4 text-white bg-red-600 px-4 py-2 rounded-lg shadow hover:bg-red-700 transition-all';
+    fullscreenContainer.appendChild(closeButton);
+
+    fullscreenContainer.classList.remove('hidden');
+
+    const html5QrCodeFull = new Html5Qrcode("readerFull");
+
+    const cameras = await Html5Qrcode.getCameras();
+    if (cameras && cameras.length) {
+        const cameraId = cameras.find(cam => cam.facingMode === 'environment')?.id || cameras[0].id;
+
+        html5QrCodeFull.start(
+            { deviceId: { exact: cameraId } },
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            },
+            async (decodedText) => {
+                await html5QrCodeFull.stop();
+                fullscreenContainer.classList.add('hidden');
+                showToast("QR Code terdeteksi. Memproses absensi...", "info");
+
+                // Reuse fungsi onScanSuccess dari kode sebelumnya
+                onScanSuccess(decodedText, null);
+            },
+            (err) => {
+                // onScanFailure bisa diabaikan atau log jika perlu
+            }
+        );
+
+        // Event: Klik tombol tutup
+        closeButton.addEventListener("click", async () => {
+            await html5QrCodeFull.stop();
+            fullscreenContainer.classList.add('hidden');
+        });
+
+    } else {
+        fullscreenContainer.innerHTML = `<p class="text-white mt-10">Tidak ada kamera tersedia.</p>`;
+    }
+};
+
+
+
     // --- Event Listeners UI Umum ---
     if (userDropdownContainer) {
         userDropdownContainer.addEventListener("click", () => {
