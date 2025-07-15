@@ -238,78 +238,93 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function startScanner() {
-        if (html5QrCodeInstance && isScannerActivelyScanning) {
-            console.log("Scanner sudah berjalan.");
+    if (html5QrCodeInstance && isScannerActivelyScanning) {
+        console.log("Scanner sudah berjalan.");
+        return;
+    }
+
+    try {
+        if (!qrScannerContainer) {
+            console.error("Elemen 'reader' tidak ditemukan di DOM.");
+            qrScanResult.textContent = "Error: Elemen scanner tidak ditemukan.";
+            showSweetAlert('Error Inisialisasi', 'Elemen scanner tidak ditemukan di halaman.', 'error', true);
             return;
         }
 
-        try {
-            if (!qrScannerContainer) {
-                console.error("Elemen 'reader' tidak ditemukan di DOM.");
-                qrScanResult.textContent = "Error: Elemen scanner tidak ditemukan.";
-                showSweetAlert('Error Inisialisasi', 'Elemen scanner tidak ditemukan di halaman.', 'error', true);
-                return;
-            }
+        await stopAndClearScanner();
 
-            await stopAndClearScanner();
-
-            if (typeof Html5Qrcode === 'undefined' || !Html5Qrcode.getCameras) {
-                qrScanResult.textContent = "Browser tidak mendukung akses kamera atau Html5Qrcode tidak dimuat dengan benar.";
-                qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Browser Anda tidak mendukung akses kamera atau izin ditolak.</p>';
-                showSweetAlert('Error Kamera', 'Browser Anda tidak mendukung akses kamera atau izin ditolak.', 'error', true);
-                return;
-            }
-
-            const cameras = await Html5Qrcode.getCameras();
-            if (cameras.length === 0) {
-                qrScanResult.textContent = "Tidak ada kamera tersedia.";
-                qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Tidak ada kamera yang ditemukan di perangkat Anda.</p>';
-                showSweetAlert('Kamera Tidak Ditemukan', 'Tidak ada kamera yang ditemukan di perangkat Anda.', 'error', true);
-                return;
-            }
-
-            // Pilih kamera belakang (environment) secara default
-            const rearCamera = cameras.find(camera => camera.facingMode === 'environment') || cameras[0];
-            const cameraIdToUse = rearCamera.id;
-            
-            // Sembunyikan elemen cameraSelect
-            cameraSelect.classList.add("hidden");
-
-            html5QrCodeInstance = new Html5Qrcode("reader");
-
-            await html5QrCodeInstance.start(
-                {
-                    deviceId: {
-                        exact: cameraIdToUse
-                    }
-                }, {
-                    fps: 10,
-                    qrbox: {
-                        width: 250,
-                        height: 250
-                    },
-                    aspectRatio: 1.0
-                },
-                onScanSuccess,
-                onScanFailure
-            );
-            qrScanResult.textContent = "Pindai QR Code untuk Absen...";
-            isScannerInitialized = true;
-            isScannerActivelyScanning = true;
-            console.log("Scanner berhasil dimulai.");
-            showToast('Kamera Berhasil Dibuka!', 'success'); // Toastify di tengah untuk notifikasi kamera
-
-        } catch (err) {
-            console.error("Gagal memulai scanner:", err);
-            qrScanResult.textContent = `Gagal memulai scanner: ${err.message}`;
-            qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat scanner: ${err.message}. Pastikan kamera diizinkan.</p>`;
-            cameraSelect.classList.add("hidden");
-            isScannerInitialized = false;
-            isScannerActivelyScanning = false;
-            showSweetAlert('Gagal Membuka Kamera', `Gagal memulai scanner: ${err.message}. Pastikan kamera diizinkan dan tidak sedang digunakan aplikasi lain.`, 'error', true);
+        if (typeof Html5Qrcode === 'undefined' || !Html5Qrcode.getCameras) {
+            qrScanResult.textContent = "Browser tidak mendukung akses kamera atau Html5Qrcode tidak dimuat dengan benar.";
+            qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Browser Anda tidak mendukung akses kamera atau izin ditolak.</p>';
+            showSweetAlert('Error Kamera', 'Browser Anda tidak mendukung akses kamera atau izin ditolak.', 'error', true);
+            return;
         }
-    }
 
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras.length === 0) {
+            qrScanResult.textContent = "Tidak ada kamera tersedia.";
+            qrScannerContainer.innerHTML = '<p class="text-red-600 mt-8">Tidak ada kamera yang ditemukan di perangkat Anda.</p>';
+            showSweetAlert('Kamera Tidak Ditemukan', 'Tidak ada kamera yang ditemukan di perangkat Anda.', 'error', true);
+            return;
+        }
+
+        let cameraIdToUse = null;
+
+        // PRIORITAS 1: Cari kamera dengan facingMode 'environment' (kamera belakang)
+        const rearCamera = cameras.find(camera => camera.facingMode === 'environment');
+        if (rearCamera) {
+            cameraIdToUse = rearCamera.id;
+            console.log("Kamera belakang 'environment' ditemukan:", rearCamera.label || rearCamera.id);
+        } else {
+            // PRIORITAS 2: Jika 'environment' tidak ditemukan, cari kamera yang BUKAN 'user' (kamera depan)
+            const nonUserCamera = cameras.find(camera => camera.facingMode !== 'user');
+            if (nonUserCamera) {
+                cameraIdToUse = nonUserCamera.id;
+                console.log("Kamera non-'user' ditemukan (kemungkinan belakang):", nonUserCamera.label || nonUserCamera.id);
+            } else {
+                // PRIORITAS 3: Jika semua di atas gagal, gunakan kamera pertama yang tersedia (ini bisa depan atau belakang)
+                cameraIdToUse = cameras[0].id;
+                console.warn("Tidak dapat menentukan kamera belakang. Menggunakan kamera pertama yang tersedia:", cameras[0].label || cameras[0].id);
+            }
+        }
+        
+        // Sembunyikan elemen cameraSelect (sesuai permintaan sebelumnya untuk menyembunyikannya)
+        cameraSelect.classList.add("hidden");
+
+        html5QrCodeInstance = new Html5Qrcode("reader");
+
+        await html5QrCodeInstance.start(
+            {
+                deviceId: {
+                    exact: cameraIdToUse // Gunakan ID kamera yang sudah ditentukan
+                }
+            }, {
+                fps: 10,
+                qrbox: {
+                    width: 250,
+                    height: 250
+                },
+                aspectRatio: 1.0
+            },
+            onScanSuccess,
+            onScanFailure
+        );
+        qrScanResult.textContent = "Pindai QR Code untuk Absen...";
+        isScannerInitialized = true;
+        isScannerActivelyScanning = true;
+        console.log("Scanner berhasil dimulai.");
+        showToast('Kamera Berhasil Dibuka!', 'success'); // Toastify di tengah untuk notifikasi kamera
+
+    } catch (err) {
+        console.error("Gagal memulai scanner:", err);
+        qrScanResult.textContent = `Gagal memulai scanner: ${err.message}`;
+        qrScannerContainer.innerHTML = `<p class="text-red-600 mt-8">Gagal memuat scanner: ${err.message}. Pastikan kamera diizinkan.</p>`;
+        cameraSelect.classList.add("hidden");
+        isScannerInitialized = false;
+        isScannerActivelyScanning = false;
+        showSweetAlert('Gagal Membuka Kamera', `Gagal memulai scanner: ${err.message}. Pastikan kamera diizinkan dan tidak sedang digunakan aplikasi lain.`, 'error', true);
+    }
+}
 
     async function loadMyTodayAttendance() {
         const currentUser = authService.getCurrentUser();
