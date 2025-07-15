@@ -29,6 +29,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const userAvatarNav = document.getElementById("userAvatar");
   const dropdownMenu = document.getElementById("dropdownMenu");
   const userDropdownContainer = document.getElementById("userDropdown");
+  const scanQrButton = document.getElementById("scanQrButton");
+const qrFullscreenContainer = document.getElementById("qrFullscreenContainer");
+const readerFullDiv = document.getElementById("readerFull");
+const qrScanResultText = document.getElementById("qrScanResultText");
+
 
   // QR Scanner elements
   const qrScanResult = document.getElementById("qr-scan-result"); // ✅ Ini yang ditambahkan ke HTML
