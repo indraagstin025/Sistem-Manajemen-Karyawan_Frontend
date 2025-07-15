@@ -351,7 +351,7 @@ window.openFullscreenScanner = async function () {
             rearCamera.id, 
             { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
             async (decodedText, decodedResult) => {
-                if (isProcessingScan) return; // Mencegah pemanggilan ganda (race condition)
+                if (isProcessingScan) return; 
                 isProcessingScan = true;
 
                 if (html5QrCodeFullInstance?.isScanning) {
