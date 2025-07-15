@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode.js/qrcode.min.js"></script> 
     <link rel="stylesheet" href="/style/input.css" />
 
     <style>
@@ -67,10 +68,31 @@
         transition: all 0.3s ease-out;
         max-width: 400px; /* Batasi lebar modal */
         width: 90%;
+        text-align: center; /* Tengah konten modal */
       }
       .qr-modal-overlay.active .qr-modal-content {
         transform: translateY(0);
         opacity: 1;
+      }
+
+      /* Custom scrollbar untuk main content */
+      .custom-scroll::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+      }
+
+      .custom-scroll::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+      }
+
+      .custom-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 10px;
+      }
+
+      .custom-scroll::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
       }
     </style>
   </head>
@@ -131,15 +153,14 @@
             <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
           </div>
           <div class="flex items-center space-x-4">
-            <div class="relative group" id="userDropdown">
+            <div class="relative" id="userDropdown">
               <img
                 id="userAvatar"
                 class="h-10 w-10 rounded-full object-cover cursor-pointer border-2 border-gray-200 hover:border-teal-500 transition-colors duration-200"
-                src="https://placehold.co/40x40/E2E8F0/4A5568?text=AD"
-                alt="User Avatar"
+                src="/assets/default-avatar.png" alt="User Avatar"
               />
               <div id="dropdownMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 dropdown-menu z-20">
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil</a>
+                <a href="/admin_profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil</a>
                 <div class="border-t border-gray-100 my-1"></div>
                 <a href="#" id="dropdownLogoutButton" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Keluar</a>
               </div>
@@ -149,30 +170,83 @@
 
         <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-teal-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Total Karyawan</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="totalKaryawan">0</p>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-teal-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
+              <div class="bg-teal-100 text-teal-600 p-3 rounded-full">
+                <i data-feather="users" class="w-7 h-7"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Karyawan</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="totalKaryawan">0</p>
+              </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Karyawan Aktif</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="karyawanAktif">0</p>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
+              <div class="bg-green-100 text-green-600 p-3 rounded-full">
+                <i data-feather="user-check" class="w-7 h-7"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Karyawan Aktif</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="karyawanAktif">0</p>
+              </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-orange-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Karyawan Cuti</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="karyawanCuti">0</p>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-orange-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
+              <div class="bg-orange-100 text-orange-600 p-3 rounded-full">
+                <i data-feather="user-minus" class="w-7 h-7"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Karyawan Cuti</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="karyawanCuti">0</p>
+              </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-purple-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Total Departemen</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="totalDepartemen">0</p>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-purple-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
+              <div class="bg-purple-100 text-purple-600 p-3 rounded-full">
+                <i data-feather="grid" class="w-7 h-7"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Departemen</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="totalDepartemen">0</p>
+              </div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
-              <h3 class="font-semibold text-gray-800 mb-4 text-xl">Distribusi Karyawan</h3>
+              <h3 class="font-semibold text-gray-800 mb-4 text-xl">Distribusi Karyawan Berdasarkan Departemen</h3>
               <div class="h-80">
                 <canvas id="departmentChart"></canvas>
               </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+              <h2 class="text-xl font-bold text-gray-900 mb-4">Aktivitas Terbaru</h2>
+              <ul class="space-y-4" id="adminActivityList">
+                <li class="flex items-start bg-gray-50 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <div class="bg-blue-100 text-blue-600 rounded-full p-2 mr-4 flex-shrink-0">
+                    <i data-feather="user-plus" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">Karyawan baru <span class="font-bold">John Doe</span> telah ditambahkan.</p>
+                    <p class="text-xs text-gray-500 mt-1">Baru saja</p>
+                  </div>
+                </li>
+                <li class="flex items-start bg-gray-50 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <div class="bg-green-100 text-green-600 rounded-full p-2 mr-4 flex-shrink-0">
+                    <i data-feather="check-circle" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">Pengajuan cuti <span class="font-bold">Jane Smith</span> telah disetujui.</p>
+                    <p class="text-xs text-gray-500 mt-1">1 jam yang lalu</p>
+                  </div>
+                </li>
+                <li class="flex items-start bg-gray-50 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <div class="bg-orange-100 text-orange-600 rounded-full p-2 mr-4 flex-shrink-0">
+                    <i data-feather="alert-triangle" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">2 karyawan terlambat absen hari ini.</p>
+                    <p class="text-xs text-gray-500 mt-1">Pagi ini</p>
+                  </div>
+                </li>
+              </ul>
             </div>
           </div>
         </main>
@@ -188,16 +262,15 @@
           </button>
         </div>
 
-        <div id="modal-qr-code-display" class="w-full max-w-[256px] h-auto p-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4">
-          <img id="modal-qr-code-image" src="" alt="QR Code Absensi" class="w-full h-full object-contain hidden opacity-0 scale-95 transition-all duration-300" />
-
+        <div id="modal-qr-code-display" class="w-full max-w-[256px] h-auto p-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4 min-h-[256px]">
+          <div id="qrcode-canvas-container"></div> 
           <span id="modal-qr-placeholder" class="text-gray-500 text-center">Memuat QR Code...</span>
         </div>
         <p id="modal-qr-expires-at" class="text-sm text-gray-500 mt-0 mb-4"></p>
 
         <div class="flex space-x-3 mt-2">
           <button type="button" id="modal-generate-qr-btn" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors duration-200">Refresh QR Code</button>
-          <button type="button" id="modal-close-qr-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200 hidden">Tutup QR</button>
+          <button type="button" id="modal-close-qr-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200">Tutup QR</button>
         </div>
       </div>
     </div>
@@ -238,7 +311,7 @@
           </a>
           <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span> </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
-            <a href="#" id="logoutButtonMobile" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl">
+            <a href="#" id="mobileLogoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl">
               <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
             </a>
           </div>
