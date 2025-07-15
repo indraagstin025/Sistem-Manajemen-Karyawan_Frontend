@@ -220,7 +220,7 @@ async function onScanSuccess(decodedText) {
  */
 async function loadMyTodayAttendance() {
     try {
-        // NOTE: Memanggil 'getMyHistory' sesuai implementasi lama Anda.
+
         const history = await AttendanceService.getMyHistory();
         const today = new Date().toISOString().slice(0, 10);
         const todayAttendance = history.find(att => att.date === today);
