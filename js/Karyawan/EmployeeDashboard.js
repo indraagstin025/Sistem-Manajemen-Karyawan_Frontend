@@ -7,13 +7,13 @@ import "toastify-js/src/toastify.css";
 import Swal from "sweetalert2";
 
 import { initializeSidebar } from "../components/sidebarHandler.js";
-import { initializeLogout } from "../components/logoutHandler.js"; // Pastikan path ini benar
+import { initializeLogout } from "../components/logoutHandler.js"; 
 
 document.addEventListener("DOMContentLoaded", async () => {
   feather.replace();
 
-  initializeSidebar(); // Mengelola sidebar mobile
-  initializeLogout(); // Mengelola semua tombol logout dengan SweetAlert2
+  initializeSidebar(); 
+  initializeLogout(); 
 
   const profilePhoto = document.getElementById("profilePhoto");
   const employeeName = document.getElementById("employeeName");
@@ -30,7 +30,7 @@ const readerFullDiv = document.getElementById("readerFull");
 const qrScanResultText = document.getElementById("qrScanResultText");
 
 
-  const qrScanResult = document.getElementById("qr-scan-result"); // ✅ Ini yang ditambahkan ke HTML
+  const qrScanResult = document.getElementById("qr-scan-result"); 
 
   const currentDateSpan = document.getElementById("current-date");
   const checkInTimeSpan = document.getElementById("check-in-time");
@@ -38,8 +38,8 @@ const qrScanResultText = document.getElementById("qrScanResultText");
   const attendanceNoteDisplay = document.getElementById("attendance-note-display");
   const attendanceNoteSpan = document.getElementById("attendance-note");
 
-  let html5QrCodeInstance = null; // Instance untuk scanner utama (jika ada, saat ini tidak digunakan)
-  let html5QrCodeFullInstance = null; // Instance khusus untuk fullscreen scanner
+  let html5QrCodeInstance = null;
+  let html5QrCodeFullInstance = null; 
   let isProcessingScan = false;
   let isScannerActivelyScanning = false;
 
@@ -73,8 +73,8 @@ const qrScanResultText = document.getElementById("qrScanResultText");
       text: message,
       duration: 3000,
       close: true,
-      gravity: "top", // top, bottom
-      position: "center", // left, center, right
+      gravity: "top", 
+      position: "center", 
       stopOnFocus: true,
       style: {
         background: backgroundColor,
@@ -138,7 +138,7 @@ const qrScanResultText = document.getElementById("qrScanResultText");
     if (html5QrCodeFullInstance && html5QrCodeFullInstance.isScanning) {
       try {
         await html5QrCodeFullInstance.stop();
-        await html5QrCodeFullInstance.clear(); // Clear juga diperlukan untuk membersihkan elemen internal
+        await html5QrCodeFullInstance.clear(); 
         console.log("Scanner dihentikan dan dibersihkan.");
       } catch (err) {
         console.warn("Gagal menghentikan/membersihkan scanner:", err);
@@ -148,7 +148,7 @@ const qrScanResultText = document.getElementById("qrScanResultText");
     const readerFullDiv = document.getElementById("readerFull");
     if (readerFullDiv) readerFullDiv.innerHTML = "";
     if (qrScanResult) qrScanResult.textContent = "";
-    isScannerInitialized = false; // Ini mungkin tidak perlu jika hanya untuk full screen
+    isScannerInitialized = false; 
     html5QrCodeFullInstance = null;
   }
 
@@ -310,7 +310,7 @@ window.openFullscreenScanner = async function () {
         return console.error("ERROR: Elemen HTML untuk scanner fullscreen tidak ditemukan.");
     }
 
-    isProcessingScan = false; // Selalu reset status saat membuka scanner
+    isProcessingScan = false; 
     qrFullscreenContainer.classList.remove("hidden");
     readerFullDiv.innerHTML = "";
     qrScanResultText.textContent = "Memulai kamera...";
@@ -332,13 +332,13 @@ window.openFullscreenScanner = async function () {
                 isProcessingScan = true;
 
                 if (html5QrCodeFullInstance?.isScanning) {
-                    await html5QrCodeFullInstance.stop(); // Hentikan kamera SEGERA
+                    await html5QrCodeFullInstance.stop(); 
                 }
                 
-                qrFullscreenContainer.classList.add("hidden"); // Tutup modal
+                qrFullscreenContainer.classList.add("hidden"); 
                 showToast("QR Code terbaca, memproses...", "info");
 
-                onScanSuccess(decodedText); // Serahkan data ke fungsi logika
+                onScanSuccess(decodedText); 
             },
             (errorMessage) => { /* Abaikan error per frame */ }
         );

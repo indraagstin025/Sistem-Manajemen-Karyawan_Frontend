@@ -23,7 +23,7 @@ export const authService = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/src/pages/login.html'; // Redirect ke halaman login
+    window.location.href = '/src/pages/login.html'; 
   },
 
   /**

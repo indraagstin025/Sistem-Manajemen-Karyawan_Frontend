@@ -22,11 +22,11 @@ const AttendanceService = {
     generateQR: async () => {
         try {
             const response = await apiClient.get('/attendance/generate-qr');
-            return response.data; // Axios otomatis mengembalikan data respons
+            return response.data; 
 
         } catch (error) {
             console.error('Error di AttendanceService.generateQR:', error);
-            throw error; // Interceptor sudah menangani error respons
+            throw error; 
         }
     },
 
