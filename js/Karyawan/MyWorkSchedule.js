@@ -18,21 +18,19 @@ document.addEventListener("DOMContentLoaded", () => {
         calendar.removeAllEvents();
       }
 
-      // 🔁 Gabungkan jadwal berdasarkan tanggal
       const grouped = {};
       schedules.forEach((s) => {
         if (!grouped[s.date]) grouped[s.date] = [];
         grouped[s.date].push(s);
       });
 
-      // 🔴 Satu event per hari dengan titik merah
       const events = Object.entries(grouped).map(([date, items]) => ({
         id: date,
         title: "",
         start: `${date}T${items[0].start_time}`,
         end: `${date}T${items[0].end_time}`,
         extendedProps: {
-          items, // kirim semua item per hari
+          items,
         },
         backgroundColor: "#e53e3e",
         borderColor: "#e53e3e",
@@ -59,7 +57,6 @@ document.addEventListener("DOMContentLoaded", () => {
     editable: false,
     selectable: false,
 
-    // 🔴 Tampilkan hanya titik merah kecil
     eventContent: () => {
       return {
         html: `<div style="width: 10px; height: 10px; border-radius: 50%; background-color: red; margin: auto;"></div>`,
@@ -80,30 +77,43 @@ document.addEventListener("DOMContentLoaded", () => {
         day: "numeric",
       });
 
-      const list = extendedProps.items
-        .map(
-          (item, i) =>
-            `<b>${i + 1}. ${item.start_time} - ${item.end_time}</b><br>${item.note || "Tanpa catatan"}<br><br>`
-        )
-        .join("");
+      // === Bagian ini yang diubah ===
+      let scheduleListHtml = '';
+      if (extendedProps.items && extendedProps.items.length > 0) {
+        scheduleListHtml = extendedProps.items
+          .map(
+            (item, i) => `
+            <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                <p style="margin: 0; font-weight: bold;">Jadwal ${i + 1}:</p>
+                <p style="margin: 5px 0;"><strong>Jam:</strong> ${item.start_time} - ${item.end_time}</p>
+                <p style="margin: 5px 0;"><strong>Catatan:</strong> ${item.note || "Tanpa catatan"}</p>
+            </div>
+            `
+          )
+          .join("");
+      } else {
+          scheduleListHtml = "<p>Tidak ada jadwal untuk hari ini.</p>";
+      }
+      // ===========================
 
       Swal.fire({
         title: "Detail Jadwal Kerja",
         html: `
-          <div style="text-align: left;">
-            <b>Tanggal:</b> ${dateStr}<br><br>
-            ${list}
+          <div style="text-align: left; max-height: 300px; overflow-y: auto; padding-right: 10px;">
+            <p style="margin-bottom: 15px;"><b>Tanggal:</b> ${dateStr}</p>
+            ${scheduleListHtml}
           </div>
         `,
         icon: "info",
         confirmButtonText: "Tutup",
         customClass: {
           popup: "rounded-lg",
+          confirmButton: "bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded", // Tailwind classes for button
         },
+        buttonsStyling: false, // Penting agar customClass untuk button berfungsi
       });
     },
 
-    // Tooltip title jika hover
     eventDidMount: function (info) {
       const count = info.event.extendedProps.items?.length || 1;
       info.el.title = `${count} jadwal pada hari ini`;
