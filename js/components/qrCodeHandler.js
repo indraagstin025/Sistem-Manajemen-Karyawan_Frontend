@@ -146,12 +146,14 @@ function initialize(options) {
   const generateQrMenuBtnMobile = document.getElementById("generate-qr-menu-btn-mobile");
   const modalGenerateQrBtn = document.getElementById("modal-generate-qr-btn");
   const closeModalBtn = document.getElementById("closeModalBtn");
+  const modalCloseQrBtn = document.getElementById("modal-close-qr-btn");
   const qrCodeModal = document.getElementById("qrCodeModal");
 
   generateQrMenuBtn?.addEventListener("click", openModal);
   generateQrMenuBtnMobile?.addEventListener("click", openModal);
   modalGenerateQrBtn?.addEventListener("click", () => handleGenerateModalQRCode(false));
   closeModalBtn?.addEventListener("click", closeModal);
+  modalCloseQrBtn?.addEventListener("click", closeModal);
   qrCodeModal?.addEventListener("click", (e) => {
     if (e.target === qrCodeModal) closeModal();
   });
