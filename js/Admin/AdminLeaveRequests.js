@@ -3,6 +3,8 @@
 import { LeaveRequestService } from "../Services/LeaveRequestsServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js";
+import { initializeLogout } from "../components/logoutHandler.js";
+import { QRCodeManager } from "../components/qrCodeHandler.js";
 import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 
 import Toastify from "toastify-js";
@@ -86,6 +88,20 @@ const showLogoutConfirmation = () => {
 document.addEventListener("DOMContentLoaded", async () => {
     feather.replace(); 
     initializeSidebar(); 
+    
+    // Initialize QR Code Manager
+    QRCodeManager.initialize({
+        toastCallback: showToast,
+    });
+
+    // Initialize logout functionality
+    initializeLogout({
+        preLogoutCallback: () => {
+            if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {
+                QRCodeManager.close();
+            }
+        }
+    }); 
 
     const leaveRequestsTableBody = document.getElementById("leaveRequestsTableBody");
     const leaveRequestsMessage = document.getElementById("leaveRequestsMessage");

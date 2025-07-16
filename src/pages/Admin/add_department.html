@@ -24,6 +24,43 @@
             opacity: 0;
             transform: scale(0.95);
         }
+
+        /* Gaya untuk QR Modal */
+        .qr-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
+        }
+        .qr-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease-out, visibility 0s linear 0s;
+        }
+        .qr-modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+            max-width: 400px;
+            width: 90%;
+        }
+        .qr-modal-overlay.active .qr-modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
@@ -163,6 +200,30 @@
             </nav>
         </div>
     </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrCodeModal" class="qr-modal-overlay hidden">
+      <div class="qr-modal-content flex flex-col items-center">
+        <div class="flex justify-between items-center w-full mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">QR Code Absensi</h2>
+          <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+            <i data-feather="x" class="w-7 h-7"></i>
+          </button>
+        </div>
+
+        <div id="modal-qr-code-display" class="w-full max-w-[256px] h-auto p-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4 min-h-[256px]">
+          <img id="modal-qr-code-image" class="w-full h-auto hidden opacity-0 scale-95 transition-all duration-300" alt="QR Code" />
+          <span id="modal-qr-placeholder" class="text-gray-500 text-center">Memuat QR Code...</span>
+        </div>
+        <p id="modal-qr-expires-at" class="text-sm text-gray-500 mt-0 mb-4"></p>
+
+        <div class="flex space-x-3 mt-2">
+          <button type="button" id="modal-generate-qr-btn" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors duration-200">Refresh QR Code</button>
+          <button type="button" id="modal-close-qr-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200">Tutup QR</button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/js/Admin/AddDepartmen.js"></script>
 </body>
 </html>

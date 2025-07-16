@@ -3,12 +3,41 @@ import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js"; 
 import { initializeLogout } from "../components/logoutHandler.js";
+import { QRCodeManager } from "../components/qrCodeHandler.js";
+import Toastify from "toastify-js";
+import "toastify-js/src/toastify.css";
 
 
 document.addEventListener("DOMContentLoaded", async () => {
     
     initializeSidebar(); 
     initializeLogout();
+
+    // Show toast function
+    const showToast = (message, type = "success") => {
+        let backgroundColor;
+        if (type === "success") {
+            backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
+        } else if (type === "error") {
+            backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
+        } else {
+            backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
+        }
+    
+        Toastify({
+            text: message,
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "right",
+            style: { background: backgroundColor, borderRadius: "8px" },
+        }).showToast();
+    };
+
+    // Initialize QR Code Manager
+    QRCodeManager.initialize({
+        toastCallback: showToast,
+    });
 
     const addDepartmentForm = document.getElementById("addDepartmentForm");
     const departmentNameInput = document.getElementById("departmentName");

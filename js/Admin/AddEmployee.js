@@ -3,6 +3,8 @@ import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeFormValidation, isFormValid } from "../Validations/addEmployeeValidation.js";
 import { initializeSidebar } from "../components/sidebarHandler.js"; // Import fungsi sidebar
+import { initializeLogout } from "../components/logoutHandler.js";
+import { QRCodeManager } from "../components/qrCodeHandler.js";
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 
@@ -10,6 +12,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   
   initializeSidebar(); 
   initializeFormValidation();
+
+  // Initialize QR Code Manager
+  QRCodeManager.initialize({
+    toastCallback: (message, type) => {
+      showAlert(message, type);
+    },
+  });
+
+  // Initialize logout functionality
+  initializeLogout({
+    preLogoutCallback: () => {
+      if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {
+        QRCodeManager.close();
+      }
+    }
+  });
 
 
   const addEmployeeForm = document.getElementById("addEmployeeForm");
