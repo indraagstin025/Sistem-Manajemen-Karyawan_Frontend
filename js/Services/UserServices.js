@@ -1,9 +1,6 @@
-// src/js/Services/UserServices.js
 
-import apiClient from './apiClient'; // Import apiClient yang sudah dibuat
+import apiClient from './apiClient'; 
 
-// Hapus API_BASE_URL karena apiClient dan interceptor menanganinya
-// const API_BASE_URL = 'http://localhost:3000/api/v1'; 
 
 export const userService = {
     /**
@@ -15,7 +12,6 @@ export const userService = {
      */
     registerUser: async (userData) => { // Parameter 'token' dihapus
         try {
-            // apiClient otomatis menambahkan Authorization header dan Content-Type
             const response = await apiClient.post('/auth/register', userData);
             return response.data;
         } catch (error) {
@@ -107,9 +103,8 @@ export const userService = {
     uploadProfilePhoto: async (id, photoFile) => { // Parameter 'token' dihapus
         try {
             const formData = new FormData();
-            formData.append('photo', photoFile); // 'photo' harus sesuai dengan nama field di backend
+            formData.append('photo', photoFile); 
 
-            // Axios otomatis mengatur Content-Type: multipart/form-data untuk FormData
             const response = await apiClient.post(`/users/${id}/upload-photo`, formData);
             return response.data;
         } catch (error) {
@@ -130,22 +125,18 @@ getProfilePhoto: async (userId) => {
     const response = await apiClient.get(`/users/${userId}/photo`, {
       responseType: "blob",
       validateStatus: (status) => {
-        // Jangan lempar error untuk 404, hanya anggap error jika status >= 500
         return (status >= 200 && status < 300) || status === 404;
       },
     });
 
-    // Kalau status 404, berarti foto tidak ditemukan → kembalikan null
     if (response.status === 404) {
       return null;
     }
 
-    // Kembalikan blob foto jika ada
     return response.data;
   } catch (error) {
-    // Untuk error selain 404 (misal: 500, 403), tetap log
     console.error(`Gagal memuat foto user ${userId}:`, error);
-    return null; // Bisa juga lempar error kalau ingin strict
+    return null; 
   }
 }
 

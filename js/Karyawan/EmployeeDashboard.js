@@ -1,4 +1,3 @@
-// js/Karyawan/EmployeeDashboard.js
 
 import { userService } from "../Services/UserServices.js";
 import { authService } from "../Services/AuthServices.js";
@@ -7,19 +6,15 @@ import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 import Swal from "sweetalert2";
 
-// Import komponen modular untuk sidebar dan logout
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js"; // Pastikan path ini benar
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // Inisialisasi Feather Icons
   feather.replace();
 
-  // --- Inisialisasi Komponen Global ---
   initializeSidebar(); // Mengelola sidebar mobile
   initializeLogout(); // Mengelola semua tombol logout dengan SweetAlert2
 
-  // --- Seleksi Elemen DOM ---
   const profilePhoto = document.getElementById("profilePhoto");
   const employeeName = document.getElementById("employeeName");
   const employeePosition = document.getElementById("employeePosition");
@@ -35,10 +30,8 @@ const readerFullDiv = document.getElementById("readerFull");
 const qrScanResultText = document.getElementById("qrScanResultText");
 
 
-  // QR Scanner elements
   const qrScanResult = document.getElementById("qr-scan-result"); // ✅ Ini yang ditambahkan ke HTML
 
-  // Elemen untuk detail absensi hari ini
   const currentDateSpan = document.getElementById("current-date");
   const checkInTimeSpan = document.getElementById("check-in-time");
   const attendanceStatusSpan = document.getElementById("attendance-status");
@@ -50,9 +43,7 @@ const qrScanResultText = document.getElementById("qrScanResultText");
   let isProcessingScan = false;
   let isScannerActivelyScanning = false;
 
-  // --- Fungsi Utilitas ---
 
-  // Fungsi untuk menampilkan notifikasi SweetAlert2
   function showSweetAlert(title, message, icon = "success", showConfirmButton = false, timer = 2000) {
     Swal.fire({
       title: title,
@@ -68,7 +59,6 @@ const qrScanResultText = document.getElementById("qrScanResultText");
     });
   }
 
-  // Fungsi showToast untuk notifikasi kamera berhasil dibuka (posisi tengah)
   function showToast(message, type = "success") {
     let backgroundColor;
     if (type === "success") {
@@ -76,7 +66,6 @@ const qrScanResultText = document.getElementById("qrScanResultText");
     } else if (type === "error") {
       backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
     } else {
-      // info
       backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
     }
 
@@ -96,7 +85,6 @@ const qrScanResultText = document.getElementById("qrScanResultText");
     }).showToast();
   }
 
-  // --- Helper Functions untuk Absensi ---
   function formatTime(timeString) {
     return timeString || "-";
   }
@@ -148,7 +136,6 @@ const qrScanResultText = document.getElementById("qrScanResultText");
 
   async function stopAndClearScanner() {
     if (html5QrCodeFullInstance && html5QrCodeFullInstance.isScanning) {
-      // ✅ Pastikan 'isScanning' adalah properti yang benar
       try {
         await html5QrCodeFullInstance.stop();
         await html5QrCodeFullInstance.clear(); // Clear juga diperlukan untuk membersihkan elemen internal
@@ -180,7 +167,6 @@ async function onScanSuccess(decodedText) {
     }
 
     try {
-        // PENTING: Memanggil service dengan 'decodedText' dan 'currentUser.id'
         const response = await AttendanceService.scanQR(decodedText, currentUser.id);
 
         Swal.fire({
@@ -190,7 +176,6 @@ async function onScanSuccess(decodedText) {
             confirmButtonText: "Selesai",
         });
 
-        // Muat ulang data untuk memperbarui UI (misal: status jadi 'Hadir')
         loadMyTodayAttendance();
 
     } catch (error) {
@@ -200,22 +185,15 @@ async function onScanSuccess(decodedText) {
         const title = icon === "info" ? "Info Absensi" : "Absensi Gagal!";
         showSweetAlert(title, message, icon);
     } finally {
-        // Reset flag agar pengguna bisa mencoba scan lagi jika terjadi error.
         isProcessingScan = false;
     }
 }
 
   function onScanFailure(error) {
-    // Ini adalah fungsi callback untuk setiap frame yang gagal mendeteksi QR.
-    // Sebaiknya tidak menampilkan toast atau SweetAlert di sini, karena akan terlalu sering.
-    // console.warn(`Scan gagal: ${error}`);
   }
 
-  // Fungsi startScanner asli yang tidak digunakan karena sekarang ada openFullscreenScanner
-  // Komentar ini mengindikasikan bahwa ini tidak aktif.
   /*
     async function startScanner() {
-        // ... (kode lama) ...
     }
     */
 
@@ -232,7 +210,6 @@ async function loadMyTodayAttendance() {
 
         updateAttendanceStatusUI(todayAttendance);
 
-        // Kondisi di mana pengguna dianggap sudah selesai absen hari ini
         const sudahAbsenLengkap = todayAttendance && ['Hadir', 'Telat', 'Sakit', 'Cuti', 'Izin'].includes(todayAttendance.status);
 
         if (scanQrButton) {
@@ -373,7 +350,6 @@ window.openFullscreenScanner = async function () {
         qrFullscreenContainer.classList.add("hidden");
     }
 };
-  // --- Event Listeners UI Umum ---
   if (userDropdownContainer) {
     userDropdownContainer.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -386,7 +362,6 @@ window.openFullscreenScanner = async function () {
     });
   }
 
-  // Event listener untuk tombol tutup scanner fullscreen
   const closeScannerBtn = document.getElementById("closeScannerBtn");
   if (closeScannerBtn) {
     closeScannerBtn.addEventListener("click", async () => {
@@ -408,7 +383,6 @@ window.openFullscreenScanner = async function () {
     });
   }
 
-  // Memuat data profil dan absensi saat halaman dimuat
   const currentUser = await fetchEmployeeProfileData();
   if (currentUser) {
     loadMyTodayAttendance();

@@ -1,15 +1,7 @@
-// src/js/Services/AttendanceServices.js
 
 import apiClient from './apiClient'; // Import apiClient yang sudah dibuat
 
-// Hapus API_BASE_URL, getToken, dan getUser karena apiClient dan interceptor menanganinya
-// const API_BASE_URL = 'http://localhost:3000/api/v1';
-// const getToken = () => localStorage.getItem('token');
-// const getUser = () => { /* ... */ };
 
-// Fungsi pembantu lokal untuk mendapatkan objek user dari localStorage
-// Tetap pertahankan ini karena tidak semua request memerlukan token,
-// tapi beberapa mungkin memerlukan user ID secara langsung (misal: scanQR)
 const getUser = () => {
     try {
         const userString = localStorage.getItem('user');
@@ -29,7 +21,6 @@ const AttendanceService = {
      */
     generateQR: async () => {
         try {
-            // apiClient otomatis menambahkan Authorization header dan menangani response.json()
             const response = await apiClient.get('/attendance/generate-qr');
             return response.data; // Axios otomatis mengembalikan data respons
 
@@ -76,8 +67,7 @@ scanQR: async (qrCodeValue) => {
         throw customError;
     }
 
-    // Deteksi timezone dari browser
-    let timezone = "Asia/Jakarta"; // fallback default
+    let timezone = "Asia/Jakarta"; 
     try {
         timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Jakarta";
     } catch (e) {
@@ -88,7 +78,7 @@ scanQR: async (qrCodeValue) => {
         const response = await apiClient.post('/attendance/scan', {
             qr_code_value: qrCodeValue,
             user_id: user.id,
-            timezone: timezone, // ⬅️ Tambahkan timezone ke payload
+            timezone: timezone, 
         });
         return response.data;
 
@@ -105,7 +95,6 @@ scanQR: async (qrCodeValue) => {
      */
     getMyHistory: async () => {
         try {
-            // apiClient otomatis menambahkan Authorization header
             const response = await apiClient.get('/attendance/my-history');
             return response.data;
 

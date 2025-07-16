@@ -1,4 +1,3 @@
-// js/Services/WorkScheduleServices.js
 import apiClient from './apiClient.js';
 
 const WorkScheduleServices = {
@@ -36,7 +35,6 @@ const WorkScheduleServices = {
      */
     getWorkScheduleById: async (scheduleId) => {
         try {
-            // Memanggil endpoint backend yang baru ditambahkan: GET /api/v1/work-schedules/:id
             const response = await apiClient.get(`/work-schedules/${scheduleId}`);
             return response.data;
         } catch (error) {
@@ -75,7 +73,6 @@ const WorkScheduleServices = {
     getHolidays: async (year) => {
         try {
             const response = await apiClient.get(`/holidays?year=${year}`);
-            // Backend sudah mengembalikan data dalam format yang bisa langsung digunakan oleh FullCalendar.
             return response.data; 
         } catch (error) {
             throw error;

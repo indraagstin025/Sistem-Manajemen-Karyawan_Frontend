@@ -1,47 +1,40 @@
-// js/Karyawan/AttendanceHistory.js
-
 import AttendanceService from '../Services/AttendanceServices.js';
 import { authService } from "../Services/AuthServices.js";
 import { userService } from "../Services/UserServices.js"; 
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
-// Import komponen modular untuk sidebar dan logout
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js"; 
 
 document.addEventListener("DOMContentLoaded", async () => {
-    feather.replace(); // Inisialisasi ikon Feather
+    feather.replace();
 
-    // --- Inisialisasi Komponen Global ---
-    initializeSidebar(); // Mengelola sidebar mobile
-    initializeLogout(); // Mengelola semua tombol logout dengan SweetAlert2
+    initializeSidebar();
+    initializeLogout();
 
-    // --- Seleksi Elemen DOM ---
     const attendanceHistoryTableBody = document.getElementById("attendanceHistoryTableBody");
     const attendanceHistoryMessage = document.getElementById("attendanceHistoryMessage");
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
 
-    // Elemen Paginasi
     const paginationControls = document.getElementById('paginationControls');
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
     const currentPageInfo = document.getElementById('currentPageInfo');
 
     let currentPage = 1;
-    const itemsPerPage = 10; // Jumlah item per halaman
-    let allAttendanceData = []; // Untuk menyimpan seluruh data absensi
+    const itemsPerPage = 10;
+    let allAttendanceData = [];
 
-    // --- Fungsi Utilitas (showToast) ---
     const showToast = (message, type = "success") => {
         let backgroundColor;
         if (type === "success") {
             backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
         } else if (type === "error") {
             backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
-        } else { // info
+        } else {
             backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
         }
 
@@ -61,7 +54,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }).showToast();
     };
 
-    // --- Fungsi untuk memuat data profil karyawan (untuk avatar di header) ---
     const fetchEmployeeProfileDataForHeader = async () => {
         try {
             let user = authService.getCurrentUser();
@@ -87,8 +79,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-
-    // --- Fungsi untuk memuat dan menampilkan riwayat absensi ---
     const loadAttendanceHistory = async () => {
         attendanceHistoryTableBody.innerHTML = `
             <tr>
@@ -96,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             </tr>
         `;
         attendanceHistoryMessage.classList.add('hidden');
-        paginationControls.classList.add('hidden'); // Sembunyikan paginasi saat memuat
+        paginationControls.classList.add('hidden');
 
         try {
             const currentUser = authService.getCurrentUser();
@@ -146,7 +136,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // --- Fungsi untuk merender tabel absensi per halaman ---
     const renderAttendanceTable = (data, page, limit) => {
         attendanceHistoryTableBody.innerHTML = ''; 
         const startIndex = (page - 1) * limit;
@@ -203,7 +192,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
-    // --- Fungsi untuk memperbarui kontrol paginasi ---
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         currentPageInfo.textContent = `Halaman ${currentPage} dari ${totalPages}`;
@@ -218,7 +206,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // --- Event Listener Paginasi ---
     if (prevPageBtn) {
         prevPageBtn.addEventListener('click', () => {
             if (currentPage > 1) {
@@ -240,7 +227,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // --- Event Listeners UI Umum (Dropdown Navigasi Pengguna) ---
     if (userDropdownContainer) {
         userDropdownContainer.addEventListener("click", () => {
             dropdownMenu.classList.toggle("active");
@@ -252,7 +238,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // --- Inisialisasi Halaman ---
-    fetchEmployeeProfileDataForHeader(); // Muat data profil untuk avatar di header
-    loadAttendanceHistory(); // Muat riwayat absensi
+    fetchEmployeeProfileDataForHeader();
+    loadAttendanceHistory();
 });

@@ -61,7 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("base_salary").value = "••••••••";
         addressTextarea.value = employee.address || "";
 
-        // Ambil foto dari GridFS
         try {
           const blob = await userService.getProfilePhoto(user.id);
           const photoUrl = URL.createObjectURL(blob);
@@ -100,7 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (photoFile) {
           const uploadResponse = await userService.uploadProfilePhoto(user.id, photoFile);
 
-          // Ambil ulang foto dari GridFS untuk ditampilkan
           const blob = await userService.getProfilePhoto(user.id);
           profilePhotoPreview.src = URL.createObjectURL(blob);
 

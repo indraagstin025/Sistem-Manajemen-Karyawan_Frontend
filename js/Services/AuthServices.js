@@ -1,13 +1,11 @@
-// src/js/Services/AuthServices.js
 
-import apiClient from './apiClient'; // <<-- IMPORT apiClient dari file terpisah
+import apiClient from './apiClient';
 
 
 
 export const authService = {
   login: async (email, password) => {
     try {
-      // Menggunakan apiClient yang sudah dikonfigurasi dari './apiClient'
       const response = await apiClient.post('/auth/login', { email, password }); 
       
       if (response.data.token && response.data.user) {
@@ -18,14 +16,11 @@ export const authService = {
 
     } catch (error) {
       console.error('Error di authService.login:', error);
-      throw error; // Error sudah diproses oleh interceptor, ini hanya re-throw
+      throw error; 
     }
   },
 
   logout: () => {
-    // Interceptor response Anda di apiClient.js sudah memiliki logika logout
-    // untuk status 401/403. Namun, fungsi logout manual ini tetap berguna
-    // untuk kasus di mana user memang ingin keluar.
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/src/pages/login.html'; // Redirect ke halaman login
@@ -53,7 +48,6 @@ export const authService = {
    */
   changePassword: async (oldPassword, newPassword) => { 
     try {
-      // apiClient akan otomatis menambahkan Authorization header melalui interceptor request
       const response = await apiClient.post('/users/change-password', {
         old_password: oldPassword,
         new_password: newPassword
@@ -70,7 +64,6 @@ export const authService = {
 export const dashboardService = {
   getDashboardStats: async () => {
     try {
-      // apiClient akan otomatis menambahkan Authorization header melalui interceptor request
       const response = await apiClient.get('/admin/dashboard-stats'); 
       return response.data;
 

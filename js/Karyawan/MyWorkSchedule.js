@@ -1,31 +1,23 @@
-// js/Karyawan/MyWorkSchedules.js
-import { Calendar } from 'fullcalendar'; // Mengimpor Calendar utama dari package fullcalendar
-import dayGridPlugin from '@fullcalendar/daygrid'; // Plugin untuk tampilan month/dayGridMonth
-import timeGridPlugin from '@fullcalendar/timegrid'; // Plugin untuk tampilan week/day
-import idLocale from '@fullcalendar/core/locales/id'; // Locale bahasa Indonesia
+import { Calendar } from 'fullcalendar'; 
+import dayGridPlugin from '@fullcalendar/daygrid'; 
+import timeGridPlugin from '@fullcalendar/timegrid';
+import idLocale from '@fullcalendar/core/locales/id';
 
 import WorkScheduleServices from '../Services/WorkScheduleServices.js';
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    let calendar; // Variabel untuk menyimpan instance kalender
+    let calendar; 
 
-    // Fungsi untuk Mengambil dan Merender Event ke FullCalendar
     const fetchMySchedules = async (info = null) => {
         try {
-            // FullCalendar secara otomatis memberikan range tanggal yang terlihat
-            // Saat ini, endpoint GetMyWorkSchedules tidak mendukung filter tanggal dari FE.
-            // Jika backend diubah untuk mendukung filter tanggal, Anda bisa passing info.startStr dan info.endStr.
-            // Untuk saat ini, kita hanya akan memanggil getMyWorkSchedules tanpa filter tambahan.
             const response = await WorkScheduleServices.getMyWorkSchedules();
             const schedules = response.data;
 
-            // Bersihkan event yang ada di kalender
             if (calendar) {
                 calendar.removeAllEvents();
             }
 
-            // Tambahkan event baru dari data backend
             const events = schedules.map(s => ({
                 id: s.id, // ID event
                 title: `${s.start_time}-${s.end_time}`, // Judul event di kalender
@@ -34,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 extendedProps: { // Data tambahan yang ingin disimpan dengan event (opsional)
                     note: s.note
                 },
-                // Atur warna event, dll.
                 backgroundColor: '#38b2ac', // Warna teal
                 borderColor: '#38b2ac',
                 allDay: false // Event memiliki waktu spesifik
@@ -49,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Inisialisasi FullCalendar
     const calendarEl = document.getElementById('my-calendar'); // ID baru untuk container kalender karyawan
     calendar = new Calendar(calendarEl, {
         plugins: [ dayGridPlugin, timeGridPlugin ], // Plugin yang dibutuhkan (tanpa interaction karena tidak ada CRUD)
@@ -64,12 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
         selectable: false, // Karyawan tidak bisa select tanggal
         eventDisplay: 'block',
         
-        // Panggil fetchMySchedules setiap kali view berubah atau navigasi
         datesSet: (info) => {
             fetchMySchedules(info);
         },
 
-        // Opsional: Untuk menampilkan detail event ketika diklik (hanya display)
         eventClick: (info) => {
             const event = info.event;
             const eventDetails = `
@@ -80,9 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showAlert(eventDetails, 'info', 5000); // Tampilkan detail sebagai alert sementara
         },
         
-        // Anda bisa menambahkan tooltip pada event untuk detail lebih lanjut
         eventDidMount: function(info) {
-            // Contoh sederhana: menambah title tooltip
             info.el.title = `${info.event.title}\nCatatan: ${info.event.extendedProps.note || '-'}`;
         }
     });

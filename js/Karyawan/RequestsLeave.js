@@ -1,4 +1,3 @@
-// js/Karyawan/request_leave.js
 
 import { authService } from '../Services/AuthServices.js';
 import { userService } from "../Services/UserServices.js";
@@ -9,7 +8,6 @@ import 'toastify-js/src/toastify.css';
 document.addEventListener("DOMContentLoaded", async () => {
     feather.replace(); // Inisialisasi ikon Feather
 
-    // --- Seleksi Elemen DOM ---
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
@@ -29,7 +27,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
     const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage");
 
-    // Elemen Formulir Pengajuan Cuti/Izin
     const leaveRequestForm = document.getElementById("leaveRequestForm");
     const requestTypeInput = document.getElementById("requestType");
     const startDateInput = document.getElementById("startDate");
@@ -37,9 +34,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const reasonInput = document.getElementById("reason");
     const attachmentSection = document.getElementById("attachmentSection");
     const attachmentInput = document.getElementById("attachment");
-    const formMessage = document.getElementById("formMessage"); // Untuk pesan sukses/error formulir
+    const formMessage = document.getElementById("formMessage"); 
 
-    // Elemen Riwayat Pengajuan
     const leaveHistoryTableBody = document.getElementById("leaveHistoryTableBody");
     const leaveHistoryMessage = document.getElementById("leaveHistoryMessage");
     const paginationControls = document.getElementById('paginationControls');
@@ -48,17 +44,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentPageInfo = document.getElementById('currentPageInfo');
 
     let currentPage = 1;
-    const itemsPerPage = 5; // Lebih sedikit untuk riwayat pengajuan
-    let allLeaveRequestsData = []; // Untuk menyimpan seluruh data pengajuan
+    const itemsPerPage = 5; 
+    let allLeaveRequestsData = []; 
 
-    // --- Fungsi Utilitas (showToast) ---
     const showToast = (message, type = "success") => {
         let backgroundColor;
         if (type === "success") {
             backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
         } else if (type === "error") {
             backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
-        } else { // info
+        } else { 
             backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
         }
 
@@ -78,25 +73,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         }).showToast();
     };
 
-    // --- Fungsi untuk memuat data profil karyawan (untuk avatar di header) ---
     const fetchEmployeeProfileDataForHeader = async () => {
         try {
-            // Tidak perlu mendapatkan 'token' secara terpisah lagi di sini
             let user = authService.getCurrentUser();
             if (!user || !user.id) { 
                 return null;
             }
-            // Parameter 'token' dihapus karena sudah di-handle oleh interceptor apiClient
             const employeeData = await userService.getUserByID(user.id); 
             if (employeeData && userAvatarNav) {
-                // Ganti placehold.co dengan via.placeholder.com atau URL lokal yang valid
                 userAvatarNav.src = employeeData.photo || "https://via.placeholder.com/40x40/E2E8F0/4A5568?text=ME";
                 userAvatarNav.alt = employeeData.name;
             }
             return employeeData;
         } catch (error) {
             console.error("Error fetching employee profile data for header:", error);
-            // Tangani error Unauthorized/Forbidden dari interceptor
             if (error.status === 401 || error.status === 403) {
                 showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
                 setTimeout(() => authService.logout(), 2000);
@@ -107,7 +97,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // --- Fungsi untuk memuat dan menampilkan riwayat pengajuan cuti/izin ---
     const loadLeaveHistory = async () => {
         leaveHistoryTableBody.innerHTML = `
             <tr>
@@ -118,7 +107,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         paginationControls.classList.add('hidden');
 
         try {
-            // Pengecekan user dan token yang lebih ringkas
             const currentUser = authService.getCurrentUser();
             if (!currentUser || currentUser.role !== 'karyawan') {
                 showToast("Akses ditolak. Anda tidak memiliki izin untuk melihat halaman ini.", "error");
@@ -126,18 +114,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
             
-            // Parameter 'token' dihapus karena sudah di-handle oleh interceptor apiClient
             let fetchedData = await LeaveRequestService.getMyLeaveRequests(); 
 
-            // Pastikan fetchedData adalah array. Jika bukan, set menjadi array kosong.
             if (!Array.isArray(fetchedData)) {
                 console.warn("Peringatan: API /leave-requests/my-requests tidak mengembalikan array. Menerima:", fetchedData);
-                fetchedData = []; // Set menjadi array kosong untuk mencegah error sort
+                fetchedData = []; 
                 showToast("Peringatan: Format data riwayat pengajuan tidak valid dari server.", "info"); 
             }
 
             allLeaveRequestsData = fetchedData;
-            allLeaveRequestsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Urutkan dari terbaru
+            allLeaveRequestsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); 
 
             if (allLeaveRequestsData.length === 0) {
                 leaveHistoryTableBody.innerHTML = `
@@ -164,14 +150,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </tr>
             `;
             showToast(error.message || "Gagal memuat riwayat pengajuan.", "error");
-            // Perbarui kondisi error untuk redirect logout (gunakan error.status dari interceptor)
             if (error.status === 401 || error.status === 403) {
                 setTimeout(() => authService.logout(), 2000);
             }
         }
     };
 
-    // --- Fungsi untuk merender tabel riwayat pengajuan per halaman ---
     const renderLeaveHistoryTable = (data, page, limit) => {
         leaveHistoryTableBody.innerHTML = '';
         const startIndex = (page - 1) * limit;
@@ -217,7 +201,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
-    // --- Fungsi untuk memperbarui kontrol paginasi ---
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         currentPageInfo.textContent = `Halaman ${currentPage} dari ${totalPages}`;
@@ -232,7 +215,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // --- Event Listener Paginasi ---
     if (prevPageBtn) {
         prevPageBtn.addEventListener('click', () => {
             if (currentPage > 1) {
@@ -254,25 +236,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // --- Logika untuk menampilkan/menyembunyikan bagian lampiran ---
     requestTypeInput.addEventListener('change', () => {
-        if (requestTypeInput.value === 'Sakit') { // Hanya tampilkan jika jenisnya 'Sakit'
+        if (requestTypeInput.value === 'Sakit') { 
             attachmentSection.classList.remove('hidden');
-            attachmentInput.setAttribute('required', 'required'); // Lampiran wajib jika sakit
+            attachmentInput.setAttribute('required', 'required'); 
         } else {
             attachmentSection.classList.add('hidden');
             attachmentInput.removeAttribute('required');
-            attachmentInput.value = ''; // Kosongkan file yang dipilih jika disembunyikan
+            attachmentInput.value = ''; 
         }
     });
 
-    // --- Event Listener Submit Formulir Pengajuan Cuti/Izin ---
 let isSubmitting = false;
 
 leaveRequestForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    if (isSubmitting) return; // Cegah klik ganda
+    if (isSubmitting) return; 
     isSubmitting = true;
 
     formMessage.classList.add("hidden");
@@ -291,7 +271,7 @@ leaveRequestForm.addEventListener("submit", async (event) => {
             formMessage.textContent = "Ukuran file terlalu besar! Maksimal 2MB.";
             formMessage.classList.remove("hidden");
             formMessage.classList.add("error");
-            isSubmitting = false; // Jangan lupa reset jika gagal validasi!
+            isSubmitting = false; 
             return;
         }
         formData.append("attachment", file);
@@ -328,13 +308,12 @@ leaveRequestForm.addEventListener("submit", async (event) => {
             setTimeout(() => authService.logout(), 2000);
         }
     } finally {
-        isSubmitting = false; // Pastikan status submit direset
+        isSubmitting = false; 
     }
 });
 
 
 
-    // --- Change Password Modal Logic (disalin dari EmployeeDashboard.js) ---
     const resetChangePasswordForm = () => {
         changePasswordForm.reset();
         changePasswordErrorMessage.classList.add("hidden");
@@ -397,10 +376,8 @@ leaveRequestForm.addEventListener("submit", async (event) => {
                 setTimeout(() => authService.logout(), 2000);
                 return;
             }
-            // const token = localStorage.getItem('token'); // <<-- Hapus ini, tidak lagi diperlukan
 
             try {
-                // Parameter 'token' dihapus
                 await authService.changePassword(oldPassword, newPassword); 
                 changePasswordSuccessMessage.textContent = "Password berhasil diubah!";
                 changePasswordSuccessMessage.classList.remove("hidden");
@@ -422,7 +399,6 @@ leaveRequestForm.addEventListener("submit", async (event) => {
     }
 
 
-    // --- Event Listeners UI Umum ---
     if (userDropdownContainer) {
         userDropdownContainer.addEventListener("click", () => {
             dropdownMenu.classList.toggle("active");
@@ -441,7 +417,6 @@ leaveRequestForm.addEventListener("submit", async (event) => {
         });
     });
 
-    // Logika Sidebar Mobile
     if (sidebarToggle && mobileSidebar && mobileSidebarPanel && closeSidebar) {
         const showMobileSidebar = () => {
             mobileSidebar.classList.remove("hidden");
@@ -494,7 +469,6 @@ leaveRequestForm.addEventListener("submit", async (event) => {
         });
     };
 
-    // --- Inisialisasi Halaman ---
-    fetchEmployeeProfileDataForHeader(); // Muat data profil untuk avatar di header
-    loadLeaveHistory(); // Muat riwayat pengajuan saat halaman dimuat
+    fetchEmployeeProfileDataForHeader();
+    loadLeaveHistory();
 });

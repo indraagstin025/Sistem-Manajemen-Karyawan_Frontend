@@ -8,13 +8,11 @@ export const LeaveRequestService = {
      */
     getAllLeaveRequests: async () => {
         try {
-            // apiClient otomatis menambahkan Authorization header dan menangani response.json()
             const response = await apiClient.get('/leave-requests');
-            return response.data; // Axios otomatis mengembalikan data respons
-
+            return response.data; 
         } catch (error) {
             console.error('Error di LeaveRequestService.getAllLeaveRequests:', error);
-            throw error; // Interceptor sudah menangani error respons
+            throw error; 
         }
     },
 
@@ -28,7 +26,6 @@ export const LeaveRequestService = {
      */
     updateLeaveRequestStatus: async (requestId, status, note = '') => {
         try {
-            // apiClient otomatis menambahkan Authorization header dan Content-Type
             const response = await apiClient.put(`/leave-requests/${requestId}/status`, { status, note });
             return response.data;
 
@@ -46,7 +43,6 @@ export const LeaveRequestService = {
      */
     createLeaveRequest: async (formData) => {
         try {
-            // Untuk FormData, Axios akan otomatis mengatur Content-Type: multipart/form-data
             const response = await apiClient.post('/leave-requests', formData);
             return response.data;
 
@@ -63,7 +59,6 @@ export const LeaveRequestService = {
      */
     getMyLeaveRequests: async () => {
         try {
-            // apiClient otomatis menambahkan Authorization header
             const response = await apiClient.get('/leave-requests/my-requests');
             return response.data;
 
