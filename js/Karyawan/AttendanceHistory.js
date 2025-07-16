@@ -136,61 +136,69 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    const renderAttendanceTable = (data, page, limit) => {
-        attendanceHistoryTableBody.innerHTML = ''; 
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + limit;
-        const paginatedItems = data.slice(startIndex, endIndex);
+// file: AttendanceHistory.js
 
-        paginatedItems.forEach(attendance => {
-            const row = attendanceHistoryTableBody.insertRow();
-            
-            const date = new Date(attendance.date + 'T00:00:00'); 
-            const formattedDate = date.toLocaleDateString('id-ID', { 
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
+const renderAttendanceTable = (data, page, limit) => {
+    attendanceHistoryTableBody.innerHTML = ''; 
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedItems = data.slice(startIndex, endIndex);
 
-            let statusDisplayText = attendance.status || '-';
-            let statusClass = 'text-gray-700';
-
-            switch (attendance.status) {
-                case 'Hadir':
-                    statusClass = 'text-green-600 font-semibold';
-                    break;
-                case 'Telat':
-                    statusClass = 'text-orange-600 font-semibold';
-                    break;
-                case 'Izin':
-                    statusClass = 'text-purple-600 font-semibold';
-                    if (attendance.note) { statusDisplayText = `Izin (${attendance.note})`; }
-                    break;
-                case 'Sakit':
-                    statusClass = 'text-red-600 font-semibold';
-                    if (attendance.note) { statusDisplayText = `Sakit (${attendance.note})`; }
-                    break;
-                case 'Cuti':
-                    statusClass = 'text-blue-600 font-semibold';
-                    if (attendance.note) { statusDisplayText = `Cuti (${attendance.note})`; }
-                    break;
-                case 'Alpha':
-                    statusClass = 'text-gray-500 font-semibold';
-                    if (attendance.note) { statusDisplayText = `Alpha (${attendance.note})`; }
-                    break;
-                default:
-                    statusClass = 'text-gray-900';
-            }
-
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_out || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.note || '-'}</td>
-            `;
+    paginatedItems.forEach(attendance => {
+        const row = attendanceHistoryTableBody.insertRow();
+        
+        const date = new Date(attendance.date + 'T00:00:00'); 
+        const formattedDate = date.toLocaleDateString('id-ID', { 
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
-    };
+
+        let statusDisplayText = attendance.status || '-';
+        let statusClass = 'text-gray-700';
+
+        // Perubahan ada di dalam blok switch ini
+        switch (attendance.status) {
+            case 'Hadir':
+                statusClass = 'text-green-600 font-semibold';
+                break;
+            // DIUBAH: 'Telat' menjadi 'Terlambat' agar sesuai dengan backend
+            case 'Terlambat':
+                statusClass = 'text-orange-600 font-semibold';
+                break;
+            // DIHAPUS: case 'Izin' tidak lagi digunakan
+            /* case 'Izin':
+                statusClass = 'text-purple-600 font-semibold';
+                if (attendance.note) { statusDisplayText = `Izin (${attendance.note})`; }
+                break;
+            */
+            case 'Sakit':
+                // Diubah sedikit untuk konsistensi, warna menjadi biru
+                statusClass = 'text-blue-600 font-semibold';
+                if (attendance.note) { statusDisplayText = `Sakit (${attendance.note})`; }
+                break;
+            case 'Cuti':
+                // Diubah sedikit untuk konsistensi, warna menjadi ungu
+                statusClass = 'text-purple-600 font-semibold';
+                if (attendance.note) { statusDisplayText = `Cuti (${attendance.note})`; }
+                break;
+            case 'Alpha':
+                statusClass = 'text-red-600 font-semibold'; // Warna diubah agar lebih kontras
+                if (attendance.note) { statusDisplayText = `Alpha (${attendance.note})`; }
+                break;
+            default:
+                statusClass = 'text-gray-900';
+        }
+
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_out || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.note || '-'}</td>
+        `;
+    });
+};
 
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage);

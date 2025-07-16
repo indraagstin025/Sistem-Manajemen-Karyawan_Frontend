@@ -89,50 +89,54 @@ const qrScanResultText = document.getElementById("qrScanResultText");
     return timeString || "-";
   }
 
-  function updateAttendanceStatusUI(attendance) {
+// file: EmployeeDashboard.js
+
+function updateAttendanceStatusUI(attendance) {
     const today = new Date().toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
     if (currentDateSpan) currentDateSpan.textContent = today;
     if (attendanceStatusSpan) attendanceStatusSpan.className = "";
     if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.className = "text-lg font-bold";
 
     if (attendance) {
-      const displayStatus = attendance.status;
-      if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.textContent = displayStatus;
+        const displayStatus = attendance.status;
+        if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.textContent = displayStatus;
 
-      if (displayStatus === "Tepat Waktu") {
-        if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-green-600");
-        if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-green-600", "font-semibold");
-      } else if (displayStatus === "Terlambat") {
-        if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-orange-500");
-        if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-orange-500", "font-semibold");
-      } else if (["Sakit", "Cuti", "Izin"].includes(displayStatus)) {
-        if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-blue-600");
-        if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-blue-600", "font-semibold");
-        if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
-      } else {
-        if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-red-600");
-        if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-red-600", "font-semibold");
-        if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
-      }
+        // DIUBAH: dari "Tepat Waktu" menjadi "Hadir"
+        if (displayStatus === "Hadir") {
+            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-green-600");
+            if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-green-600", "font-semibold");
+        } else if (displayStatus === "Terlambat") {
+            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-orange-500");
+            if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-orange-500", "font-semibold");
+        // DIUBAH: "Izin" dihapus dari array
+        } else if (["Sakit", "Cuti"].includes(displayStatus)) {
+            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-blue-600");
+            if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-blue-600", "font-semibold");
+            if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
+        } else { // Ini akan menangani "Alpha"
+            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-red-600");
+            if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-red-600", "font-semibold");
+            if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
+        }
 
-      if (attendance.check_in) {
-        if (checkInTimeSpan) checkInTimeSpan.textContent = formatTime(attendance.check_in);
-      }
+        if (attendance.check_in) {
+            if (checkInTimeSpan) checkInTimeSpan.textContent = formatTime(attendance.check_in);
+        }
 
-      if (attendanceStatusSpan) attendanceStatusSpan.textContent = displayStatus;
+        if (attendanceStatusSpan) attendanceStatusSpan.textContent = displayStatus;
     } else {
-      if (todayAttendanceStatusSummary) {
-        todayAttendanceStatusSummary.textContent = "Belum Absen";
-        todayAttendanceStatusSummary.classList.add("text-red-600");
-      }
+        if (todayAttendanceStatusSummary) {
+            todayAttendanceStatusSummary.textContent = "Belum Absen";
+            todayAttendanceStatusSummary.classList.add("text-red-600");
+        }
 
-      if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
-      if (attendanceStatusSpan) {
-        attendanceStatusSpan.textContent = "Belum Absen";
-        attendanceStatusSpan.classList.add("text-red-600", "font-semibold");
-      }
+        if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
+        if (attendanceStatusSpan) {
+            attendanceStatusSpan.textContent = "Belum Absen";
+            attendanceStatusSpan.classList.add("text-red-600", "font-semibold");
+        }
     }
-  }
+}
 
   async function stopAndClearScanner() {
     if (html5QrCodeFullInstance && html5QrCodeFullInstance.isScanning) {
@@ -201,16 +205,18 @@ async function onScanSuccess(decodedText) {
  * ✅ FUNGSI UNTUK MENGONTROL UI BERDASARKAN STATUS ABSENSI
  * Tugasnya hanya mengelola tampilan, terutama tombol scan.
  */
+// file: EmployeeDashboard.js
+
 async function loadMyTodayAttendance() {
     try {
-
         const history = await AttendanceService.getMyHistory();
         const today = new Date().toISOString().slice(0, 10);
         const todayAttendance = history.find(att => att.date === today);
 
         updateAttendanceStatusUI(todayAttendance);
 
-        const sudahAbsenLengkap = todayAttendance && ['Hadir', 'Telat', 'Sakit', 'Cuti', 'Izin'].includes(todayAttendance.status);
+        // DIUBAH: Menggunakan "Terlambat" dan menghapus "Izin"
+        const sudahAbsenLengkap = todayAttendance && ['Hadir', 'Terlambat', 'Sakit', 'Cuti'].includes(todayAttendance.status);
 
         if (scanQrButton) {
             if (sudahAbsenLengkap) {
