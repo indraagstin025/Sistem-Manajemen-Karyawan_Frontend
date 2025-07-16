@@ -19,27 +19,25 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const events = schedules.map((s) => ({
-        id: s._id, // pakai _id
-        title: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}`,
-
+        id: s._id,
+        title: "", // kosong karena hanya titik
         start: `${s.date}T${s.start_time}`,
         end: `${s.date}T${s.end_time}`,
-        // ‼️ semua properti kustom sebaiknya disimpan di extendedProps
         extendedProps: {
           description: s.note || "Tanpa catatan",
           note: s.note || "Tanpa catatan",
           start_time: s.start_time,
           end_time: s.end_time,
         },
-        backgroundColor: "#38b2ac",
-        borderColor: "#38b2ac",
+        backgroundColor: "#e53e3e", // warna merah tua
+        borderColor: "#e53e3e",
         allDay: false,
       }));
 
       console.log("Jadwal yang diterima:", schedules);
 
       if (calendar) {
-        calendar.addEventSource(events); // Tambahkan semua event ke kalender
+        calendar.addEventSource(events);
       }
     } catch (error) {
       console.error("Error fetching my work schedules:", error);
@@ -47,19 +45,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const calendarEl = document.getElementById("my-calendar"); // ID baru untuk container kalender karyawan
+  const calendarEl = document.getElementById("my-calendar");
   calendar = new Calendar(calendarEl, {
-    plugins: [dayGridPlugin, timeGridPlugin], // Plugin yang dibutuhkan (tanpa interaction karena tidak ada CRUD)
-    initialView: "dayGridMonth", // Tampilan awal: bulan
-    locale: idLocale, // Set bahasa ke Indonesia
+    plugins: [dayGridPlugin, timeGridPlugin],
+    initialView: "dayGridMonth",
+    locale: idLocale,
     headerToolbar: {
       left: "prev,next today",
       center: "title",
       right: "dayGridMonth,timeGridWeek,timeGridDay",
     },
-    editable: false, // Karyawan tidak bisa drag & drop atau resize
-    selectable: false, // Karyawan tidak bisa select tanggal
-    eventDisplay: "block",
+    editable: false,
+    selectable: false,
+
+    // 🔴 Ganti tampilan event menjadi titik merah
+    eventContent: function (arg) {
+      return {
+        html: `<div style="width: 10px; height: 10px; border-radius: 50%; background-color: red; margin: auto;"></div>`,
+      };
+    },
 
     datesSet: (info) => {
       fetchMySchedules(info);
@@ -68,20 +72,34 @@ document.addEventListener("DOMContentLoaded", () => {
     eventClick: (info) => {
       const { start, end, extendedProps } = info.event;
 
-      const dateStr = start.toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-      const timeStr = `${start.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} - ${end ? end.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "-"}`;
+      const dateStr = start.toLocaleDateString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const timeStr = `${start.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })} - ${
+        end
+          ? end.toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "-"
+      }`;
       const noteStr = extendedProps.description || "-";
 
       Swal.fire({
         title: "Detail Jadwal Kerja",
         html: `
-    <pre style="text-align:left; white-space: pre-wrap;">
+        <pre style="text-align:left; white-space: pre-wrap;">
 <b>Tanggal:</b> ${dateStr}
 <b>Waktu:</b>   ${timeStr}
 <b>Catatan:</b> ${noteStr}
-    </pre>
-`,
-
+        </pre>
+        `,
         icon: "info",
         confirmButtonText: "Tutup",
         customClass: {
@@ -92,9 +110,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     eventDidMount: function (info) {
       const note = info.event.extendedProps.description || "-";
-      info.el.title = `${info.event.title}\nCatatan: ${note}`;
+      info.el.title = `Catatan: ${note}`;
     },
   });
 
-  calendar.render(); // Render kalender setelah inisialisasi
+  calendar.render();
 });
