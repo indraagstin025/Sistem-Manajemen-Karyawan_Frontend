@@ -4,6 +4,7 @@ import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js"; 
 import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js"; 
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 import Swal from 'sweetalert2'; 
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
@@ -173,15 +174,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             let photoUrl = "/assets/default-avatar.png";
             try {
-                const userPhotoBlobUrl = await userService.getProfilePhoto(employee.id); 
-                if (userPhotoBlobUrl) {
-                    photoUrl = userPhotoBlobUrl;
-                } else {
-                    const initial = employee.name ? employee.name.charAt(0).toUpperCase() : '?';
-                    photoUrl = `https://placehold.co/48x48/E2E8F0/4A5568?text=${initial}`;
-                }
+                photoUrl = await getUserPhotoBlobUrl(employee.id, employee.name, 48);
             } catch (error) {
-                console.warn(`Gagal memuat foto untuk user ${employee.name}:`, error, `menggunakan placeholder.`);
+                console.warn(`Gagal memuat foto untuk user ${employee.name}:`, error);
                 const initial = employee.name ? employee.name.charAt(0).toUpperCase() : '?';
                 photoUrl = `https://placehold.co/48x48/E2E8F0/4A5568?text=${initial}`;
             }
