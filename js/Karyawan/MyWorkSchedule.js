@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const events = schedules.map(s => ({
-                id: s.id, // ID event
+                id: s._id, // ID event
                 title: `${s.start_time}-${s.end_time}`, // Judul event di kalender
                 start: `${s.date}T${s.start_time}`,
                 end: `${s.date}T${s.end_time}`,
@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 borderColor: '#38b2ac',
                 allDay: false // Event memiliki waktu spesifik
             }));
+            console.log("Jadwal yang diterima:", schedules);
+
 
             if (calendar) {
                 calendar.addEventSource(events); // Tambahkan semua event ke kalender

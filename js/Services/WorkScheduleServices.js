@@ -66,6 +66,26 @@ const WorkScheduleServices = {
         }
     },
 
+
+    getMyWorkSchedules: async () => {
+    try {
+        const today = new Date();
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+        const filters = {
+            start_date: startOfMonth.toISOString().split("T")[0],
+            end_date: endOfMonth.toISOString().split("T")[0]
+        };
+
+        const response = await apiClient.get(`/work-schedules?${new URLSearchParams(filters).toString()}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+},
+
+
     /**
      * Fungsi untuk mendapatkan daftar hari libur dari backend.
      * @param {string} year - Tahun yang ingin dicari.
