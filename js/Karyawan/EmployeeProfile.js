@@ -111,6 +111,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         showToast("Profil berhasil diupdate!", "success");
         loadProfileData();
+        
+        // Redirect ke dashboard setelah 2 detik
+        setTimeout(() => {
+          window.location.href = "/employee_dashboard.html";
+        }, 2000);
       } catch (error) {
         showToast(error.message || "Gagal mengupdate profil.", "error");
         if (error.status === 401 || error.status === 403) {
@@ -136,6 +141,11 @@ document.addEventListener("DOMContentLoaded", () => {
         await authService.changePassword(oldPassword, newPassword);
         showToast("Password berhasil diubah!", "success");
         changePasswordForm.reset();
+        
+        // Redirect ke dashboard setelah 2 detik
+        setTimeout(() => {
+          window.location.href = "/employee_dashboard.html";
+        }, 2000);
       } catch (error) {
         showToast(error.message || "Gagal mengubah password.", "error");
       }
