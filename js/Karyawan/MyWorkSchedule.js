@@ -9,7 +9,7 @@ import Swal from "sweetalert2";
 document.addEventListener("DOMContentLoaded", () => {
   let calendar;
 
-  const fetchMySchedules = async (info = null) => {
+  const fetchMySchedules = async () => {
     try {
       const response = await WorkScheduleServices.getMyWorkSchedules();
       const schedules = response.data;
@@ -18,30 +18,31 @@ document.addEventListener("DOMContentLoaded", () => {
         calendar.removeAllEvents();
       }
 
-      const events = schedules.map((s) => ({
-        id: s._id,
-        title: "", // kosong karena hanya titik
-        start: `${s.date}T${s.start_time}`,
-        end: `${s.date}T${s.end_time}`,
+      // 🔁 Gabungkan jadwal berdasarkan tanggal
+      const grouped = {};
+      schedules.forEach((s) => {
+        if (!grouped[s.date]) grouped[s.date] = [];
+        grouped[s.date].push(s);
+      });
+
+      // 🔴 Satu event per hari dengan titik merah
+      const events = Object.entries(grouped).map(([date, items]) => ({
+        id: date,
+        title: "",
+        start: `${date}T${items[0].start_time}`,
+        end: `${date}T${items[0].end_time}`,
         extendedProps: {
-          description: s.note || "Tanpa catatan",
-          note: s.note || "Tanpa catatan",
-          start_time: s.start_time,
-          end_time: s.end_time,
+          items, // kirim semua item per hari
         },
-        backgroundColor: "#e53e3e", // warna merah tua
+        backgroundColor: "#e53e3e",
         borderColor: "#e53e3e",
         allDay: false,
       }));
 
-      console.log("Jadwal yang diterima:", schedules);
-
-      if (calendar) {
-        calendar.addEventSource(events);
-      }
+      calendar.addEventSource(events);
     } catch (error) {
       console.error("Error fetching my work schedules:", error);
-      showAlert("Gagal memuat jadwal kerja Anda. " + (error.response?.data?.error || error.message), "error");
+      Swal.fire("Gagal memuat jadwal kerja", error.response?.data?.error || error.message, "error");
     }
   };
 
@@ -58,47 +59,41 @@ document.addEventListener("DOMContentLoaded", () => {
     editable: false,
     selectable: false,
 
-    // 🔴 Ganti tampilan event menjadi titik merah
-    eventContent: function (arg) {
+    // 🔴 Tampilkan hanya titik merah kecil
+    eventContent: () => {
       return {
         html: `<div style="width: 10px; height: 10px; border-radius: 50%; background-color: red; margin: auto;"></div>`,
       };
     },
 
-    datesSet: (info) => {
-      fetchMySchedules(info);
+    datesSet: () => {
+      fetchMySchedules();
     },
 
+    // 🟢 Klik titik = tampilkan semua jadwal hari itu
     eventClick: (info) => {
-      const { start, end, extendedProps } = info.event;
-
+      const { start, extendedProps } = info.event;
       const dateStr = start.toLocaleDateString("id-ID", {
         weekday: "long",
         year: "numeric",
         month: "long",
         day: "numeric",
       });
-      const timeStr = `${start.toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })} - ${
-        end
-          ? end.toLocaleTimeString("id-ID", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "-"
-      }`;
-      const noteStr = extendedProps.description || "-";
+
+      const list = extendedProps.items
+        .map(
+          (item, i) =>
+            `<b>${i + 1}. ${item.start_time} - ${item.end_time}</b><br>${item.note || "Tanpa catatan"}<br><br>`
+        )
+        .join("");
 
       Swal.fire({
         title: "Detail Jadwal Kerja",
         html: `
-        <pre style="text-align:left; white-space: pre-wrap;">
-<b>Tanggal:</b> ${dateStr}
-<b>Waktu:</b>   ${timeStr}
-<b>Catatan:</b> ${noteStr}
-        </pre>
+          <div style="text-align: left;">
+            <b>Tanggal:</b> ${dateStr}<br><br>
+            ${list}
+          </div>
         `,
         icon: "info",
         confirmButtonText: "Tutup",
@@ -108,9 +103,10 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     },
 
+    // Tooltip title jika hover
     eventDidMount: function (info) {
-      const note = info.event.extendedProps.description || "-";
-      info.el.title = `Catatan: ${note}`;
+      const count = info.event.extendedProps.items?.length || 1;
+      info.el.title = `${count} jadwal pada hari ini`;
     },
   });
 

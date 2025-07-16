@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <link rel="stylesheet" href="/style/input.css" />
 
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+
     <style>
       body {
         font-family: "Inter", sans-serif;
@@ -33,7 +35,7 @@
       #mobileSidebarPanel {
         transition: transform 0.3s ease-out;
       }
-      /* Gaya untuk modal detail event */
+      /* Gaya untuk modal detail event - Ini tidak terpakai karena Anda menggunakan SweetAlert2, tapi saya biarkan jika sewaktu-waktu ingin kembali ke modal custom */
       .modal-overlay {
           position: fixed;
           top: 0;
@@ -81,6 +83,92 @@
       .detail-item span {
         color: #2d3748; /* gray-800 */
         font-size: 1rem;
+      }
+
+      /* --- Kustomisasi FullCalendar dengan warna toska --- */
+
+      /* Tombol navigasi */
+      .fc .fc-button-primary {
+        background-color: #1aae9f; /* Toska utama */
+        border-color: #1aae9f;
+        color: white;
+        text-transform: capitalize; /* Agar teks tombol tidak kapital semua */
+        font-weight: 500;
+      }
+      .fc .fc-button-primary:hover {
+        background-color: #159b8f; /* Toska lebih gelap saat hover */
+        border-color: #159b8f;
+      }
+      .fc .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: #0e7a70; /* Toska paling gelap saat aktif */
+        border-color: #0e7a70;
+      }
+
+      /* Header kalender (nama hari, judul bulan) */
+      .fc-col-header-cell-cushion {
+        color: #1aae9f; /* Warna teks toska untuk nama hari */
+        font-weight: 700;
+        padding: 8px 0; /* Memberi sedikit padding */
+      }
+      .fc-toolbar-title {
+        color: #2d3748; /* Warna teks abu-abu gelap untuk judul bulan/tahun */
+        font-weight: 700;
+        font-size: 1.75rem; /* Ukuran judul lebih besar */
+      }
+
+      /* Nomor tanggal di kalender */
+      .fc-daygrid-day-number {
+        font-weight: 600;
+        font-size: 1.1em;
+        color: #333;
+        padding: 8px; /* Memberi sedikit ruang */
+      }
+
+      /* Hari ini */
+      .fc-day-today {
+        background-color: #e0f2f1 !important; /* Latar belakang toska muda untuk hari ini */
+        border-radius: 8px; /* Sudut sedikit membulat */
+      }
+
+      /* Event (titik merah) */
+      .fc-event-main-frame {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%; /* Pastikan titik di tengah sel */
+      }
+
+      /* Menyesuaikan style SweetAlert2 agar lebih modern */
+      .swal2-popup {
+        font-family: "Inter", sans-serif;
+        border-radius: 1rem !important; /* Lebih membulat */
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+      }
+      .swal2-title {
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        color: #2d3748 !important;
+        margin-bottom: 1rem !important;
+      }
+      .swal2-html-container {
+        font-size: 1rem !important;
+        color: #4a5568 !important;
+        line-height: 1.6 !important;
+      }
+      .swal2-confirm {
+        background-color: #1aae9f !important; /* Tombol konfirmasi toska */
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 1.5rem !important;
+        border-radius: 0.5rem !important;
+        transition: background-color 0.2s ease-out !important;
+      }
+      .swal2-confirm:hover {
+        background-color: #159b8f !important;
+      }
+      .swal2-icon {
+        border-color: #1aae9f !important; /* Border ikon info toska */
+        color: #1aae9f !important; /* Warna ikon info toska */
       }
     </style>
   </head>
@@ -145,7 +233,8 @@
         <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
             <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
                 <h3 class="font-semibold text-gray-800 mb-4 text-xl">Kalender Jadwal Kerja Saya</h3>
-                <div id='my-calendar' style="height: 600px;"></div> </div>
+                <div id='my-calendar' style="height: 600px;"></div>
+            </div>
         </main>
       </div>
     </div>
@@ -211,7 +300,9 @@
       </div>
     </div>
 
-    <script type="module" src="/js/Karyawan/MyWorkSchedule.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/id.js'></script> <script type="module" src="/js/Karyawan/MyWorkSchedule.js"></script>
     <script type="module" src="/js/components/sidebarHandler.js"></script>
     <script type="module" src="/js/components/logoutHandler.js"></script>
     <script>
