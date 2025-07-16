@@ -117,93 +117,111 @@
           </div>
         </header>
 
-        <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
-          <div id="profilePageError" class="text-red-600 text-center mb-4 hidden"></div>
-          <div id="profilePageSuccess" class="text-green-600 text-center mb-4 hidden"></div>
+<main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
+  <div id="profilePageError" class="text-red-600 text-center mb-4 hidden"></div>
+  <div id="profilePageSuccess" class="text-green-600 text-center mb-4 hidden"></div>
 
-          <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">Informasi Profil</h2>
-            <form id="profileForm" class="space-y-5">
-              <div class="flex flex-col items-center mb-6">
-                <img id="profilePhotoPreview" class="w-32 h-32 rounded-full object-cover border-4 border-teal-500 shadow-md mb-4" src="https://placehold.co/128x128/E2E8F0/4A5568?text=ME" alt="Foto Profil" />
-                <label for="photoUpload" class="block text-sm font-medium text-gray-700 mb-1">Unggah Foto Profil (JPG, PNG, GIF, WEBP)</label>
-                <input
-                  type="file"
-                  id="photoUpload"
-                  name="photo"
-                  accept="image/jpeg,image/png,image/gif,image/webp"
-                  class="mt-1 block w-full md:w-2/3 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-                />
-                <p class="text-xs text-gray-500 mt-1">Ukuran maksimal 5MB.</p>
-              </div>
+  <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden md:max-w-3xl">
+    <div class="md:flex">
+      <div class="md:flex-shrink-0">
+        <div class="flex items-center justify-center p-6 bg-gray-50 md:h-full md:w-48">
+          <label for="photoUpload" class="cursor-pointer">
+            <img id="profilePhotoPreview" class="w-32 h-32 rounded-full object-cover border-4 border-teal-500 shadow-md transition-transform duration-200 hover:scale-105" src="https://placehold.co/128x128/E2E8F0/4A5568?text=ME" alt="Foto Profil" />
+            <input
+              type="file"
+              id="photoUpload"
+              name="photo"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              class="hidden"
+            />
+            <p class="text-xs text-gray-500 mt-2 text-center">Ukuran maks 5MB. Klik untuk mengubah.</p>
+          </label>
+        </div>
+      </div>
+      <div class="p-8 flex-grow">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6 border-b pb-4">Informasi Profil Karyawan</h2>
 
-              <div>
-                <label for="name" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
-                <input type="text" id="name" name="name" required disabled class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 cursor-not-allowed sm:text-sm" />
-              </div>
-              <div>
-                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                <input type="email" id="email" name="email" required disabled class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 cursor-not-allowed sm:text-sm" />
-              </div>
-              <div>
-                <label for="position" class="block text-sm font-medium text-gray-700">Posisi</label>
-                <input type="text" id="position" name="position" required disabled class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 cursor-not-allowed sm:text-sm" />
-              </div>
-              <div>
-                <label for="department" class="block text-sm font-medium text-gray-700">Departemen</label>
-                <input type="text" id="department" name="department" required disabled class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 cursor-not-allowed sm:text-sm" />
-              </div>
-              <div>
-                <label for="base_salary" class="block text-sm font-medium text-gray-700">Gaji Pokok</label>
-                <input type="number" id="base_salary" name="base_salary" required disabled class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 cursor-not-allowed sm:text-sm" />
-              </div>
-              <div>
-                <label for="address" class="block text-sm font-medium text-gray-700">Alamat</label>
-                <textarea id="address" name="address" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm"></textarea>
-              </div>
-
-              <div class="flex justify-end space-x-3 mt-6">
-                <button type="button" id="cancelProfileEditBtn" class="px-5 py-2.5 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors duration-200">Batal</button>
-                <button type="submit" class="px-5 py-2.5 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors duration-200">Simpan Perubahan</button>
-              </div>
-            </form>
-
-            <div class="mt-8 pt-8 border-t border-gray-200">
-              <h3 class="text-xl font-bold text-gray-900 mb-4">Ganti Password</h3>
-
-              <form id="changePasswordFormProfile" class="space-y-4">
-                <div>
-                  <label for="oldPasswordProfile" class="block text-sm font-medium text-gray-700">Password Lama</label>
-                  <input type="password" id="oldPasswordProfile" name="old_password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-                </div>
-
-                <div>
-                  <label for="newPasswordProfile" class="block text-sm font-medium text-gray-700">Password Baru</label>
-                  <input type="password" id="newPasswordProfile" name="new_password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-                  <p class="mt-1 text-sm text-gray-500">Minimal 8 karakter dan harus mengandung setidaknya satu huruf kapital.</p>
-                </div>
-
-                <div>
-                  <label for="confirmNewPasswordProfile" class="block text-sm font-medium text-gray-700">Konfirmasi Password Baru</label>
-                  <input type="password" id="confirmNewPasswordProfile" name="confirm_new_password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-                  <p class="mt-1 text-sm text-gray-500">Minimal 8 karakter dan harus mengandung setidaknya satu huruf kapital.</p>
-                </div>
-
-                <div class="flex items-center pt-2">
-                  <input id="showPasswordCheckbox" type="checkbox" class="h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500" />
-                  <label for="showPasswordCheckbox" class="ml-2 block text-sm text-gray-900">Tampilkan password</label>
-                </div>
-                <div id="changePasswordErrorMessageProfile" class="text-red-600 text-sm text-center hidden"></div>
-                <div id="changePasswordSuccessMessageProfile" class="text-green-600 text-sm text-center hidden"></div>
-
-                <div class="flex justify-end space-x-3 pt-4">
-                  <button type="reset" class="px-5 py-2.5 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors duration-200">Reset</button>
-                  <button type="submit" class="px-5 py-2.5 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors duration-200">Ubah Password</button>
-                </div>
-              </form>
+        <form id="profileForm" class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+              <input type="text" id="name" name="name" required disabled class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 cursor-not-allowed sm:text-sm" />
+            </div>
+            <div>
+              <label for="position" class="block text-sm font-medium text-gray-700">Posisi</label>
+              <input type="text" id="position" name="position" required disabled class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 cursor-not-allowed sm:text-sm" />
             </div>
           </div>
-        </main>
+          <div>
+            <label for="department" class="block text-sm font-medium text-gray-700">Departemen</label>
+            <input type="text" id="department" name="department" required disabled class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 cursor-not-allowed sm:text-sm" />
+          </div>
+
+          <div class="pt-4 border-t border-gray-200 mt-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Detail Kontak & Alamat</h3>
+            <div>
+              <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+              <input type="email" id="email" name="email" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
+            </div>
+            <div class="mt-4">
+              <label for="address" class="block text-sm font-medium text-gray-700">Alamat</label>
+              <textarea id="address" name="address" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm"></textarea>
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-gray-200 mt-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Informasi Gaji</h3>
+            <div>
+              <label for="base_salary" class="block text-sm font-medium text-gray-700">Gaji Pokok</label>
+              <input type="text" id="base_salary" name="base_salary" required disabled class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 cursor-not-allowed sm:text-sm" value="••••••••" />
+              <p class="mt-1 text-xs text-gray-500">Informasi gaji bersifat rahasia dan tidak dapat diubah di sini.</p>
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+            <button type="button" id="cancelProfileEditBtn" class="px-5 py-2.5 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors duration-200">Batal</button>
+            <button type="submit" class="px-5 py-2.5 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors duration-200">Simpan Perubahan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-8">
+    <h3 class="text-xl font-bold text-gray-900 mb-4 border-b pb-4">Ganti Password</h3>
+
+    <form id="changePasswordFormProfile" class="space-y-4">
+      <div>
+        <label for="oldPasswordProfile" class="block text-sm font-medium text-gray-700">Password Lama</label>
+        <input type="password" id="oldPasswordProfile" name="old_password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
+      </div>
+
+      <div>
+        <label for="newPasswordProfile" class="block text-sm font-medium text-gray-700">Password Baru</label>
+        <input type="password" id="newPasswordProfile" name="new_password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
+        <p class="mt-1 text-sm text-gray-500">Minimal 8 karakter dan harus mengandung setidaknya satu huruf kapital.</p>
+      </div>
+
+      <div>
+        <label for="confirmNewPasswordProfile" class="block text-sm font-medium text-gray-700">Konfirmasi Password Baru</label>
+        <input type="password" id="confirmNewPasswordProfile" name="confirm_new_password" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
+        <p class="mt-1 text-sm text-gray-500">Minimal 8 karakter dan harus mengandung setidaknya satu huruf kapital.</p>
+      </div>
+
+      <div class="flex items-center pt-2">
+        <input id="showPasswordCheckbox" type="checkbox" class="h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500" />
+        <label for="showPasswordCheckbox" class="ml-2 block text-sm text-gray-900">Tampilkan password</label>
+      </div>
+      <div id="changePasswordErrorMessageProfile" class="text-red-600 text-sm text-center hidden"></div>
+      <div id="changePasswordSuccessMessageProfile" class="text-green-600 text-sm text-center hidden"></div>
+
+      <div class="flex justify-end space-x-3 pt-4">
+        <button type="reset" class="px-5 py-2.5 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors duration-200">Reset</button>
+        <button type="submit" class="px-5 py-2.5 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors duration-200">Ubah Password</button>
+      </div>
+    </form>
+  </div>
+</main>
       </div>
     </div>
 
