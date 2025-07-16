@@ -1,4 +1,4 @@
-// js/Admin/AddDepartmen.js
+
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js"; 
@@ -6,8 +6,8 @@ import { initializeLogout } from "../components/logoutHandler.js";
 
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // feather.replace(); // Pindahkan ini jika Anda memusatkannya di initializeSidebar()
-    initializeSidebar(); // Panggil fungsi sidebar yang sudah diimpor
+    
+    initializeSidebar(); 
     initializeLogout();
 
     const addDepartmentForm = document.getElementById("addDepartmentForm");

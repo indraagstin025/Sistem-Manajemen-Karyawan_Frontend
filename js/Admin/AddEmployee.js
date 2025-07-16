@@ -7,8 +7,8 @@ import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // feather.replace(); // Pindahkan ini jika Anda memusatkannya di initializeSidebar()
-  initializeSidebar(); // Panggil fungsi sidebar yang sudah diimpor
+  
+  initializeSidebar(); 
   initializeFormValidation();
 
 

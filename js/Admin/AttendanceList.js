@@ -8,7 +8,6 @@ import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Deklarasikan fungsi showToast terlebih dahulu
     const showToast = (message, type = "success") => {
         const backgroundColor = {
             success: "linear-gradient(to right, #22c55e, #16a34a)",
@@ -25,21 +24,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).showToast();
     };
 
-    // 2. Sekarang inisialisasi semua modul
     initializeSidebar();
     QRCodeManager.initialize({ toastCallback: showToast });
     initializeLogout({ preLogoutCallback: QRCodeManager.close });
-    
 
-    // --- SISA KODE ANDA ---
     const userAvatar = document.getElementById('userAvatar');
     const userDropdown = document.getElementById('userDropdown');
     const dropdownMenu = document.getElementById('dropdownMenu');
     const attendanceListBody = document.getElementById('attendance-list-body');
     const attendanceEmptyState = document.getElementById('attendance-empty-state');
 
-    // Sesuaikan formatTime: Cukup kembalikan string apa adanya dari backend
-    // Karena backend sudah memformatnya menjadi "HH:MM AM/PM"
     const formatTime = (timeString) => {
         return timeString || '-';
     };
@@ -56,7 +50,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 for (const attendance of attendanceData) {
                     const row = document.createElement('tr');
-                    // Pastikan getUserPhotoBlobUrl menangani kasus user_id tidak valid atau foto tidak ada dengan baik
                     const photoUrl = await getUserPhotoBlobUrl(attendance.user_id, attendance.user_name, 40);
 
                     row.innerHTML = `
@@ -105,7 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = '/src/pages/Auth/login.html';
             return;
         }
-        if (user.role !== 'admin') { // Ini adalah file admin dashboard, jadi cek peran admin
+        if (user.role !== 'admin') { 
             alert('Akses ditolak. Anda tidak memiliki izin sebagai admin.');
             window.location.href = '/src/pages/Auth/login.html';
             return;
@@ -130,7 +123,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Panggilan fungsi terakhir untuk menjalankan halaman
     initializeAuth();
     loadTodaysAttendance();
 });

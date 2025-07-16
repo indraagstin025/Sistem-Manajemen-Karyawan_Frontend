@@ -1,42 +1,32 @@
-// src/js/Admin/ManageEmployees.js 
-// Asumsi path ini adalah yang benar, bukan js/Karyawan/ManageEmployees.js
-
 import { userService } from "../Services/UserServices.js";
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js"; 
 import { initializeLogout } from "../components/logoutHandler.js";
-import { QRCodeManager } from "../components/qrCodeHandler.js"; // Import QRCodeManager
-// import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; // Sepertinya logic ini sudah ada di renderEmployees
-// Import SweetAlert2 (sudah ada)
+import { QRCodeManager } from "../components/qrCodeHandler.js"; 
 import Swal from 'sweetalert2'; 
-// Import Toastify jika masih ingin menggunakannya untuk notifikasi spesifik
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // Inisialisasi komponen global
+   
     initializeSidebar(); 
-    // Inisialisasi logout dengan callback untuk menutup modal QR jika terbuka
     initializeLogout({
         preLogoutCallback: () => {
-            // Asumsi QRCodeManager memiliki method close()
             if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {
                 QRCodeManager.close();
             }
         }
     });
 
-    // Inisialisasi QRCodeManager jika tombol generate QR ada di halaman ini
     QRCodeManager.initialize({
         toastCallback: (message, type) => {
-            // Gunakan Toastify untuk pesan QR code jika diinginkan, atau SweetAlert2
             let backgroundColor;
             if (type === "success") {
                 backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
             } else if (type === "error") {
                 backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
-            } else { // info
+            } else {
                 backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
             }
         
@@ -45,15 +35,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 duration: 3000,
                 close: true,
                 gravity: "top",
-                position: "right", // Atau "center" jika ingin di tengah
+                position: "right",
                 style: { background: backgroundColor, borderRadius: "8px" },
             }).showToast();
         },
     });
 
-    // feather.replace(); // Umumnya dipanggil di initializeSidebar, tapi bisa juga di sini jika ada ikon di luar sidebar/header
-
-    // --- Seleksi Elemen DOM ---
     const employeeTableBody = document.getElementById("employeeTableBody");
     const loadingMessage = document.getElementById("loadingMessage");
     const employeeListError = document.getElementById("employeeListError");
@@ -63,7 +50,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nextPageBtn = document.getElementById("nextPageBtn");
     const searchInput = document.getElementById("searchInput");
 
-    // Elemen modal edit
     const editEmployeeModal = document.getElementById("editEmployeeModal");
     const closeEditEmployeeModalBtn = document.getElementById("closeEditEmployeeModalBtn");
     const cancelEditEmployeeBtn = document.getElementById("cancelEditEmployeeBtn");
@@ -71,7 +57,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editErrorMessageDiv = document.getElementById("editErrorMessage");
     const editSuccessMessageDiv = document.getElementById("editSuccessMessage");
 
-    // Input form edit
     const editEmployeeId = document.getElementById("editEmployeeId");
     const editName = document.getElementById("editName");
     const editEmail = document.getElementById("editEmail");
@@ -80,23 +65,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editBaseSalary = document.getElementById("editBaseSalary");
     const editAddress = document.getElementById("editAddress");
 
-    // Dropdown pengguna di header (untuk menampilkan foto profil)
     const userAvatarNav = document.getElementById("userAvatar");
-    const userDropdownContainer = document.getElementById("userDropdown"); // Container dropdown (untuk click event)
-    const dropdownMenu = document.getElementById("dropdownMenu"); // Menu dropdown itu sendiri
+    const userDropdownContainer = document.getElementById("userDropdown");
+    const dropdownMenu = document.getElementById("dropdownMenu");
 
     let currentPage = 1;
     const itemsPerPage = 10;
     let currentSearch = "";
-    let currentRoleFilter = ""; // Jika ada filter role di masa depan, ini bisa digunakan
-    let allDepartments = []; // Cache departemen
+    let currentRoleFilter = "";
+    let allDepartments = [];
 
-    // --- Fungsi Notifikasi (SweetAlert2 untuk pesan penting) ---
-    // Mengganti showGlobalMessage dan showModalMessage dengan satu fungsi SweetAlert2 yang fleksibel
     const showSweetAlert = (title, message, icon = "success", showConfirmButton = false, timer = 2000) => {
         Swal.fire({
             title: title,
-            html: message, // Gunakan html agar bisa menerima <br>
+            html: message,
             icon: icon,
             showConfirmButton: showConfirmButton,
             timer: timer,
@@ -110,14 +92,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
-    // Fungsi untuk memuat foto profil admin di header
     const loadUserProfile = async () => {
         try {
             const user = await authService.getCurrentUser();
             if (user && user.photo_url && userAvatarNav) {
                 userAvatarNav.src = user.photo_url;
             } else if (userAvatarNav) {
-                // Gunakan default avatar yang sudah ada di HTML
                 userAvatarNav.src = "/assets/default-avatar.png"; 
             }
         } catch (error) {
@@ -126,18 +106,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // Fungsi untuk memuat daftar departemen ke modal edit
     const loadDepartmentsToEditModal = async () => {
         try {
             const departments = await departmentService.getAllDepartments();
-            allDepartments = departments; // Cache departemen
+            allDepartments = departments;
 
             editDepartment.innerHTML = '<option value="">Pilih Departemen</option>';
 
             if (Array.isArray(allDepartments)) {
                 allDepartments.forEach(dept => {
                     const option = document.createElement("option");
-                    option.value = dept.name; // Asumsi value adalah nama departemen
+                    option.value = dept.name;
                     option.textContent = dept.name;
                     editDepartment.appendChild(option);
                 });
@@ -151,12 +130,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // Fungsi untuk memuat data karyawan
     const fetchEmployees = async () => {
         employeeTableBody.innerHTML = "";
         loadingMessage.classList.remove("hidden");
-        employeeListError.classList.add("hidden"); // Sembunyikan pesan error sebelumnya
-        employeeListSuccess.classList.add("hidden"); // Sembunyikan pesan sukses sebelumnya
+        employeeListError.classList.add("hidden");
+        employeeListSuccess.classList.add("hidden");
 
         try {
             const data = await userService.getAllUsers(currentPage, itemsPerPage, currentSearch, currentRoleFilter);
@@ -164,7 +142,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             loadingMessage.classList.add("hidden");
 
             if (data.data && data.data.length > 0) {
-                await renderEmployees(data.data); // Gunakan await di sini
+                await renderEmployees(data.data);
                 updatePagination(data.total, data.page, data.limit);
             } else {
                 employeeTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-gray-500">Tidak ada data karyawan.</td></tr>';
@@ -186,23 +164,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // Fungsi untuk merender baris karyawan
     const renderEmployees = async (employees) => {
         employeeTableBody.innerHTML = "";
 
         for (const employee of employees) {
             const row = document.createElement("tr");
-            row.className = "border-b border-gray-100 hover:bg-gray-50"; // Tambahkan hover effect
+            row.className = "border-b border-gray-100 hover:bg-gray-50";
 
-            // Handle photo URL
-            let photoUrl = "/assets/default-avatar.png"; // Default placeholder
+            let photoUrl = "/assets/default-avatar.png";
             try {
-                // Asumsi getUserPhotoBlobUrl mengembalikan URL objek blob atau null jika gagal/tidak ada
                 const userPhotoBlobUrl = await userService.getProfilePhoto(employee.id); 
                 if (userPhotoBlobUrl) {
                     photoUrl = userPhotoBlobUrl;
                 } else {
-                    // Fallback to placeholder if no photo or error
                     const initial = employee.name ? employee.name.charAt(0).toUpperCase() : '?';
                     photoUrl = `https://placehold.co/48x48/E2E8F0/4A5568?text=${initial}`;
                 }
@@ -234,7 +208,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             employeeTableBody.appendChild(row);
         }
 
-        // Pastikan feather.replace() dipanggil setelah semua ikon baru ditambahkan
         feather.replace();
 
         document.querySelectorAll(".edit-btn").forEach((button) => {
@@ -245,7 +218,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
-    // Fungsi untuk memperbarui paginasi
     const updatePagination = (total, page, limit) => {
         const totalPages = Math.ceil(total / limit);
         const startIndex = (page - 1) * limit + 1;
@@ -254,18 +226,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         paginationInfo.textContent = `Menampilkan ${startIndex}-${endIndex} dari ${total} karyawan`;
 
         prevPageBtn.disabled = page === 1;
-        nextPageBtn.disabled = page >= totalPages; // Gunakan totalPages untuk nextPageBtn
+        nextPageBtn.disabled = page >= totalPages;
     };
 
-    // Fungsi untuk membuka modal edit
     const openEditModal = async (employeeId) => {
-        // Reset pesan error/sukses di modal
         editErrorMessageDiv.classList.add("hidden");
         editSuccessMessageDiv.classList.add("hidden");
         editErrorMessageDiv.textContent = "";
         editSuccessMessageDiv.textContent = "";
 
-        // Muat departemen jika belum dimuat
         if (allDepartments.length === 0) {
             await loadDepartmentsToEditModal();
         }
@@ -281,9 +250,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 editBaseSalary.value = employee.base_salary || 0;
                 editAddress.value = employee.address || "";
                 
-                // Tampilkan modal dengan class "active" untuk transisi CSS
                 editEmployeeModal.classList.remove("hidden");
-                setTimeout(() => editEmployeeModal.classList.add("active"), 10); // Memberi waktu agar transisi bekerja
+                setTimeout(() => editEmployeeModal.classList.add("active"), 10);
             } else {
                 showSweetAlert("Data Tidak Ditemukan", "Data karyawan tidak ditemukan.", "error");
             }
@@ -296,27 +264,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // Fungsi untuk menutup modal edit
     const closeEditModal = () => {
         editEmployeeModal.classList.remove("active");
         setTimeout(() => {
             editEmployeeModal.classList.add("hidden");
             editEmployeeForm.reset();
-        }, 300); // Sesuaikan dengan durasi transisi CSS
+        }, 300);
     };
 
-    // Event listeners untuk tombol tutup modal edit dan overlay
     if (closeEditEmployeeModalBtn) closeEditEmployeeModalBtn.addEventListener("click", closeEditModal);
     if (cancelEditEmployeeBtn) cancelEditEmployeeBtn.addEventListener("click", closeEditModal);
     if (editEmployeeModal) {
         editEmployeeModal.addEventListener("click", (event) => {
-            if (event.target === editEmployeeModal) { // Jika klik pada overlay
+            if (event.target === editEmployeeModal) {
                 closeEditModal();
             }
         });
     }
 
-    // Event listener untuk submit form edit
     if (editEmployeeForm) {
         editEmployeeForm.addEventListener("submit", async (event) => {
             event.preventDefault();
@@ -331,11 +296,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 updatedData[key] = value;
             }
 
-            // Hapus field yang tidak relevan untuk update
             delete updatedData.id;
-            // delete updatedData.password; // Password tidak diupdate dari sini
-            // delete updatedData.role; // Role tidak diupdate dari sini
-            // delete updatedData.photo_file; // Photo tidak diupdate dari sini
 
             updatedData.base_salary = parseFloat(updatedData.base_salary);
             if (isNaN(updatedData.base_salary)) {
@@ -343,10 +304,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
             
-            // Perbaikan: Hapus atribut `name` dari `editEmail` jika backend hanya menerima `email`
-            // dan tidak ada validasi email di frontend.
-            // Jika backend memvalidasi, pastikan `email` dikirim dengan benar.
-            // Untuk memastikan hanya data yang valid dan relevan yang dikirim
             const dataToUpdate = {
                 name: updatedData.name,
                 email: updatedData.email,
@@ -356,7 +313,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 address: updatedData.address,
             };
 
-
             try {
                 const response = await userService.updateUser(employeeId, dataToUpdate);
                 console.log("Karyawan berhasil diupdate:", response);
@@ -365,7 +321,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 setTimeout(() => {
                     closeEditModal();
-                    fetchEmployees(); // Muat ulang daftar karyawan setelah update
+                    fetchEmployees();
                 }, 1500);
             } catch (error) {
                 console.error("Gagal mengupdate karyawan:", error);
@@ -387,7 +343,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Fungsi untuk menghapus karyawan
     const handleDelete = async (employeeId, employeeName) => {
         Swal.fire({
             title: `Hapus ${employeeName}?`,
@@ -412,7 +367,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         showConfirmButton: false
                     });
 
-                    fetchEmployees(); // Muat ulang daftar karyawan setelah penghapusan
+                    fetchEmployees();
                 } catch (error) {
                     console.error("Gagal menghapus karyawan:", error);
                     let errorMessage = "Terjadi kesalahan saat menghapus karyawan. Silakan coba lagi.";
@@ -434,7 +389,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
-    // Event listeners untuk paginasi
     if (prevPageBtn) {
         prevPageBtn.addEventListener("click", () => {
             if (currentPage > 1) {
@@ -451,22 +405,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Event listener untuk search input
     if (searchInput) {
         let searchTimeout;
         searchInput.addEventListener("input", () => {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 currentSearch = searchInput.value;
-                currentPage = 1; // Reset halaman ke 1 saat pencarian baru
+                currentPage = 1;
                 fetchEmployees();
-            }, 500); // Debounce 500ms
+            }, 500);
         });
     }
 
-    // --- Inisialisasi Halaman ---
-    // Memuat foto profil pengguna di header
     loadUserProfile();
-    // Memuat daftar karyawan pertama kali
     fetchEmployees();
 });

@@ -1,4 +1,4 @@
-// js/Admin/AdminLeaveRequests.js
+
 
 import { LeaveRequestService } from "../Services/LeaveRequestsServices.js";
 import { authService } from "../Services/AuthServices.js";
@@ -7,12 +7,11 @@ import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
-import Swal from 'sweetalert2'; // Import SweetAlert2
+import Swal from 'sweetalert2'; 
 
-// Base URL untuk backend Anda
+
 const BACKEND_URL = "https://sistem-manajemen-karyawanbackend-production.up.railway.app";
 
-// === FUNGSI BANTUAN ===
 const createFullUrl = (relativePath) => {
     if (!relativePath) {
         return null;
@@ -49,7 +48,7 @@ const showToast = (message, type = "success") => {
     }).showToast();
 };
 
-// Fungsi showSweetAlert untuk notifikasi umum (jika belum ada)
+
 function showSweetAlert(title, message, icon = "success", showConfirmButton = false, timer = 2000) {
     Swal.fire({
         title: title,
@@ -67,7 +66,7 @@ function showSweetAlert(title, message, icon = "success", showConfirmButton = fa
 
 
 const showLogoutConfirmation = () => {
-    // Menggunakan SweetAlert2 untuk konfirmasi logout
+
     Swal.fire({
         title: 'Anda yakin ingin keluar?',
         text: "Anda akan diarahkan ke halaman login.",
@@ -84,10 +83,9 @@ const showLogoutConfirmation = () => {
     });
 };
 
-// --- START: DOMContentLoaded Listener ---
 document.addEventListener("DOMContentLoaded", async () => {
-    feather.replace(); // Pastikan feather.replace() dipanggil di sini
-    initializeSidebar(); // Panggil fungsi sidebar yang sudah diimpor
+    feather.replace(); 
+    initializeSidebar(); 
 
     const leaveRequestsTableBody = document.getElementById("leaveRequestsTableBody");
     const leaveRequestsMessage = document.getElementById("leaveRequestsMessage");
@@ -100,19 +98,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nextPageBtn = document.getElementById("nextPageBtn");
     const currentPageInfo = document.getElementById("currentPageInfo");
 
-    // === ELEMEN DOM UNTUK MODAL VIEWER BARU ===
+
     const attachmentViewerModal = document.getElementById("attachmentViewerModal");
     const closeAttachmentViewerModalBtn = document.getElementById("closeAttachmentViewerModalBtn");
     const attachmentContent = document.getElementById("attachmentContent");
     const attachmentErrorMessage = document.getElementById("attachmentErrorMessage");
     const attachmentModalTitle = document.getElementById("attachmentModalTitle");
 
-    // === VARIABEL GLOBAL / STATE ===
     let currentPage = 1;
     const itemsPerPage = 10;
     let allLeaveRequestsData = [];
 
-    // === FUNGSI UTAMA / HANDLER ===
 
     const fetchAdminProfileDataForHeader = async () => {
         try {
@@ -475,7 +471,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
         });
 
-        // Re-bind event listeners to prevent duplication
         leaveRequestsTableBody.querySelectorAll(".view-attachment-btn").forEach(button => {
             button.removeEventListener("click", handleViewAttachment);
             button.addEventListener("click", handleViewAttachment);
@@ -522,24 +517,23 @@ document.addEventListener("DOMContentLoaded", async () => {
             confirmText = "Anda akan menyetujui pengajuan cuti/izin ini.";
             inputPlaceholder = "Catatan persetujuan (wajib)";
             inputLabel = "Catatan Persetujuan:";
-            iconType = "success"; // Atau 'info' / 'question'
+            iconType = "success"; 
         } else if (action === "reject") {
             statusToUpdate = "rejected";
             confirmTitle = "Tolak Pengajuan Ini?";
             confirmText = "Anda akan menolak pengajuan cuti/izin ini.";
             inputPlaceholder = "Catatan penolakan (wajib)";
             inputLabel = "Catatan Penolakan:";
-            iconType = "error"; // Atau 'warning'
+            iconType = "error"; 
         } else {
             return;
         }
 
-        // Tampilkan SweetAlert dengan input teks
         const { value: note } = await Swal.fire({
             title: confirmTitle,
             text: confirmText,
             icon: iconType,
-            input: 'textarea', // Gunakan textarea untuk input catatan yang lebih panjang
+            input: 'textarea', 
             inputLabel: inputLabel,
             inputPlaceholder: inputPlaceholder,
             inputValidator: (value) => {
@@ -550,21 +544,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             showCancelButton: true,
             confirmButtonText: 'Ya, Proses',
             cancelButtonText: 'Batal',
-            confirmButtonColor: action === "approve" ? '#10b981' : '#dc2626', // Teal untuk approve, Red untuk reject
+            confirmButtonColor: action === "approve" ? '#10b981' : '#dc2626', 
             cancelButtonColor: '#6b7280',
-            reverseButtons: true // Agar tombol "Batal" di kiri
+            reverseButtons: true 
         });
 
-        // Jika user tidak memasukkan catatan atau membatalkan SweetAlert
         if (note === undefined || note === null || note.trim() === "") {
-            showToast("Proses dibatalkan: Catatan tidak diisi.", "info"); // Mengubah ini menjadi 'info'
+            showToast("Proses dibatalkan: Catatan tidak diisi.", "info"); 
             return;
         }
 
-        // Lanjutkan dengan konfirmasi terakhir (jika diperlukan, atau langsung proses)
-        // Saat ini, SweetAlert input sudah berfungsi sebagai konfirmasi.
-        // Jika Anda ingin konfirmasi terpisah setelah input, Anda bisa menambahkannya di sini.
-        // Namun, biasanya SweetAlert input sudah cukup sebagai satu langkah interaksi.
 
         try {
             button.disabled = true;
@@ -611,7 +600,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Dropdown User in Header (Adjusted to work with group-hover CSS but also provide click toggle)
     const userDropdownGroup = document.querySelector('.header .relative.group');
     if (userDropdownGroup) {
         userDropdownGroup.addEventListener("click", (event) => {
@@ -625,7 +613,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 dropdown.classList.toggle("active");
             }
         });
-        // Close dropdown if clicking outside the entire group
+       
         document.addEventListener("click", (event) => {
             const dropdown = userDropdownGroup.querySelector('#dropdownMenu');
             if (dropdown && !userDropdownGroup.contains(event.target) && !dropdown.contains(event.target)) {
@@ -655,7 +643,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }, 300);
         });
 
-        // Pastikan klik di luar modal-content menutup modal
         attachmentViewerModal.addEventListener("click", (event) => {
             if (event.target === attachmentViewerModal) {
                 attachmentViewerModal.classList.remove("active");
@@ -668,7 +655,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // === INISIALISASI ===
     fetchAdminProfileDataForHeader();
     loadLeaveRequests();
 });
