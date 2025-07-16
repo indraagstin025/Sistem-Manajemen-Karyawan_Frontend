@@ -1,7 +1,3 @@
-/**
- * Menginisialisasi fungsionalitas sidebar mobile.
- * Fungsi ini harus dipanggil di setiap halaman yang memiliki struktur sidebar mobile yang sama.
- */
 export function initializeSidebar() {
   if (typeof feather !== "undefined" && feather.replace) {
     feather.replace();

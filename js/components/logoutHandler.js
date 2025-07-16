@@ -1,6 +1,4 @@
-// File: js/components/logoutHandler.js
-
-import { authService } from "../Services/AuthServices.js"; // PASTIKAN ADA KURUNG KURAWAL {}
+import { authService } from "../Services/AuthServices.js";
 import Swal from 'sweetalert2';
 
 /**
@@ -19,11 +17,9 @@ const showLogoutConfirmation = (preLogoutCallback) => {
         cancelButtonText: 'Batal'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Jalankan callback jika ada, sebelum proses logout
             if (preLogoutCallback && typeof preLogoutCallback === 'function') {
                 preLogoutCallback();
             }
-            // Lakukan proses logout
             authService.logout();
         }
     });
