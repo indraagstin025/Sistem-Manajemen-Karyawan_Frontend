@@ -77,53 +77,69 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  if (profileForm) {
-    profileForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const userString = localStorage.getItem("user");
+ if (profileForm) {
+    profileForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const userString = localStorage.getItem("user");
 
-      try {
-        if (!userString) throw new Error("Sesi tidak valid. Harap login kembali.");
+      try {
+        if (!userString) throw new Error("Sesi tidak valid. Harap login kembali.");
 
-        const user = JSON.parse(userString);
-        const photoFile = photoUploadInput.files[0];
-        const updatedData = { address: addressTextarea.value.trim() };
+        const user = JSON.parse(userString);
+        const photoFile = photoUploadInput.files[0];
+        
+        // --- Perubahan dimulai di sini ---
+        const updatedData = {}; // Mulai dengan objek kosong
 
-        if (!updatedData.address && !photoFile) {
-          return showToast("Tidak ada perubahan untuk disimpan.", "error");
+        // Tambahkan email jika ada perubahan dan tidak kosong
+        if (emailInput.value.trim() !== "" && emailInput.value.trim() !== user.email) {
+            updatedData.email = emailInput.value.trim();
         }
 
-        if (updatedData.address) {
-          await userService.updateUser(user.id, updatedData);
+        // Tambahkan address jika ada perubahan dan tidak kosong
+        if (addressTextarea.value.trim() !== "" && addressTextarea.value.trim() !== user.address) {
+            updatedData.address = addressTextarea.value.trim();
         }
-        if (photoFile) {
-          const uploadResponse = await userService.uploadProfilePhoto(user.id, photoFile);
+        // --- Perubahan berakhir di sini ---
 
-          const blob = await userService.getProfilePhoto(user.id);
-          profilePhotoPreview.src = URL.createObjectURL(blob);
 
-          const currentUserData = authService.getCurrentUser();
-          if (currentUserData) {
-            currentUserData.photo = uploadResponse.photo_url;
-            localStorage.setItem('user', JSON.stringify(currentUserData));
-          }
-        }
+        if (Object.keys(updatedData).length === 0 && !photoFile) { // Periksa apakah updatedData kosong dan tidak ada foto baru
+          return showToast("Tidak ada perubahan untuk disimpan.", "error");
+        }
 
-        showToast("Profil berhasil diupdate!", "success");
-        loadProfileData();
-        
-        // Redirect ke dashboard setelah 2 detik
-        setTimeout(() => {
-          window.location.href = "/employee_dashboard.html";
-        }, 2000);
-      } catch (error) {
-        showToast(error.message || "Gagal mengupdate profil.", "error");
-        if (error.status === 401 || error.status === 403) {
-          setTimeout(() => authService.logout(), 2000);
-        }
-      }
-    });
-  }
+        // Panggil updateUser hanya jika ada data yang diupdate (selain foto)
+        if (Object.keys(updatedData).length > 0) { 
+          await userService.updateUser(user.id, updatedData);
+        }
+
+        if (photoFile) {
+          const uploadResponse = await userService.uploadProfilePhoto(user.id, photoFile);
+
+          const blob = await userService.getProfilePhoto(user.id);
+          profilePhotoPreview.src = URL.createObjectURL(blob);
+
+          const currentUserData = authService.getCurrentUser();
+          if (currentUserData) {
+            currentUserData.photo = uploadResponse.photo_url;
+            localStorage.setItem('user', JSON.stringify(currentUserData));
+          }
+        }
+
+        showToast("Profil berhasil diupdate!", "success");
+        loadProfileData();
+        
+        // Redirect ke dashboard setelah 2 detik
+        setTimeout(() => {
+          window.location.href = "/employee_dashboard.html";
+        }, 2000);
+      } catch (error) {
+        showToast(error.message || "Gagal mengupdate profil.", "error");
+        if (error.status === 401 || error.status === 403) {
+          setTimeout(() => authService.logout(), 2000);
+        }
+      }
+    });
+  }
 
   if (changePasswordForm) {
     changePasswordForm.addEventListener("submit", async (event) => {
