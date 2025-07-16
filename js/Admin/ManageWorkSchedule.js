@@ -197,110 +197,115 @@ document.addEventListener("DOMContentLoaded", async () => {
         }, 300);
     };
 
-    const calendarEl = document.getElementById("calendar");
-    calendar = new Calendar(calendarEl, {
-        plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-        initialView: "dayGridMonth",
-        locale: idLocale,
-        headerToolbar: {
-            left: "prev,next today",
-            center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay",
-        },
-        editable: true,
-        selectable: true,
-        displayEventTime: false,
-        eventSources: [
-            {
-                events: async (info) => {
-                    try {
-                        const filters = {
-                            start_date: info.startStr.split("T")[0],
-                            end_date: info.endStr.split("T")[0],
-                        };
-                        const response = await WorkScheduleServices.getAllWorkSchedules(filters);
-                        
-                        return (response.data || []).map(s => ({
-                            id: s.id,
-                            title: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}`,
-                            start: s.date,
-                            extendedProps: { 
-                                start_time: s.start_time,
-                                end_time: s.end_time,
-                                note: s.note,
-                                recurrence_rule: s.recurrence_rule, 
-                            },
-                            allDay: true,
-                            color: '#38b2ac',
-                            textColor: 'white',
-                            display: 'block', 
-                        }));
-                    } catch (error) {
-                        console.error("Error fetching work schedules:", error);
-                        showSweetAlert('Error Fetching Schedules', `Gagal memuat jadwal kerja: ${error.message || "Terjadi kesalahan."}`, 'error', true);
-                        if (error.status === 401 || error.status === 403) {
-                            setTimeout(() => authService.logout(), 2000);
-                        }
-                        return [];
-                    }
-                },
-                color: '#38b2ac',
-                textColor: 'white',
+calendar = new Calendar(calendarEl, {
+  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+  initialView: "dayGridMonth",
+  locale: idLocale,
+  headerToolbar: {
+    left: "prev,next today",
+    center: "title",
+    right: "dayGridMonth,timeGridWeek,timeGridDay",
+  },
+  editable: true,
+  selectable: true,
+  displayEventTime: false,
+
+  // ✅ Tambahkan ini agar event muncul sebagai titik merah
+  eventContent: function () {
+    return {
+      html: `<div style="width: 10px; height: 10px; border-radius: 50%; background-color: red; margin: auto;"></div>`,
+    };
+  },
+
+  eventSources: [
+    {
+      events: async (info) => {
+        try {
+          const filters = {
+            start_date: info.startStr.split("T")[0],
+            end_date: info.endStr.split("T")[0],
+          };
+          const response = await WorkScheduleServices.getAllWorkSchedules(filters);
+
+          return (response.data || []).map((s) => ({
+            id: s.id,
+            title: "", // ✅ kosongkan title agar hanya titik yang ditampilkan
+            start: s.date,
+            extendedProps: {
+              start_time: s.start_time,
+              end_time: s.end_time,
+              note: s.note,
+              recurrence_rule: s.recurrence_rule,
             },
+            allDay: true,
+            backgroundColor: "#e53e3e", // warna merah tua
+            borderColor: "#e53e3e",
+            display: "block",
+          }));
+        } catch (error) {
+          console.error("Error fetching work schedules:", error);
+          showSweetAlert("Error Fetching Schedules", `Gagal memuat jadwal kerja: ${error.message || "Terjadi kesalahan."}`, "error", true);
+          if (error.status === 401 || error.status === 403) {
+            setTimeout(() => authService.logout(), 2000);
+          }
+          return [];
+        }
+      },
+    },
+    {
+      events: async (info) => {
+        try {
+          const year = info.start.getFullYear();
+          const holidays = await WorkScheduleServices.getHolidays(year);
+          return (holidays || []).map((holiday) => ({
+            title: holiday.Name,
+            start: holiday.Date,
+            allDay: true,
+            display: "background",
+            color: "#ff9f89",
+          }));
+        } catch (error) {
+          console.error("Error fetching holidays:", error);
+          showSweetAlert("Error Fetching Holidays", `Gagal memuat hari libur: ${error.message || "Terjadi kesalahan."}`, "error", true);
+          return [];
+        }
+      },
+    },
+  ],
 
-            {
-                events: async (info) => {
-                    try {
-                        const year = info.start.getFullYear();
-                        const holidays = await WorkScheduleServices.getHolidays(year);
-                        return (holidays || []).map(holiday => ({
-                            title: holiday.Name, 
-                            start: holiday.Date, 
-                            allDay: true,
-                            display: 'background',
-                            color: '#ff9f89',
-                        }));
-                    } catch (error) {
-                        console.error("Error fetching holidays:", error);
-                        showSweetAlert('Error Fetching Holidays', `Gagal memuat hari libur: ${error.message || "Terjadi kesalahan."}`, 'error', true);
-                        return [];
-                    }
-                }
-            }
-        ],
+  select: (info) => {
+    openScheduleModal("create");
+    scheduleDateInput.value = info.startStr.split("T")[0];
+    calendar.unselect();
+  },
 
-        select: (info) => {
-            openScheduleModal("create");
-            scheduleDateInput.value = info.startStr.split("T")[0];
-            calendar.unselect();
-        },
-        eventClick: async (info) => {
-            const scheduleRuleId = info.event.id;
+  eventClick: async (info) => {
+    const scheduleRuleId = info.event.id;
 
-            if (info.event.display === 'background') {
-                showSweetAlert('Info Hari Libur', `Hari libur: ${info.event.title}`, 'info');
-                return;
-            }
+    if (info.event.display === "background") {
+      showSweetAlert("Info Hari Libur", `Hari libur: ${info.event.title}`, "info");
+      return;
+    }
 
-            try {
-                const response = await WorkScheduleServices.getWorkScheduleById(scheduleRuleId);
-                const scheduleRule = response.data;
+    try {
+      const response = await WorkScheduleServices.getWorkScheduleById(scheduleRuleId);
+      const scheduleRule = response.data;
 
-                if (scheduleRule) {
-                    openScheduleModal("edit", scheduleRule);
-                } else {
-                    showSweetAlert("Data Tidak Ditemukan", "Detail jadwal tidak ditemukan.", "error");
-                }
+      if (scheduleRule) {
+        openScheduleModal("edit", scheduleRule);
+      } else {
+        showSweetAlert("Data Tidak Ditemukan", "Detail jadwal tidak ditemukan.", "error");
+      }
+    } catch (error) {
+      console.error("Error fetching schedule for edit:", error);
+      showSweetAlert("Gagal Memuat Jadwal", `Gagal memuat detail jadwal untuk diedit: ${error.message || "Terjadi kesalahan."}`, "error", true);
+      if (error.status === 401 || error.status === 403) {
+        setTimeout(() => authService.logout(), 2000);
+      }
+    }
+  },
+});
 
-            } catch (error) {
-                console.error("Error fetching schedule for edit:", error);
-                showSweetAlert("Gagal Memuat Jadwal", `Gagal memuat detail jadwal untuk diedit: ${error.message || "Terjadi kesalahan."}`, "error", true);
-                if (error.status === 401 || error.status === 403) {
-                    setTimeout(() => authService.logout(), 2000);
-                }
-            }
-        },
-    });
 
     calendar.render();
 

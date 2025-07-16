@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.13/main.min.css' rel='stylesheet' />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode.js/qrcode.min.js"></script> 
     <link rel="stylesheet" href="/style/input.css" />
 
@@ -37,7 +38,7 @@
         transition: transform 0.3s ease-out;
       }
 
-      /* Gaya untuk Modal (menggunakan active class untuk transisi) */
+      /* --- Gaya untuk Modal Formulir Jadwal --- */
       .modal-overlay {
         position: fixed;
         top: 0;
@@ -94,11 +95,28 @@
         font-size: 1rem;
         color: #2d3748;
         background-color: #fff;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
       }
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+          border-color: #1aae9f; /* Warna toska saat fokus */
+          box-shadow: 0 0 0 3px rgba(26, 174, 159, 0.2); /* Shadow toska lembut */
+          outline: none;
+      }
+      /* Checkbox styling */
+      .form-group .weekday-checkbox {
+          width: auto; /* Reset width for checkboxes */
+          margin-right: 0.5rem;
+          transform: scale(1.1); /* Sedikit membesar */
+          accent-color: #1aae9f; /* Warna toska untuk checkbox yang dicentang */
+      }
+
       .form-buttons {
         display: flex;
         justify-content: flex-end;
         margin-top: 1.5rem;
+        gap: 0.75rem; /* Memberi jarak antar tombol */
       }
       .form-buttons button {
         padding: 0.75rem 1.5rem;
@@ -108,16 +126,15 @@
         cursor: pointer;
       }
       .form-buttons .save-btn {
-        background-color: #38b2ac;
+        background-color: #1aae9f; /* Toska untuk simpan */
         color: white;
       }
       .form-buttons .save-btn:hover {
-        background-color: #319795;
+        background-color: #159b8f; /* Toska lebih gelap saat hover */
       }
       .form-buttons .cancel-btn {
-        background-color: #e2e8f0;
+        background-color: #e0e7eb; /* Abu-abu terang */
         color: #4a5568;
-        margin-left: 0.75rem;
       }
       .form-buttons .cancel-btn:hover {
         background-color: #cbd5e0;
@@ -125,48 +142,54 @@
       .form-buttons .delete-btn {
         background-color: #ef4444;
         color: white;
-        margin-right: auto;
+        margin-right: auto; /* Dorong ke kiri */
       }
       .form-buttons .delete-btn:hover {
         background-color: #dc2626;
       }
-      /* Gaya untuk Modal QR Code (diperlukan jika ManageWorkSchedule.js mengimpor QRCodeManager) */
+      
+      /* --- Gaya untuk Modal QR Code --- */
       .qr-modal-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.6); /* Overlay gelap */
+        background-color: rgba(0, 0, 0, 0.6);
         display: flex;
         justify-content: center;
         align-items: center;
-        z-index: 1000; /* Pastikan di atas elemen lain */
+        z-index: 1000;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.3s ease-out, visibility 0s linear 0.3s; /* Transisi opacity, dan visibility setelah transisi selesai */
+        transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
       }
       .qr-modal-overlay.active {
         opacity: 1;
         visibility: visible;
-        transition: opacity 0.3s ease-out, visibility 0s linear 0s; /* Tampilkan segera */
+        transition: opacity 0.3s ease-out, visibility 0s linear 0s;
       }
       .qr-modal-content {
         background-color: white;
-        padding: 2.5rem; /* p-10 */
-        border-radius: 0.75rem; /* rounded-xl */
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-2xl */
+        padding: 2.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         transform: translateY(-20px);
         opacity: 0;
         transition: all 0.3s ease-out;
-        max-width: 400px; /* Batasi lebar modal */
+        max-width: 400px;
         width: 90%;
-        text-align: center; /* Tengah konten modal */
+        text-align: center;
       }
       .qr-modal-overlay.active .qr-modal-content {
         transform: translateY(0);
         opacity: 1;
       }
+      #qrcode-canvas-container canvas {
+          width: 100% !important; /* Pastikan QR code mengisi kontainer */
+          height: auto !important; /* Pertahankan rasio aspek */
+      }
+
       /* Custom scrollbar untuk main content */
       .custom-scroll::-webkit-scrollbar {
           width: 8px;
@@ -184,6 +207,63 @@
           background: #a0aec0;
       }
 
+      /* --- Kustomisasi FullCalendar dengan warna toska (disesuaikan untuk admin) --- */
+      .fc .fc-button-primary {
+        background-color: #1aae9f; /* Toska utama */
+        border-color: #1aae9f;
+        color: white;
+        text-transform: capitalize;
+        font-weight: 500;
+      }
+      .fc .fc-button-primary:hover {
+        background-color: #159b8f; /* Toska lebih gelap saat hover */
+        border-color: #159b8f;
+      }
+      .fc .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: #0e7a70; /* Toska paling gelap saat aktif */
+        border-color: #0e7a70;
+      }
+      .fc-col-header-cell-cushion {
+        color: #1aae9f; /* Warna teks toska untuk nama hari */
+        font-weight: 700;
+        padding: 8px 0;
+      }
+      .fc-toolbar-title {
+        color: #2d3748; /* Warna teks abu-abu gelap untuk judul bulan/tahun */
+        font-weight: 700;
+        font-size: 1.75rem;
+      }
+      .fc-daygrid-day-number {
+        font-weight: 600;
+        font-size: 1.1em;
+        color: #333;
+        padding: 8px;
+      }
+      .fc-day-today {
+        background-color: #e0f2f1 !important; /* Latar belakang toska muda untuk hari ini */
+        border-radius: 8px;
+      }
+      /* Event pada FullCalendar (untuk jadwal kerja) */
+      .fc-event {
+        background-color: #20c997; /* Warna toska untuk event jadwal */
+        border-color: #20c997;
+        color: white;
+        padding: 2px 6px; /* Sedikit padding */
+        border-radius: 4px;
+        font-size: 0.85rem;
+        cursor: pointer; /* Menandakan bisa diklik */
+        margin-bottom: 2px; /* Jarak antar event */
+      }
+      .fc-event-time, .fc-event-title {
+          padding: 0 1px; /* Padding minimal untuk teks event */
+      }
+      .fc-event-title-container {
+        font-weight: 500; /* Sedikit lebih tebal */
+      }
+      .fc-event.fc-event-dragging {
+          opacity: 0.7; /* Sedikit transparan saat di-drag */
+      }
+
       /* Responsivitas FullCalendar */
       #calendar {
         height: 600px; /* Tinggi default */
@@ -195,42 +275,99 @@
           min-height: 400px; /* Minimal tinggi */
           padding-bottom: 20px; /* Tambahkan padding bawah agar kalender tidak terlalu mepet */
         }
-        /* FullCalendar header toolbar penyesuaian */
         .fc .fc-header-toolbar {
           flex-direction: column;
-          align-items: center; /* Tengahkan item */
-          /* Tambahkan gap atau padding vertikal antara chunks jika perlu */
+          align-items: center;
         }
-        /* Mengatur urutan dan margin untuk chunks (bagian kiri, tengah, kanan) */
-        .fc .fc-toolbar-chunk:nth-child(1) { /* Default: left chunk (prev,next,today) */
-          order: 2; /* Pindahkan ke bawah judul */
-          margin-top: 1rem; /* Beri jarak dari judul */
+        .fc .fc-toolbar-chunk:nth-child(1) {
+          order: 2;
+          margin-top: 1rem;
         }
-        .fc .fc-toolbar-chunk:nth-child(2) { /* Default: center chunk (title) */
-          order: 1; /* Pindahkan judul ke atas */
-          margin-bottom: 0.5rem; /* Sedikit jarak dari tombol atas */
+        .fc .fc-toolbar-chunk:nth-child(2) {
+          order: 1;
+          margin-bottom: 0.5rem;
         }
-        .fc .fc-toolbar-chunk:nth-child(3) { /* Default: right chunk (views) */
-          order: 3; /* Pindahkan ke paling bawah */
-          margin-top: 1rem; /* Beri jarak dari tombol navigasi */
+        .fc .fc-toolbar-chunk:nth-child(3) {
+          order: 3;
+          margin-top: 1rem;
         }
-        /* Penyesuaian tampilan tombol-tombol FullCalendar */
         .fc .fc-button-group {
-          flex-wrap: wrap; /* Biarkan tombol membungkus ke baris baru */
-          justify-content: center; /* Tengahkan tombol dalam grup */
-          width: 100%; /* Pastikan grup mengambil lebar penuh */
+          flex-wrap: wrap;
+          justify-content: center;
+          width: 100%;
         }
         .fc .fc-button {
-            margin: 0.25rem; /* Sedikit margin antar tombol */
-            font-size: 0.8em; /* Kecilkan ukuran font tombol agar muat */
-            padding: 0.5em 0.8em; /* Sesuaikan padding */
+            margin: 0.25rem;
+            font-size: 0.8em;
+            padding: 0.5em 0.8em;
         }
         .fc-toolbar-title {
-            font-size: 1.5em !important; /* Pastikan judul lebih besar */
-            white-space: normal; /* Izinkan teks judul membungkus */
-            text-align: center; /* Pastikan judul terpusat */
+            font-size: 1.5em !important;
+            white-space: normal;
+            text-align: center;
         }
       }
+
+      /* Kustomisasi SweetAlert2 */
+      .swal2-popup {
+        font-family: "Inter", sans-serif;
+        border-radius: 1rem !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+      }
+      .swal2-title {
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        color: #2d3748 !important;
+        margin-bottom: 1rem !important;
+      }
+      .swal2-html-container {
+        font-size: 1rem !important;
+        color: #4a5568 !important;
+        line-height: 1.6 !important;
+      }
+      .swal2-confirm {
+        background-color: #1aae9f !important; /* Tombol konfirmasi toska */
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 1.5rem !important;
+        border-radius: 0.5rem !important;
+        transition: background-color 0.2s ease-out !important;
+      }
+      .swal2-confirm:hover {
+        background-color: #159b8f !important;
+      }
+      .swal2-cancel { /* Gaya untuk tombol batal SweetAlert, jika ada */
+        background-color: #ef4444 !important; /* Merah untuk batal */
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 1.5rem !important;
+        border-radius: 0.5rem !important;
+        transition: background-color 0.2s ease-out !important;
+      }
+      .swal2-cancel:hover {
+        background-color: #dc2626 !important;
+      }
+      .swal2-icon {
+        border-color: #1aae9f !important; /* Border ikon info toska */
+        color: #1aae9f !important; /* Warna ikon info toska */
+      }
+      .swal2-success .swal2-success-ring {
+          border-color: #1aae9f !important;
+      }
+      .swal2-success [class^=swal2-success-line][class$=long] {
+          background-color: #1aae9f !important;
+      }
+      .swal2-success [class^=swal2-success-line][class$=tip] {
+          background-color: #1aae9f !important;
+      }
+      .swal2-error .swal2-x-mark {
+          color: #ef4444 !important;
+      }
+      .swal2-error .swal2-x-mark-line-left,
+      .swal2-error .swal2-x-mark-line-right {
+          background-color: #ef4444 !important;
+      }
+
     </style>
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
@@ -308,10 +445,11 @@
         <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
           <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
             <h3 class="font-semibold text-gray-800 mb-4 text-xl">Kalender Jadwal Kerja</h3>
-            <button id="manualAddScheduleBtn" class="mb-4 inline-flex items-center px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold rounded-lg shadow transition-all duration-200">
-              <i data-feather="plus" class="w-4 h-4 mr-2"></i> Tambah Aturan Jadwal
+            <button id="manualAddScheduleBtn" class="mb-4 inline-flex items-center px-5 py-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white text-base font-semibold rounded-lg shadow-md transition-all duration-300 transform hover:scale-[1.02] active:scale-95">
+              <i data-feather="plus" class="w-5 h-5 mr-2"></i> Tambah Aturan Jadwal
             </button>
-            <div id='calendar'></div> </div>
+            <div id='calendar'></div> 
+          </div>
         </main>
       </div>
     </div>
@@ -343,7 +481,7 @@
 
           <div id="weekly-options" class="form-group hidden">
             <label>Pada Hari:</label>
-            <div class="grid grid-cols-4 gap-2 mt-2">
+            <div class="grid grid-cols-4 gap-2 mt-2 md:grid-cols-7">
               <label class="flex items-center space-x-2"><input type="checkbox" class="weekday-checkbox" value="SU"> Min</label>
               <label class="flex items-center space-x-2"><input type="checkbox" class="weekday-checkbox" value="MO"> Sen</label>
               <label class="flex items-center space-x-2"><input type="checkbox" class="weekday-checkbox" value="TU"> Sel</label>
@@ -448,6 +586,12 @@
       </div>
     </div>
 
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.13/index.global.min.js'></script>
     <script type="module" src="/js/Admin/ManageWorkSchedule.js"></script>
+    <script type="module" src="/js/components/sidebarHandler.js"></script>
+    <script type="module" src="/js/components/logoutHandler.js"></script>
+    <script>
+      feather.replace();
+    </script>
   </body>
 </html>
