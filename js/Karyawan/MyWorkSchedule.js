@@ -4,6 +4,8 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import idLocale from '@fullcalendar/core/locales/id';
 
 import WorkScheduleServices from '../Services/WorkScheduleServices.js';
+import Swal from 'sweetalert2';
+
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -65,23 +67,33 @@ calendar = new Calendar(calendarEl, {
         fetchMySchedules(info);
     },
 
-    eventClick: (info) => {
-        const { start, end, extendedProps } = info.event;
+eventClick: (info) => {
+    const { start, end, extendedProps } = info.event;
 
-        const dateStr = start.toLocaleDateString('id-ID');
-        const timeStr = `${start.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - ${
-            end ? end.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'
-        }`;
-        const noteStr = extendedProps.description || '-';
+    const dateStr = start.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = `${start.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} - ${
+        end ? end.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'
+    }`;
+    const noteStr = extendedProps.description || '-';
 
-        const content = `
-            <b>Tanggal&nbsp;&nbsp;:</b> ${dateStr}<br>
-            <b>Waktu&nbsp;&nbsp;&nbsp;:</b> ${timeStr}<br>
-            <b>Catatan&nbsp;:</b> ${noteStr}
-        `;
+    Swal.fire({
+        title: 'Detail Jadwal Kerja',
+html: `
+    <pre style="text-align:left; white-space: pre-wrap;">
+<b>Tanggal:</b> ${dateStr}
+<b>Waktu:</b>   ${timeStr}
+<b>Catatan:</b> ${noteStr}
+    </pre>
+`,
 
-        showAlert(content, 'info', 6000); // Ganti dengan SweetAlert2 jika ingin modal
-    },
+        icon: 'info',
+        confirmButtonText: 'Tutup',
+        customClass: {
+            popup: 'rounded-lg'
+        }
+    });
+},
+
 
     eventDidMount: function(info) {
         const note = info.event.extendedProps.description || '-';
