@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
         emailInput.value = employee.email || "";
         positionInput.value = employee.position || "";
         departmentInput.value = employee.department || "";
-        document.getElementById("base_salary").value = "••••••••";
+       document.getElementById("base_salary").value = employee.base_salary || 0;
         addressTextarea.value = employee.address || "";
 
         try {
