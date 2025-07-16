@@ -7,44 +7,15 @@ import WorkScheduleServices from "../Services/WorkScheduleServices.js";
 import Swal from "sweetalert2";
 
 document.addEventListener("DOMContentLoaded", () => {
-  let calendar;
+  const calendarEl = document.getElementById("my-calendar");
 
-  const fetchMySchedules = async () => {
-    try {
-      const response = await WorkScheduleServices.getMyWorkSchedules();
-      const schedules = response.data;
+  // Pastikan elemen kalender ada sebelum melanjutkan
+  if (!calendarEl) {
+    console.error("Elemen kalender dengan ID 'my-calendar' tidak ditemukan.");
+    return;
+  }
 
-      if (calendar) {
-        calendar.removeAllEvents();
-      }
-
-      const grouped = {};
-      schedules.forEach((s) => {
-        if (!grouped[s.date]) grouped[s.date] = [];
-        grouped[s.date].push(s);
-      });
-
-      const events = Object.entries(grouped).map(([date, items]) => ({
-        id: date,
-        title: "",
-        start: `${date}T${items[0].start_time}`,
-        end: `${date}T${items[0].end_time}`,
-        extendedProps: {
-          items,
-        },
-        backgroundColor: "#e53e3e",
-        borderColor: "#e53e3e",
-        allDay: false,
-      }));
-
-      calendar.addEventSource(events);
-    } catch (error) {
-      console.error("Error fetching my work schedules:", error);
-      Swal.fire("Gagal memuat jadwal kerja", error.response?.data?.error || error.message, "error");
-    }
-  };
-
-  // Fungsi helper untuk format waktu ke AM/PM
+  // Fungsi helper untuk format waktu ke AM/PM (sudah bagus, tidak perlu diubah)
   const formatTimeWithAmPm = (timeString) => {
     if (!timeString) return '';
     try {
@@ -54,16 +25,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: true // Ini yang membuat format AM/PM
+        hour12: true,
       });
     } catch (e) {
       console.error("Error formatting time:", e);
-      return timeString; // Fallback jika gagal format
+      return timeString;
     }
   };
 
-  const calendarEl = document.getElementById("my-calendar");
-  calendar = new Calendar(calendarEl, {
+  const calendar = new Calendar(calendarEl, {
     plugins: [dayGridPlugin, timeGridPlugin],
     initialView: "dayGridMonth",
     locale: idLocale,
@@ -75,17 +45,42 @@ document.addEventListener("DOMContentLoaded", () => {
     editable: false,
     selectable: false,
 
-    eventContent: () => {
-      return {
-        html: `<div style="width: 10px; height: 10px; border-radius: 50%; background-color: red; margin: auto;"></div>`,
-      };
-    },
+    // ✅ Pola yang lebih baik untuk memuat event
+    events: async function (fetchInfo, successCallback, failureCallback) {
+      try {
+        const schedules = await WorkScheduleServices.getMyWorkSchedules();
 
-    datesSet: () => {
-      fetchMySchedules();
-    },
+        if (!Array.isArray(schedules)) {
+          throw new Error("Format data jadwal tidak valid.");
+        }
 
-    // 🟢 Klik titik = tampilkan semua jadwal hari itu
+        // Kelompokkan jadwal berdasarkan tanggal
+        const grouped = {};
+        schedules.forEach((s) => {
+          if (!grouped[s.date]) grouped[s.date] = [];
+          grouped[s.date].push(s);
+        });
+
+        // Ubah data yang sudah dikelompokkan menjadi format event FullCalendar
+        const events = Object.entries(grouped).map(([date, items]) => ({
+          id: date,
+          start: date, // Cukup tanggalnya saja untuk event seharian
+          display: 'background', // Tampilkan sebagai background dot
+          backgroundColor: '#e53e3e', // Warna dot
+          extendedProps: {
+            items, // Simpan semua jadwal di hari itu
+          },
+        }));
+
+        successCallback(events);
+      } catch (error) {
+        console.error("Error fetching my work schedules:", error);
+        Swal.fire("Gagal Memuat Jadwal", error.message || "Terjadi kesalahan pada server", "error");
+        failureCallback(error);
+      }
+    },
+    
+    // ✅ Klik pada hari manapun yang ada jadwalnya
     eventClick: (info) => {
       const { start, extendedProps } = info.event;
       const dateStr = start.toLocaleDateString("id-ID", {
@@ -95,23 +90,19 @@ document.addEventListener("DOMContentLoaded", () => {
         day: "numeric",
       });
 
-      // === Bagian ini yang diubah ===
       let scheduleListHtml = '';
       if (extendedProps.items && extendedProps.items.length > 0) {
         scheduleListHtml = extendedProps.items
-          .map(
-            (item) => `
+          .map(item => `
             <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                <p style="margin: 5px 0;"><strong>Jam:</strong> ${formatTimeWithAmPm(item.start_time)} - ${formatTimeWithAmPm(item.end_time)}</p>
-                <p style="margin: 5px 0;"><strong>Catatan:</strong> ${item.note || "Tanpa catatan"}</p>
+              <p style="margin: 5px 0;"><strong>Jam:</strong> ${formatTimeWithAmPm(item.start_time)} - ${formatTimeWithAmPm(item.end_time)}</p>
+              <p style="margin: 5px 0;"><strong>Catatan:</strong> ${item.note || "Tanpa catatan"}</p>
             </div>
-            `
-          )
+          `)
           .join("");
       } else {
-          scheduleListHtml = "<p>Tidak ada jadwal untuk hari ini.</p>";
+        scheduleListHtml = "<p>Tidak ada detail jadwal untuk hari ini.</p>";
       }
-      // ===========================
 
       Swal.fire({
         title: "Detail Jadwal Kerja",
@@ -130,10 +121,14 @@ document.addEventListener("DOMContentLoaded", () => {
         buttonsStyling: false,
       });
     },
-
+    
+    // Tooltip saat hover (sudah bagus)
     eventDidMount: function (info) {
-      const count = info.event.extendedProps.items?.length || 1;
-      info.el.title = `${count} jadwal pada hari ini`;
+      const count = info.event.extendedProps.items?.length || 0;
+      if (count > 0) {
+        info.el.title = `${count} jadwal pada hari ini`;
+        info.el.style.cursor = 'pointer';
+      }
     },
   });
 
