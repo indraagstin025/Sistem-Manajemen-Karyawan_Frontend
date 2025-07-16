@@ -87,6 +87,11 @@
 
       /* --- Kustomisasi FullCalendar dengan warna toska --- */
 
+      /* Container kalender */
+      #my-calendar {
+        font-size: 0.9rem; /* Ukuran font lebih kecil */
+      }
+
       /* Tombol navigasi */
       .fc .fc-button-primary {
         background-color: #1aae9f; /* Toska utama */
@@ -94,6 +99,8 @@
         color: white;
         text-transform: capitalize; /* Agar teks tombol tidak kapital semua */
         font-weight: 500;
+        padding: 0.4rem 0.8rem; /* Padding lebih kecil */
+        font-size: 0.875rem; /* Font size lebih kecil */
       }
       .fc .fc-button-primary:hover {
         background-color: #159b8f; /* Toska lebih gelap saat hover */
@@ -108,20 +115,26 @@
       .fc-col-header-cell-cushion {
         color: #1aae9f; /* Warna teks toska untuk nama hari */
         font-weight: 700;
-        padding: 8px 0; /* Memberi sedikit padding */
+        padding: 6px 0; /* Padding lebih kecil */
+        font-size: 0.875rem; /* Font size lebih kecil */
       }
       .fc-toolbar-title {
         color: #2d3748; /* Warna teks abu-abu gelap untuk judul bulan/tahun */
         font-weight: 700;
-        font-size: 1.75rem; /* Ukuran judul lebih besar */
+        font-size: 1.5rem; /* Ukuran judul lebih kecil */
       }
 
       /* Nomor tanggal di kalender */
       .fc-daygrid-day-number {
         font-weight: 600;
-        font-size: 1.1em;
+        font-size: 1rem; /* Font size lebih kecil */
         color: #333;
-        padding: 8px; /* Memberi sedikit ruang */
+        padding: 6px; /* Padding lebih kecil */
+      }
+
+      /* Sel hari di kalender */
+      .fc-daygrid-day {
+        min-height: 40px; /* Tinggi minimum lebih kecil */
       }
 
       /* Hari ini */
@@ -136,6 +149,28 @@
         justify-content: center;
         align-items: center;
         height: 100%; /* Pastikan titik di tengah sel */
+      }
+
+      /* Toolbar kalender */
+      .fc-toolbar {
+        margin-bottom: 1rem; /* Margin lebih kecil */
+      }
+
+      /* Responsive design untuk kalender */
+      @media (max-width: 768px) {
+        #my-calendar {
+          font-size: 0.8rem;
+        }
+        .fc-toolbar-title {
+          font-size: 1.25rem;
+        }
+        .fc-daygrid-day {
+          min-height: 35px;
+        }
+        .fc .fc-button-primary {
+          padding: 0.3rem 0.6rem;
+          font-size: 0.8rem;
+        }
       }
 
       /* Menyesuaikan style SweetAlert2 agar lebih modern */
@@ -236,9 +271,9 @@
         </header>
 
         <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
-            <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+            <div class="bg-white p-6 rounded-xl shadow-lg mb-6 max-w-4xl mx-auto">
                 <h3 class="font-semibold text-gray-800 mb-4 text-xl">Kalender Jadwal Kerja Saya</h3>
-                <div id='my-calendar' style="height: 600px;"></div>
+                <div id='my-calendar' style="height: 450px;"></div>
             </div>
         </main>
       </div>
