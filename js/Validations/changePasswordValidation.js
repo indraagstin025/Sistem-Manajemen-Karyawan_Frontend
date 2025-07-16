@@ -37,28 +37,6 @@ export const validateChangePasswordForm = (oldPassword, newPassword, confirmNewP
         };
     }
 
-    // Anda bisa menambahkan validasi kompleks lainnya di sini, contoh:
-    // - Harus mengandung huruf kecil
-    // - Harus mengandung angka
-    // - Harus mengandung simbol
-    // if (!/[a-z]/.test(newPassword)) {
-    //     return {
-    //         isValid: false,
-    //         message: "Password baru harus mengandung setidaknya satu huruf kecil."
-    //     };
-    // }
-    // if (!/[0-9]/.test(newPassword)) {
-    //     return {
-    //         isValid: false,
-    //         message: "Password baru harus mengandung setidaknya satu angka."
-    //     };
-    // }
-    // if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) {
-    //     return {
-    //         isValid: false,
-    //         message: "Password baru harus mengandung setidaknya satu simbol."
-    //     };
-    // }
 
 
     return {
