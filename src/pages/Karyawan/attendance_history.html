@@ -35,27 +35,8 @@
         transition: transform 0.3s ease-out;
       }
 
-      /* ✨ DIHAPUS: Gaya untuk Modal Change Password (karena modalnya juga dihapus) ✨ */
-      /* .modal {
-        background-color: rgba(0, 0, 0, 0.6);
-        transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
-        visibility: hidden;
-        opacity: 0;
-      }
-      .modal.active {
-        visibility: visible;
-        opacity: 1;
-        transition: opacity 0.3s ease-out, visibility 0s linear 0s;
-      }
-      .modal-content {
-        transform: translateY(-20px);
-        opacity: 0;
-        transition: all 0.3s ease-out;
-      }
-      .modal.active .modal-content {
-        transform: translateY(0);
-        opacity: 1;
-      } */
+      /* ✨ DIHAPUS: Gaya untuk Modal Change Password (jika modalnya juga dihapus) ✨ */
+      /* .modal { ... } */
 
       /* Stil untuk pesan notifikasi */
       .notification {
@@ -65,20 +46,20 @@
         font-weight: 500;
         display: flex;
         align-items: center;
-        justify-content: center; /* Tambah ini agar teks di tengah */
-        gap: 0.75rem; /* Spasi antara ikon dan teks */
+        justify-content: center;
+        gap: 0.75rem;
       }
       .notification.success {
-        background-color: #d1fae5; /* green-100 */
-        color: #065f46; /* green-800 */
+        background-color: #d1fae5;
+        color: #065f46;
       }
       .notification.error {
-        background-color: #fee2e2; /* red-100 */
-        color: #991b1b; /* red-800 */
+        background-color: #fee2e2;
+        color: #991b1b;
       }
       .notification.info {
-        background-color: #dbeafe; /* blue-100 */
-        color: #1e40af; /* blue-800 */
+        background-color: #dbeafe;
+        color: #1e40af;
       }
     </style>
   </head>
