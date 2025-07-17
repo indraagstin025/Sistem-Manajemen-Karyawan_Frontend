@@ -1,4 +1,4 @@
-// js/Karyawan/request_leave.js
+// js/Karyawan/request_leave.js (atau RequestsLeave.js, pastikan namanya konsisten!)
 
 import { authService } from '../Services/AuthServices.js';
 import { userService } from "../Services/UserServices.js";
@@ -7,7 +7,9 @@ import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
 document.addEventListener("DOMContentLoaded", async () => {
-    feather.replace(); // Inisialisasi ikon Feather
+    // Pastikan Feather Icons sudah dimuat di <head> atau sebelum script ini.
+    // Jika masih ada error 'feather is not defined', cek urutan script di HTML Anda.
+    feather.replace(); 
 
     // --- Seleksi Elemen DOM ---
     const userAvatarNav = document.getElementById("userAvatar");
@@ -27,18 +29,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     const newPasswordInput = document.getElementById("newPassword");
     const confirmNewPasswordInput = document.getElementById("confirmNewPassword");
     const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
-    const changePasswordSuccessMessage = document = document.getElementById("changePasswordSuccessMessage");
+    // ✨ PERBAIKAN PENTING DI SINI ✨
+    const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage"); 
 
     // Elemen Formulir Pengajuan Cuti/Izin
     const leaveRequestForm = document.getElementById("leaveRequestForm");
     const requestTypeInput = document.getElementById("requestType");
     const startDateInput = document.getElementById("startDate");
-    const endDateInput = document.getElementById("endDate"); // Elemen endDate tetap ada di sini
+    const endDateInput = document.getElementById("endDate"); 
     const endDateField = document.getElementById("endDateField"); // Referensi ke div pembungkus endDate
     const reasonInput = document.getElementById("reason");
     const attachmentSection = document.getElementById("attachmentSection");
     const attachmentInput = document.getElementById("attachment");
-    const formMessage = document.getElementById("formMessage"); // Untuk pesan sukses/error formulir
+    const formMessage = document.getElementById("formMessage"); 
 
     // Elemen Riwayat Pengajuan
     const leaveHistoryTableBody = document.getElementById("leaveHistoryTableBody");
@@ -52,8 +55,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const leaveLimitSummaryElement = document.getElementById("leaveLimitSummary");
 
     let currentPage = 1;
-    const itemsPerPage = 5; // Lebih sedikit untuk riwayat pengajuan
-    let allLeaveRequestsData = []; // Untuk menyimpan seluruh data pengajuan
+    const itemsPerPage = 5; 
+    let allLeaveRequestsData = []; 
 
     // --- Fungsi Utilitas (showToast) ---
     const showToast = (message, type = "success") => {
@@ -62,7 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
         } else if (type === "error") {
             backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
-        } else { // info
+        } else { 
             backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
         }
 
@@ -153,7 +156,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             }
 
-            // Panggil fungsi baru untuk memuat ringkasan cuti setelah riwayat dimuat
             await updateLeaveLimitSummary();
 
         } catch (error) {
@@ -178,7 +180,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         leaveLimitSummaryElement.classList.remove('hidden');
 
         try {
-            // Panggil service untuk mendapatkan ringkasan cuti dari backend
             const summary = await LeaveRequestService.getLeaveSummary();
             const currentYear = new Date().getFullYear();
 
@@ -219,7 +220,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         paginatedItems.forEach(request => {
             const row = leaveHistoryTableBody.insertRow();
             
-            // Tampilkan rentang tanggal jika StartDate dan EndDate berbeda
             let dateDisplay = new Date(request.start_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
             if (request.start_date !== request.end_date) {
                 const endDate = new Date(request.end_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -445,7 +445,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             attachmentInput.removeAttribute('required');
             attachmentInput.value = '';
             // Panggil event change secara manual untuk mereset tampilan input tanggal setelah reset form
-            requestTypeInput.dispatchEvent(new Event('change'));
+            requestTypeInput.dispatchEvent(new Event('change')); 
             await loadLeaveHistory();
         } catch (error) {
             console.error("Error submitting leave request:", error);
