@@ -9,7 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode.js/qrcode.min.js"></script> 
     
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
     <style>
       body {
@@ -67,20 +70,42 @@
         transition: all 0.3s ease-out;
         max-width: 400px; /* Batasi lebar modal */
         width: 90%;
+        text-align: center; /* Tambahkan ini agar konten di tengah seperti gambar Anda */
       }
       .qr-modal-overlay.active .qr-modal-content {
         transform: translateY(0);
         opacity: 1;
       }
+
+      /* Custom scrollbar untuk main content */
+      .custom-scroll::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+      }
+
+      .custom-scroll::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+      }
+
+      .custom-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 10px;
+      }
+
+      .custom-scroll::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
+      }
     </style>
-    <script type="module" crossorigin src="/assets/admin_dashboard-b53e9f91.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/input-2b7f90d6.js">
+    <script type="module" crossorigin src="/assets/admin_dashboard-6cd2054f.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/input-15de07a3.js">
     <link rel="modulepreload" crossorigin href="/assets/AuthServices-0f733033.js">
-    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-812a17ce.js">
-    <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-d22e76f5.js">
-    <link rel="modulepreload" crossorigin href="/assets/sweetalert2.esm.all-9d2ad45a.js">
-    <link rel="modulepreload" crossorigin href="/assets/logoutHandler-0fd76589.js">
-    <link rel="stylesheet" href="/assets/input-db3cceb4.css">
+    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-9bf2f837.js">
+    <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-3c60f548.js">
+    <link rel="modulepreload" crossorigin href="/assets/logoutHandler-a2e70173.js">
+    <link rel="modulepreload" crossorigin href="/assets/toastify-3acd0462.js">
+    <link rel="stylesheet" href="/assets/input-4e496796.css">
+    <link rel="stylesheet" href="/assets/toastify-a461d729.css">
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
     <div class="flex min-h-screen">
@@ -98,29 +123,20 @@
           <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="users" class="w-5 h-5 mr-3"></i><span>Manajemen Karyawan</span>
           </a>
-          <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="user-plus" class="w-5 h-5 mr-3"></i><span>Tambah Karyawan</span>
-          </a>
           <a href="/manage_departments.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="grid" class="w-5 h-5 mr-3"></i><span>Manajemen Departemen</span>
           </a>
-          <a href="/add_department.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="plus-square" class="w-5 h-5 mr-3"></i><span>Tambah Departemen</span>
+          <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
           </a>
           <button type="button" id="generate-qr-menu-btn" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="qr-code" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
+            <i data-feather="square" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
           </button>
           <a href="/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Laporan Absensi</span>
           </a>
           <a href="/admin_leave_requests.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Pengajuan Cuti & Izin</span>
-          </a>
-          <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
-          </a>
-          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span>
           </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
             <a href="#" id="logoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
@@ -139,15 +155,13 @@
             <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
           </div>
           <div class="flex items-center space-x-4">
-            <div class="relative group" id="userDropdown">
-              <img
+            <div class="relative" id="userDropdown"> <img
                 id="userAvatar"
                 class="h-10 w-10 rounded-full object-cover cursor-pointer border-2 border-gray-200 hover:border-teal-500 transition-colors duration-200"
-                src="https://placehold.co/40x40/E2E8F0/4A5568?text=AD"
-                alt="User Avatar"
+                src="/assets/default-avatar.png" alt="User Avatar"
               />
               <div id="dropdownMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 dropdown-menu z-20">
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil</a>
+                <a href="/admin_profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil</a>
                 <div class="border-t border-gray-100 my-1"></div>
                 <a href="#" id="dropdownLogoutButton" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Keluar</a>
               </div>
@@ -157,28 +171,37 @@
 
         <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-teal-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Total Karyawan</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="totalKaryawan">0</p>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-teal-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
+              <div class="bg-teal-100 text-teal-600 p-3 rounded-full">
+                <i data-feather="users" class="w-7 h-7"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Karyawan</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="totalKaryawan">0</p>
+              </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Karyawan Aktif</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="karyawanAktif">0</p>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-green-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
+              <div class="bg-green-100 text-green-600 p-3 rounded-full">
+                <i data-feather="user-check" class="w-7 h-7"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Karyawan Aktif</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="karyawanAktif">0</p>
+              </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-orange-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Karyawan Cuti</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="karyawanCuti">0</p>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-purple-500 transform hover:scale-[1.02] transition-all">
-              <p class="text-sm font-medium text-gray-500">Total Departemen</p>
-              <p class="text-4xl font-extrabold text-gray-900" id="totalDepartemen">0</p>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-purple-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
+              <div class="bg-purple-100 text-purple-600 p-3 rounded-full">
+                <i data-feather="grid" class="w-7 h-7"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Departemen</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="totalDepartemen">0</p>
+              </div>
             </div>
           </div>
-
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
-              <h3 class="font-semibold text-gray-800 mb-4 text-xl">Distribusi Karyawan</h3>
-              <div class="h-80">
+              <h3 class="font-semibold text-gray-800 mb-4 text-xl">Distribusi Karyawan Berdasarkan Departemen</h3> <div class="h-80">
                 <canvas id="departmentChart"></canvas>
               </div>
             </div>
@@ -196,16 +219,16 @@
           </button>
         </div>
 
-        <div id="modal-qr-code-display" class="w-full max-w-[256px] h-auto p-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4">
+        <div id="modal-qr-code-display" class="w-full max-w-[256px] h-auto p-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4 min-h-[256px]">
           <img id="modal-qr-code-image" src="" alt="QR Code Absensi" class="w-full h-full object-contain hidden opacity-0 scale-95 transition-all duration-300" />
-
           <span id="modal-qr-placeholder" class="text-gray-500 text-center">Memuat QR Code...</span>
         </div>
+        
         <p id="modal-qr-expires-at" class="text-sm text-gray-500 mt-0 mb-4"></p>
 
         <div class="flex space-x-3 mt-2">
           <button type="button" id="modal-generate-qr-btn" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors duration-200">Refresh QR Code</button>
-          <button type="button" id="modal-close-qr-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200 hidden">Tutup QR</button>
+          <button type="button" id="modal-close-qr-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200">Tutup QR</button>
         </div>
       </div>
     </div>
@@ -225,34 +248,29 @@
           <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="users" class="w-5 h-5 mr-3"></i><span>Manajemen Karyawan</span>
           </a>
-          <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
-            <i data-feather="user-plus" class="w-5 h-5 mr-3"></i><span>Tambah Karyawan</span>
-          </a>
           <a href="/manage_departments.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="grid" class="w-5 h-5 mr-3"></i><span>Manajemen Departemen</span>
           </a>
-          <a href="/add_department.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
-            <i data-feather="plus-square" class="w-5 h-5 mr-3"></i><span>Tambah Departemen</span>
+          <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
           </a>
           <button type="button" id="generate-qr-menu-btn-mobile" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
-            <i data-feather="qr-code" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
+            <i data-feather="square" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
           </button>
           <a href="/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Laporan Absensi</span> </a>
           <a href="/admin_leave_requests.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Pengajuan Cuti & Izin</span>
           </a>
-          <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
-            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
-          </a>
-          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span> </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
-            <a href="#" id="logoutButtonMobile" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl">
+            <a href="#" id="mobileLogoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl">
               <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
             </a>
           </div>
         </nav>
       </div>
     </div>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
     
   </body>

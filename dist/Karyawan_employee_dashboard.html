@@ -36,69 +36,78 @@
         transition: transform 0.3s ease-out;
       }
 
-      /* Gaya untuk Modal Change Password */
-      .modal {
-        background-color: rgba(0, 0, 0, 0.6); /* Overlay */
-        transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
-        visibility: hidden;
-        opacity: 0;
-      }
-      .modal.active {
-        visibility: visible;
-        opacity: 1;
-        transition: opacity 0.3s ease-out, visibility 0s linear 0s;
-      }
-      .modal-content {
-        transform: translateY(-20px);
-        opacity: 0;
-        transition: all 0.3s ease-out;
-      }
-      .modal.active .modal-content {
-        transform: translateY(0);
-        opacity: 1;
-      }
-
       /* Gaya untuk QR Scanner Container */
       #reader {
         width: 100%;
         max-width: 400px; /* Batasi lebar scanner */
-        margin: 0 auto;
+        margin: 0 auto; /* Tengah secara horizontal */
         border: 2px solid #ccc;
         border-radius: 8px;
         overflow: hidden; /* Penting untuk video feed */
-      }
-      /* Stil untuk pesan notifikasi */
-      .notification {
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-radius: 0.5rem;
-        font-weight: 500;
-        display: flex;
+        aspect-ratio: 1 / 1; /* Membuat kotak QR menjadi persegi */
+        display: flex; /* Untuk menengahkan konten video jika tidak mengisi penuh */
+        justify-content: center;
         align-items: center;
-        justify-content: center; /* Tambah ini agar teks di tengah */
-        gap: 0.75rem; /* Spasi antara ikon dan teks */
       }
-      .notification.success {
-        background-color: #d1fae5; /* green-100 */
-        color: #065f46; /* green-800 */
+      #reader video {
+        width: 100% !important; /* Memastikan video mengisi penuh */
+        height: 100% !important; /* Memastikan video mengisi penuh */
+        -o-object-fit: cover;
+           object-fit: cover; /* Menutupi area tanpa distorsi */
       }
-      .notification.error {
-        background-color: #fee2e2; /* red-100 */
-        color: #991b1b; /* red-800 */
+
+      /* Gaya untuk Fullscreen QR Scanner Container */
+      #qrFullscreenContainer #readerFull {
+        width: 100%;
+        height: auto; /* Disesuaikan dengan aspect-ratio */
+        max-width: 400px; /* Batasi lebar scanner di fullscreen */
+        margin: auto; /* Tengah di dalam flex container */
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
-      .notification.info {
-        background-color: #dbeafe; /* blue-100 */
-        color: #1e40af; /* blue-800 */
+      #qrFullscreenContainer #readerFull video {
+        width: 100% !important;
+        height: 100% !important;
+        -o-object-fit: cover;
+           object-fit: cover;
+      }
+
+      /* Stil untuk pesan notifikasi (Toastify) */
+      .Toastify {
+        z-index: 9999; /* Pastikan Toastify di atas elemen lain */
+      }
+      /* Custom scrollbar untuk main content */
+      .custom-scroll::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 10px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
       }
     </style>
-    <script type="module" crossorigin src="/assets/employee_dashboard-3e4bc845.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/input-2b7f90d6.js">
+    <script type="module" crossorigin src="/assets/employee_dashboard-6db6cc27.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/input-15de07a3.js">
     <link rel="modulepreload" crossorigin href="/assets/AuthServices-0f733033.js">
     <link rel="modulepreload" crossorigin href="/assets/UserServices-9109671c.js">
-    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-812a17ce.js">
-    <link rel="modulepreload" crossorigin href="/assets/toastify-85d374dd.js">
-    <link rel="modulepreload" crossorigin href="/assets/sweetalert2.esm.all-9d2ad45a.js">
-    <link rel="stylesheet" href="/assets/input-db3cceb4.css">
+    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-9bf2f837.js">
+    <link rel="modulepreload" crossorigin href="/assets/LeaveRequestsServices-57462767.js">
+    <link rel="modulepreload" crossorigin href="/assets/toastify-3acd0462.js">
+    <link rel="modulepreload" crossorigin href="/assets/logoutHandler-a2e70173.js">
+    <link rel="modulepreload" crossorigin href="/assets/sidebarHandler-d6522c99.js">
+    <link rel="stylesheet" href="/assets/input-4e496796.css">
     <link rel="stylesheet" href="/assets/toastify-a461d729.css">
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
@@ -114,20 +123,20 @@
           >
             <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
           </a>
+          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          </a>
           <a href="/my_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Jadwal</span>
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Jadwal Kerja Saya</span>
           </a>
           <a href="/attendance_history.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Riwayat Absensi</span>
           </a>
           <a href="/request_leave.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
+            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
           </a>
           <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span>
-          </a>
-          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
           </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
             <a href="#" id="logoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
@@ -146,13 +155,6 @@
             <h1 class="text-2xl font-bold text-gray-900">Dashboard Karyawan</h1>
           </div>
           <div class="flex items-center space-x-4">
-            <div class="relative hidden sm:block">
-              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i data-feather="search" class="h-5 w-5 text-gray-400"></i>
-              </span>
-              <input type="text" placeholder="Cari..." class="py-2 pl-10 pr-4 block w-48 rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-            </div>
-
             <button class="text-gray-500 hover:text-teal-600 relative">
               <i data-feather="bell" class="w-6 h-6"></i>
               <span class="absolute top-0 right-0 -mt-1 -mr-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full ring-2 ring-white">3</span>
@@ -167,7 +169,6 @@
               />
               <div id="dropdownMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 dropdown-menu z-20">
                 <a href="/employee_profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil Saya</a>
-                <a href="#" id="openChangePasswordModalBtn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Ganti Password</a>
                 <div class="border-t border-gray-100 my-1"></div>
                 <a href="#" id="dropdownLogoutButton" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Keluar</a>
               </div>
@@ -182,123 +183,71 @@
           <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
             <h2 class="text-xl font-bold text-gray-900 mb-4">Ringkasan Anda</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div class="col-span-1 bg-gradient-to-br from-teal-500 to-teal-700 text-white rounded-lg shadow-md p-6 flex items-center space-x-4">
-                <img id="profilePhoto" class="w-20 h-20 rounded-full object-cover border-2 border-white" src="https://placehold.co/80x80/E2E8F0/4A5568?text=ME" alt="Foto Profil" />
-                <div>
-                  <p class="text-lg font-semibold" id="employeeName">Memuat...</p>
+              <div class="col-span-1 bg-gradient-to-br from-teal-500 to-teal-700 text-white rounded-lg shadow-md p-6 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 text-center sm:text-left">
+                <img id="profilePhoto" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg" src="https://placehold.co/96x96/E2E8F0/4A5568?text=ME" alt="Foto Profil" />
+                <div class="flex-grow">
+                  <p class="text-xl font-semibold mb-1" id="employeeName">Memuat...</p>
                   <p class="text-sm opacity-90" id="employeePosition">Memuat Posisi</p>
                   <p class="text-xs opacity-80" id="employeeDepartment">Memuat Departemen</p>
                 </div>
               </div>
 
-              <div class="col-span-1 bg-white rounded-lg shadow-md p-6 flex items-center justify-between border-b-4 border-green-500">
-                <div>
-                  <p class="text-sm font-medium text-gray-500 mb-1">Kehadiran Hari Ini</p>
-                  <p class="text-3xl font-extrabold text-gray-900" id="todayAttendanceStatus">Memuat...</p>
+              <div class="col-span-1 bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center border-b-4 border-green-500">
+                <div class="bg-green-100 text-green-600 p-4 rounded-full mb-3">
+                  <i data-feather="check-circle" class="w-8 h-8"></i>
                 </div>
-                <div class="bg-green-100 text-green-600 p-3 rounded-full">
-                  <i data-feather="check-circle" class="w-7 h-7"></i>
-                </div>
+                <p class="text-lg font-medium text-gray-500 mb-2">Kehadiran Hari Ini</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="todayAttendanceStatus">Memuat...</p>
               </div>
 
-              <div class="col-span-1 bg-white rounded-lg shadow-md p-6 flex items-center justify-between border-b-4 border-orange-500">
-                <div>
-                  <p class="text-sm font-medium text-gray-500 mb-1">Sisa Cuti Tahunan</p>
-                  <p class="text-3xl font-extrabold text-gray-900" id="remainingLeave">Memuat...</p>
-                </div>
-                <div class="bg-orange-100 text-orange-600 p-3 rounded-full">
-                  <i data-feather="briefcase" class="w-7 h-7"></i>
-                </div>
+              <div class="col-span-1 bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center border-b-4 border-purple-500">
+                <div class="bg-purple-100 text-purple-600 p-4 rounded-full mb-3">
+                  <i data-feather="briefcase" class="w-8 h-8"></i> </div>
+                <p class="text-lg font-medium text-gray-500 mb-2">Sisa Kuota Cuti Tahunan</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="remainingLeave">Memuat...</p>
+              </div>
+              <div class="col-span-1 md:col-span-2 lg:col-span-1 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+                <button
+                  id="scanQrButton"
+                  class="w-full h-full flex flex-col items-center justify-center text-center p-4 rounded-xl transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-indigo-300 focus:ring-opacity-75 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:transform-none disabled:hover:-translate-y-0"
+                  onclick="openFullscreenScanner()"
+                >
+                  <div class="bg-white bg-opacity-30 p-5 rounded-full mb-4 ring-2 ring-white ring-opacity-50">
+                    <i data-feather="camera" class="w-12 h-12 text-white"></i>
+                  </div>
+                  <p class="text-2xl font-extrabold mb-1">Absen Sekarang</p>
+                  <p class="text-base opacity-80">Gunakan QR Code</p>
+                </button>
               </div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div class="bg-white p-6 rounded-xl shadow-lg text-center">
-              <h2 class="text-xl font-bold text-gray-800 mb-4">Absensi Harian</h2>
-              <div id="notification-message" class="notification hidden"></div>
-
-              <div class="mb-4">
-                <select id="camera-select" class="w-full p-2 border border-gray-300 rounded-md shadow-sm hidden"></select>
+            <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col justify-between">
+              <div>
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Detail Absensi Anda Hari Ini</h2>
+                <div id="today-attendance-detail" class="space-y-4 text-gray-700">
+                  <p class="flex items-center"><i data-feather="calendar" class="w-5 h-5 mr-3 text-teal-600"></i><strong>Tanggal:</strong> <span id="current-date" class="ml-2 font-medium">Memuat...</span></p>
+                  <p class="flex items-center"><i data-feather="clock" class="w-5 h-5 mr-3 text-teal-600"></i><strong>Masuk Pada Jam:</strong> <span id="check-in-time" class="ml-2 font-medium">Memuat...</span></p>
+                  <p class="flex items-center"><i data-feather="info" class="w-5 h-5 mr-3 text-teal-600"></i><strong>Status:</strong> <span id="attendance-status" class="ml-2 font-medium">Memuat...</span></p>
+                  <p id="attendance-note-display" class="hidden flex items-start">
+                    <i data-feather="message-square" class="w-5 h-5 mr-3 text-teal-600"></i><strong>Catatan:</strong> <span id="attendance-note" class="ml-2 font-medium flex-grow"></span>
+                  </p>
+                </div>
               </div>
-
-              <div id="reader"></div>
-              <p id="qr-scan-result" class="mt-4 text-gray-700 font-semibold text-lg">Siap memindai QR Code...</p>
-            </div>
-
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-              <h2 class="text-xl font-bold text-gray-800 mb-4">Detail Absensi Anda Hari Ini</h2>
-              <div id="today-attendance-detail" class="space-y-3 text-gray-700">
-                <p><strong>Tanggal:</strong> <span id="current-date" class="font-medium">Memuat...</span></p>
-                <p><strong>Masuk Pada Jam:</strong> <span id="check-in-time" class="font-medium">Memuat...</span></p>
-                <p><strong>Status:</strong> <span id="attendance-status" class="font-medium">Memuat...</span></p>
-                <p id="attendance-note-display" class="hidden"><strong>Catatan:</strong> <span id="attendance-note" class="font-medium"></span></p>
+              <div class="mt-6 text-center">
+                <a href="/attendance_history.html" class="inline-flex items-center px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition-colors duration-200">
+                  <i data-feather="arrow-right" class="w-5 h-5 mr-2"></i> Lihat Riwayat Absensi
+                </a>
               </div>
             </div>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-lg p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">Aktivitas & Pemberitahuan</h2>
-            <ul class="space-y-4" id="employeeActivityList">
-              <li class="flex items-start">
-                <div class="bg-blue-100 text-blue-600 rounded-full p-2 mr-4 flex-shrink-0">
-                  <i data-feather="info" class="w-5 h-5"></i>
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-gray-900">Selamat datang di dashboard karyawan Anda!</p>
-                  <p class="text-xs text-gray-500 mt-1">Baru saja</p>
-                </div>
-              </li>
-              <li class="flex items-start">
-                <div class="bg-green-100 text-green-600 rounded-full p-2 mr-4 flex-shrink-0">
-                  <i data-feather="file-text" class="w-5 h-5"></i>
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-gray-900">Slip gaji bulan lalu Anda telah diterbitkan.</p>
-                  <p class="text-xs text-gray-500 mt-1">Kemarin</p>
-                </div>
-              </li>
-            </ul>
           </div>
         </main>
       </div>
     </div>
 
-    <div id="changePasswordModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-      <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto overflow-y-auto max-h-[90vh]">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-2xl font-bold text-gray-900">Ganti Password</h3>
-          <button id="closeChangePasswordModalBtn" class="text-gray-500 hover:text-gray-800">
-            <i data-feather="x" class="w-6 h-6"></i>
-          </button>
-        </div>
-        <form id="changePasswordForm" class="space-y-4">
-          <div>
-            <label for="oldPassword" class="block text-sm font-medium text-gray-700">Password Lama</label>
-            <input type="password" id="oldPassword" name="old_password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-          </div>
-          <div>
-            <label for="newPassword" class="block text-sm font-medium text-gray-700">Password Baru</label>
-            <input type="password" id="newPassword" name="new_password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-          </div>
-          <div>
-            <label for="confirmNewPassword" class="block text-sm font-medium text-gray-700">Konfirmasi Password Baru</label>
-            <input type="password" id="confirmNewPassword" name="confirm_new_password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-          </div>
-
-          <div id="changePasswordErrorMessage" class="text-red-600 text-sm text-center hidden"></div>
-          <div id="changePasswordSuccessMessage" class="text-green-600 text-sm text-center hidden"></div>
-
-          <div class="flex justify-end space-x-3 mt-6">
-            <button type="button" id="cancelChangePasswordBtn" class="px-5 py-2.5 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors duration-200">Batal</button>
-            <button type="submit" class="px-5 py-2.5 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors duration-200">Simpan Password</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div id="mobileSidebar" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden md:hidden opacity-0 transition-opacity duration-300 ease-out">
-      <div class="w-64 bg-white h-full shadow-xl flex flex-col transform -translate-x-full transition-transform duration-300 ease-out" id="mobileSidebarPanel">
+    <div id="mobileSidebar" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden md:hidden opacity-0">
+      <div class="w-64 bg-white h-full shadow-xl flex flex-col transform -translate-x-full" id="mobileSidebarPanel">
         <div class="flex items-center justify-between h-16 bg-teal-600 text-white px-4">
           <a href="#" class="text-2xl font-bold">HR-System</a>
           <button id="closeSidebar" class="text-white hover:text-gray-200 focus:outline-none">
@@ -309,20 +258,37 @@
           <a href="/employee_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
             <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
           </a>
+          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          </a>
+          <a href="/my_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Jadwal Kerja Saya</span>
+          </a>
           <a href="/attendance_history.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Riwayat Absensi</span>
           </a>
-          <a href="/request_leave.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span> </a>
-          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span> </a>
-          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
-            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          <a href="/request_leave.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
           </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span> </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
             <a href="#" id="mobileLogoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
               <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
             </a>
           </div>
         </nav>
+      </div>
+    </div>
+
+    <div id="qrFullscreenContainer" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex flex-col items-center justify-center hidden">
+      <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg relative">
+        <button id="closeScannerBtn" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 focus:outline-none">
+          <i data-feather="x" class="w-6 h-6"></i>
+        </button>
+        <h2 class="text-2xl font-bold mb-4 text-center">Scan QR Code Absensi</h2>
+        <div id="readerFull" class="w-full h-80 bg-gray-200 flex items-center justify-center overflow-hidden"></div>
+        <p id="qrScanResultText" class="text-sm text-center text-gray-600 mt-4">Arahkan kamera ke QR Code Absensi</p>
+        <div id="qr-scan-result" class="hidden text-center mt-2 font-semibold text-green-700"></div>
       </div>
     </div>
 

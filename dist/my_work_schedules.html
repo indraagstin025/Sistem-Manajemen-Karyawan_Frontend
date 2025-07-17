@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     
 
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+
     <style>
       body {
         font-family: "Inter", sans-serif;
@@ -33,7 +35,7 @@
       #mobileSidebarPanel {
         transition: transform 0.3s ease-out;
       }
-      /* Gaya untuk modal detail event */
+      /* Gaya untuk modal detail event - Ini tidak terpakai karena Anda menggunakan SweetAlert2, tapi saya biarkan jika sewaktu-waktu ingin kembali ke modal custom */
       .modal-overlay {
           position: fixed;
           top: 0;
@@ -82,15 +84,135 @@
         color: #2d3748; /* gray-800 */
         font-size: 1rem;
       }
+
+      /* --- Kustomisasi FullCalendar dengan warna toska --- */
+
+      /* Container kalender */
+      #my-calendar {
+        font-size: 0.9rem; /* Ukuran font lebih kecil */
+      }
+
+      /* Tombol navigasi */
+      .fc .fc-button-primary {
+        background-color: #1aae9f; /* Toska utama */
+        border-color: #1aae9f;
+        color: white;
+        text-transform: capitalize; /* Agar teks tombol tidak kapital semua */
+        font-weight: 500;
+        padding: 0.4rem 0.8rem; /* Padding lebih kecil */
+        font-size: 0.875rem; /* Font size lebih kecil */
+      }
+      .fc .fc-button-primary:hover {
+        background-color: #159b8f; /* Toska lebih gelap saat hover */
+        border-color: #159b8f;
+      }
+      .fc .fc-button-primary:not(:disabled).fc-button-active {
+        background-color: #0e7a70; /* Toska paling gelap saat aktif */
+        border-color: #0e7a70;
+      }
+
+      /* Header kalender (nama hari, judul bulan) */
+      .fc-col-header-cell-cushion {
+        color: #1aae9f; /* Warna teks toska untuk nama hari */
+        font-weight: 700;
+        padding: 6px 0; /* Padding lebih kecil */
+        font-size: 0.875rem; /* Font size lebih kecil */
+      }
+      .fc-toolbar-title {
+        color: #2d3748; /* Warna teks abu-abu gelap untuk judul bulan/tahun */
+        font-weight: 700;
+        font-size: 1.5rem; /* Ukuran judul lebih kecil */
+      }
+
+      /* Nomor tanggal di kalender */
+      .fc-daygrid-day-number {
+        font-weight: 600;
+        font-size: 1rem; /* Font size lebih kecil */
+        color: #333;
+        padding: 6px; /* Padding lebih kecil */
+      }
+
+      /* Sel hari di kalender */
+      .fc-daygrid-day {
+        min-height: 40px; /* Tinggi minimum lebih kecil */
+      }
+
+      /* Hari ini */
+      .fc-day-today {
+        background-color: #e0f2f1 !important; /* Latar belakang toska muda untuk hari ini */
+        border-radius: 8px; /* Sudut sedikit membulat */
+      }
+
+      /* Event (titik merah) */
+      .fc-event-main-frame {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%; /* Pastikan titik di tengah sel */
+      }
+
+      /* Toolbar kalender */
+      .fc-toolbar {
+        margin-bottom: 1rem; /* Margin lebih kecil */
+      }
+
+      /* Responsive design untuk kalender */
+      @media (max-width: 768px) {
+        #my-calendar {
+          font-size: 0.8rem;
+        }
+        .fc-toolbar-title {
+          font-size: 1.25rem;
+        }
+        .fc-daygrid-day {
+          min-height: 35px;
+        }
+        .fc .fc-button-primary {
+          padding: 0.3rem 0.6rem;
+          font-size: 0.8rem;
+        }
+      }
+
+      /* Menyesuaikan style SweetAlert2 agar lebih modern */
+      .swal2-popup {
+        font-family: "Inter", sans-serif;
+        border-radius: 1rem !important; /* Lebih membulat */
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+      }
+      .swal2-title {
+        font-size: 1.8rem !important;
+        font-weight: 700 !important;
+        color: #2d3748 !important;
+        margin-bottom: 1rem !important;
+      }
+      .swal2-html-container {
+        font-size: 1rem !important;
+        color: #4a5568 !important;
+        line-height: 1.6 !important;
+      }
+      .swal2-confirm {
+        background-color: #1aae9f !important; /* Tombol konfirmasi toska */
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 0.75rem 1.5rem !important;
+        border-radius: 0.5rem !important;
+        transition: background-color 0.2s ease-out !important;
+      }
+      .swal2-confirm:hover {
+        background-color: #159b8f !important;
+      }
+      .swal2-icon {
+        border-color: #1aae9f !important; /* Border ikon info toska */
+        color: #1aae9f !important; /* Warna ikon info toska */
+      }
     </style>
-    <script type="module" crossorigin src="/assets/my_work_schedules-ea2e11b3.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/input-2b7f90d6.js">
+    <script type="module" crossorigin src="/assets/my_work_schedules-8f49f4c5.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/input-15de07a3.js">
     <link rel="modulepreload" crossorigin href="/assets/AuthServices-0f733033.js">
-    <link rel="modulepreload" crossorigin href="/assets/WorkScheduleServices-6bb05019.js">
+    <link rel="modulepreload" crossorigin href="/assets/WorkScheduleServices-6b431584.js">
+    <link rel="modulepreload" crossorigin href="/assets/logoutHandler-a2e70173.js">
     <link rel="modulepreload" crossorigin href="/assets/sidebarHandler-d6522c99.js">
-    <link rel="modulepreload" crossorigin href="/assets/sweetalert2.esm.all-9d2ad45a.js">
-    <link rel="modulepreload" crossorigin href="/assets/logoutHandler-0fd76589.js">
-    <link rel="stylesheet" href="/assets/input-db3cceb4.css">
+    <link rel="stylesheet" href="/assets/input-4e496796.css">
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
     <div class="flex min-h-screen">
@@ -105,17 +227,17 @@
           >
             <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
           </a>
-          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          <a href="/my_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Jadwal Kerja Saya</span>
           </a>
           <a href="/attendance_history.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Riwayat Absensi</span>
           </a>
           <a href="/request_leave.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Ajukan Cuti/Izin</span>
+            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
           </a>
-          <a href="/my_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95">
-            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Jadwal Kerja Saya</span>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span>
           </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
             <a href="#" id="logoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
@@ -134,6 +256,11 @@
             <h1 class="text-2xl font-bold text-gray-900">Jadwal Kerja Saya</h1>
           </div>
           <div class="flex items-center space-x-4">
+            <button class="text-gray-500 hover:text-teal-600 relative">
+              <i data-feather="bell" class="w-6 h-6"></i>
+              <span class="absolute top-0 right-0 -mt-1 -mr-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full ring-2 ring-white">3</span>
+            </button>
+
             <div class="relative group" id="userDropdown">
               <img
                 id="userAvatar"
@@ -153,37 +280,10 @@
         <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
             <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
                 <h3 class="font-semibold text-gray-800 mb-4 text-xl">Kalender Jadwal Kerja Saya</h3>
-                <div id='my-calendar' style="height: 600px;"></div> </div>
+                <div id='my-calendar' style="height: 600px;"></div>
+            </div>
         </main>
       </div>
-    </div>
-
-    <div id="scheduleDetailModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Detail Jadwal Kerja</h2>
-                <button id="closeDetailModalBtn" class="text-gray-500 hover:text-gray-700">
-                    <i data-feather="x" class="w-7 h-7"></i>
-                </button>
-            </div>
-            <div id="event-details-content">
-                <div class="detail-item">
-                    <strong>Tanggal:</strong>
-                    <span id="detail-date"></span>
-                </div>
-                <div class="detail-item">
-                    <strong>Waktu:</strong>
-                    <span id="detail-time"></span>
-                </div>
-                <div class="detail-item">
-                    <strong>Catatan:</strong>
-                    <span id="detail-note"></span>
-                </div>
-            </div>
-            <div class="flex justify-end mt-6">
-                <button type="button" id="okDetailModalBtn" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200">OK</button>
-            </div>
-        </div>
     </div>
 
     <div id="mobileSidebar" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden opacity-0">
@@ -195,31 +295,33 @@
           </button>
         </div>
         <nav class="flex flex-col flex-grow p-4">
-          <a href="/employee_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
+          <a href="/employee_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
           </a>
-          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
-            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          <a href="/my_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Jadwal Kerja Saya</span>
           </a>
           <a href="/attendance_history.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Riwayat Absensi</span>
           </a>
           <a href="/request_leave.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
-            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Ajukan Cuti/Izin</span>
+            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
           </a>
-          <a href="/my_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
-            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Jadwal Kerja Saya</span>
-          </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span> </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
-            <a href="#" id="logoutButtonMobile" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl">
+            <a href="#" id="logoutButtonMobile" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
               <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>
             </a>
+          </div>
+        </nav>
           </div>
         </nav>
       </div>
     </div>
 
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/id.js'></script> 
     
     
     <script>

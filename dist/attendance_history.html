@@ -18,7 +18,7 @@
         transition: all 0.2s ease-out;
         opacity: 0;
         transform: scale(0.95);
-        display: none; /* Sembunyikan secara default */
+        display: none;
       }
 
       .dropdown-menu.active {
@@ -35,28 +35,6 @@
         transition: transform 0.3s ease-out;
       }
 
-      /* Gaya untuk Modal Change Password */
-      .modal {
-        background-color: rgba(0, 0, 0, 0.6); /* Overlay */
-        transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
-        visibility: hidden;
-        opacity: 0;
-      }
-      .modal.active {
-        visibility: visible;
-        opacity: 1;
-        transition: opacity 0.3s ease-out, visibility 0s linear 0s;
-      }
-      .modal-content {
-        transform: translateY(-20px);
-        opacity: 0;
-        transition: all 0.3s ease-out;
-      }
-      .modal.active .modal-content {
-        transform: translateY(0);
-        opacity: 1;
-      }
-
       /* Stil untuk pesan notifikasi */
       .notification {
         padding: 1rem;
@@ -65,29 +43,198 @@
         font-weight: 500;
         display: flex;
         align-items: center;
-        justify-content: center; /* Tambah ini agar teks di tengah */
-        gap: 0.75rem; /* Spasi antara ikon dan teks */
+        justify-content: center;
+        gap: 0.75rem;
       }
       .notification.success {
-        background-color: #d1fae5; /* green-100 */
-        color: #065f46; /* green-800 */
+        background-color: #d1fae5;
+        color: #065f46;
       }
       .notification.error {
-        background-color: #fee2e2; /* red-100 */
-        color: #991b1b; /* red-800 */
+        background-color: #fee2e2;
+        color: #991b1b;
       }
       .notification.info {
-        background-color: #dbeafe; /* blue-100 */
-        color: #1e40af; /* blue-800 */
+        background-color: #dbeafe;
+        color: #1e40af;
+      }
+
+      /* --- Gaya Card Absensi (untuk semua mode) --- */
+      .attendance-card {
+        display: grid; /* Gunakan Grid untuk tata letak 2 kolom utama */
+        grid-template-columns: 60px 1fr; /* Kolom kiri (No.) tetap 60px, kolom kanan sisanya */
+        gap: 0; /* Tidak ada gap antar kolom utama */
+
+        margin-bottom: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        padding: 0;
+      }
+
+      /* Kolom kiri untuk "No" */
+      .attendance-card .card-no-col {
+        grid-column: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        padding: 1rem 0.5rem;
+        border-right: 1px solid #e5e7eb;
+        background-color: #f9fafb;
+        border-top-left-radius: 0.75rem;
+        border-bottom-left-radius: 0.75rem;
+        text-align: center;
+        font-size: 0.875rem;
+        color: #6b7280;
+      }
+      .attendance-card .card-no-col .no-label {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: #4b5563;
+      }
+      .attendance-card .card-no-col .no-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+      }
+
+      /* Kolom kanan untuk detail absensi */
+      .attendance-card .card-details-col {
+        grid-column: 2;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      /* Setiap baris data (Tanggal, Masuk Jam, Status, Catatan) */
+      .attendance-data-item {
+        display: flex;
+        align-items: baseline; /* Menyelaraskan baris pertama teks label dan value */
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+
+      /* Label untuk setiap data */
+      .attendance-data-item .data-label {
+        font-weight: 600;
+        color: #4b5563;
+        flex-shrink: 0;
+        padding-right: 0.5rem;
+        text-align: left;
+        white-space: nowrap; /* Mencegah label melipat */
+      }
+      .attendance-data-item .data-label::after {
+        content: ":";
+        margin-left: 0.25rem;
+        color: #4b5563;
+      }
+
+      /* Styling untuk nilai data */
+      .attendance-data-item .data-value {
+        color: #1f2937;
+        text-align: left;
+        flex-grow: 1;
+        white-space: normal; /* Biarkan teks melipat jika panjang */
+        word-break: break-word; /* Memastikan teks panjang pecah baris */
+        font-size: 0.9375rem;
+      }
+
+      /* Khusus untuk nilai Tanggal */
+      .attendance-data-item .data-label:contains("Tanggal") + .data-value {
+        font-size: 0.875rem;
+      }
+
+      /* Penyesuaian khusus untuk Catatan */
+      .attendance-data-item.note-item {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: 0.5rem;
+        justify-content: flex-start;
+      }
+
+      .attendance-data-item.note-item .data-label {
+        width: 100%;
+        padding-right: 0;
+        margin-bottom: 0.25rem;
+      }
+      .attendance-data-item.note-item .data-value {
+        width: 100%;
+        text-align: left;
+      }
+
+      /* Gaya untuk badge status */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.3rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
+      }
+
+      /* Ubah warna menjadi rgba() untuk menambahkan transparansi (alpha) */
+      .status-badge.hadir {
+        background-color: rgba(6, 159, 114, 0.1); /* Hijaunya lebih transparan (10% opacity) */
+        color: #065f46; /* text-emerald-800 */
+      }
+
+      .status-badge.terlambat {
+        background-color: rgba(255, 175, 59, 0.1); /* Oranye lebih transparan (seperti yang diminta untuk Sakit) */
+        color: #9a3412; /* text-orange-800 */
+      }
+
+      .status-badge.izin {
+        background-color: rgba(59, 130, 246, 0.1); /* Biru lebih transparan */
+        color: #1e40af; /* text-blue-800 */
+      }
+
+      /* ✨ PERUBAHAN DI SINI: Sakit menjadi Oranye ✨ */
+      .status-badge.sakit {
+        background-color: rgba(255, 175, 59, 0.1); /* Warna oranye dengan alpha */
+        color: #9a3412; /* Warna teks oranye gelap */
+      }
+      
+      .status-badge.cuti {
+        background-color: rgba(14, 165, 233, 0.1); /* Biru langit lebih transparan */
+        color: #0c4a6e; /* text-sky-800 */
+      }
+      .status-badge.libur {
+        background-color: rgba(99, 102, 241, 0.1); /* Indigo lebih transparan */
+        color: #3730a3; /* text-indigo-800 */
+      }
+      /* ✨ PERUBAHAN DI SINI: Alpha menjadi Merah ✨ */
+      .status-badge.alpha { /* Menambahkan kelas 'alpha' */
+        background-color: rgba(239, 68, 68, 0.1); /* Warna merah dengan alpha */
+        color: #991b1b; /* Warna teks merah gelap */
+      }
+      .status-badge.tidak-absen { /* Kelas ini sudah ada sebelumnya, tidak ada perubahan */
+        background-color: rgba(245, 158, 11, 0.1); /* Amber lebih transparan */
+        color: #b45309; /* text-amber-800 */
+      }
+
+      /* Gaya untuk catatan kosong (tetap sama) */
+      .empty-note {
+        color: #6b7280;
+        font-style: italic;
       }
     </style>
-    <script type="module" crossorigin src="/assets/attendance_history-8c27dadf.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/input-2b7f90d6.js">
+    <script type="module" crossorigin src="/assets/attendance_history-2f09897b.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/input-15de07a3.js">
     <link rel="modulepreload" crossorigin href="/assets/AuthServices-0f733033.js">
-    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-812a17ce.js">
+    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-9bf2f837.js">
+    <link rel="modulepreload" crossorigin href="/assets/toastify-3acd0462.js">
+    <link rel="modulepreload" crossorigin href="/assets/sidebarHandler-d6522c99.js">
+    <link rel="modulepreload" crossorigin href="/assets/logoutHandler-a2e70173.js">
     <link rel="modulepreload" crossorigin href="/assets/UserServices-9109671c.js">
-    <link rel="modulepreload" crossorigin href="/assets/toastify-85d374dd.js">
-    <link rel="stylesheet" href="/assets/input-db3cceb4.css">
+    <link rel="modulepreload" crossorigin href="/assets/photoUtils-c92e179b.js">
+    <link rel="stylesheet" href="/assets/input-4e496796.css">
     <link rel="stylesheet" href="/assets/toastify-a461d729.css">
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
@@ -103,17 +250,20 @@
           >
             <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
           </a>
+          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          </a>
+          <a href="/my_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Jadwal Kerja Saya</span>
+          </a>
           <a href="/attendance_history.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95">
             <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Riwayat Absensi</span>
           </a>
-          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
+          <a href="/request_leave.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
           </a>
-          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span>
-          </a>
-          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
           </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
             <a href="#" id="logoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
@@ -136,7 +286,7 @@
               <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i data-feather="search" class="h-5 w-5 text-gray-400"></i>
               </span>
-              <input type="text" placeholder="Cari..." class="py-2 pl-10 pr-4 block w-48 rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
+              <input type="text" id="attendanceSearchInput" placeholder="Cari riwayat absensi..." class="py-2 pl-10 pr-4 block w-48 rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
             </div>
 
             <button class="text-gray-500 hover:text-teal-600 relative">
@@ -153,7 +303,6 @@
               />
               <div id="dropdownMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 dropdown-menu z-20">
                 <a href="/employee_profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Profil Saya</a>
-                <a href="#" id="openChangePasswordModalBtn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Ganti Password</a>
                 <div class="border-t border-gray-100 my-1"></div>
                 <a href="#" id="dropdownLogoutButton" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Keluar</a>
               </div>
@@ -166,24 +315,11 @@
 
           <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
             <h2 class="text-xl font-bold text-gray-900 mb-4">Daftar Riwayat Absensi Anda</h2>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="attendanceHistoryTableBody">
-                  <tr>
-                    <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat absensi...</td>
-                  </tr>
-                </tbody>
-              </table>
+            
+            <div id="attendanceCardsContainer" class="flex flex-col">
+              <div class="text-center text-gray-500 py-4">Memuat riwayat absensi...</div>
             </div>
+
             <div id="paginationControls" class="mt-4 flex justify-center items-center space-x-2 hidden">
                 <button id="prevPageBtn" class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">Sebelumnya</button>
                 <span id="currentPageInfo" class="text-gray-700">Halaman 1</span>
@@ -191,39 +327,6 @@
             </div>
           </div>
         </main>
-      </div>
-    </div>
-
-    <div id="changePasswordModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-      <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto overflow-y-auto max-h-[90vh]">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-2xl font-bold text-gray-900">Ganti Password</h3>
-          <button id="closeChangePasswordModalBtn" class="text-gray-500 hover:text-gray-800">
-            <i data-feather="x" class="w-6 h-6"></i>
-          </button>
-        </div>
-        <form id="changePasswordForm" class="space-y-4">
-          <div>
-            <label for="oldPassword" class="block text-sm font-medium text-gray-700">Password Lama</label>
-            <input type="password" id="oldPassword" name="old_password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-          </div>
-          <div>
-            <label for="newPassword" class="block text-sm font-medium text-gray-700">Password Baru</label>
-            <input type="password" id="newPassword" name="new_password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-          </div>
-          <div>
-            <label for="confirmNewPassword" class="block text-sm font-medium text-gray-700">Konfirmasi Password Baru</label>
-            <input type="password" id="confirmNewPassword" name="confirm_new_password" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-          </div>
-
-          <div id="changePasswordErrorMessage" class="text-red-600 text-sm text-center hidden"></div>
-          <div id="changePasswordSuccessMessage" class="text-green-600 text-sm text-center hidden"></div>
-
-          <div class="flex justify-end space-x-3 mt-6">
-            <button type="button" id="cancelChangePasswordBtn" class="px-5 py-2.5 rounded-lg text-gray-700 border border-gray-300 bg-white hover:bg-gray-50 transition-colors duration-200">Batal</button>
-            <button type="submit" class="px-5 py-2.5 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors duration-200">Simpan Password</button>
-          </div>
-        </form>
       </div>
     </div>
 
@@ -239,14 +342,19 @@
           <a href="/employee_dashboard.html" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="home" class="w-5 h-5 mr-3"></i><span>Dashboard</span>
           </a>
+          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          </a>
+          <a href="/my_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Jadwal Kerja Saya</span>
+          </a>
           <a href="/attendance_history.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
             <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Riwayat Absensi</span>
           </a>
-          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span> </a>
-          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span> </a>
-          <a href="/employee_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg">
-            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil Saya</span>
+          <a href="/request_leave.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
           </a>
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl"> <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span> </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
             <a href="#" id="mobileLogoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
               <i data-feather="log-out" class="w-5 h-5 mr-3"></i><span>Keluar</span>

@@ -151,18 +151,57 @@
   }
 }
 
+/* Gaya untuk QR Modal */
+.qr-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
+}
+.qr-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease-out, visibility 0s linear 0s;
+}
+.qr-modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-20px);
+  opacity: 0;
+  transition: all 0.3s ease-out;
+  max-width: 400px;
+  width: 90%;
+}
+.qr-modal-overlay.active .qr-modal-content {
+  transform: translateY(0);
+  opacity: 1;
+}
+
 </style>
 
-    <script type="module" crossorigin src="/assets/admin_leave_requests-9ee1403e.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/input-2b7f90d6.js">
+    <script type="module" crossorigin src="/assets/admin_leave_requests-2d43d045.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/input-15de07a3.js">
     <link rel="modulepreload" crossorigin href="/assets/AuthServices-0f733033.js">
-    <link rel="modulepreload" crossorigin href="/assets/LeaveRequestsServices-d7327dcf.js">
+    <link rel="modulepreload" crossorigin href="/assets/LeaveRequestsServices-57462767.js">
     <link rel="modulepreload" crossorigin href="/assets/sidebarHandler-d6522c99.js">
+    <link rel="modulepreload" crossorigin href="/assets/logoutHandler-a2e70173.js">
+    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-9bf2f837.js">
+    <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-3c60f548.js">
     <link rel="modulepreload" crossorigin href="/assets/UserServices-9109671c.js">
     <link rel="modulepreload" crossorigin href="/assets/photoUtils-c92e179b.js">
-    <link rel="modulepreload" crossorigin href="/assets/toastify-85d374dd.js">
-    <link rel="modulepreload" crossorigin href="/assets/sweetalert2.esm.all-9d2ad45a.js">
-    <link rel="stylesheet" href="/assets/input-db3cceb4.css">
+    <link rel="modulepreload" crossorigin href="/assets/toastify-3acd0462.js">
+    <link rel="stylesheet" href="/assets/input-4e496796.css">
     <link rel="stylesheet" href="/assets/toastify-a461d729.css">
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800 flex min-h-screen">
@@ -177,17 +216,14 @@
         <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
           <i data-feather="users" class="w-5 h-5 mr-3"></i><span>Manajemen Karyawan</span>
         </a>
-        <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-          <i data-feather="user-plus" class="w-5 h-5 mr-3"></i><span>Tambah Karyawan</span>
-        </a>
         <a href="/manage_departments.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
           <i data-feather="grid" class="w-5 h-5 mr-3"></i><span>Manajemen Departemen</span>
         </a>
-        <a href="/add_department.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-          <i data-feather="plus-square" class="w-5 h-5 mr-3"></i><span>Tambah Departemen</span>
+        <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+          <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
         </a>
         <button type="button" id="generate-qr-menu-btn" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-          <i data-feather="qr-code" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
+          <i data-feather="square" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
         </button>
         <a href="/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
           <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Laporan Absensi</span>
@@ -197,9 +233,6 @@
           class="flex items-center px-4 py-3 mt-3 text-base font-semibold text-white bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95"
         >
           <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Pengajuan Cuti & Izin</span>
-        </a>
-        <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-          <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span>
         </a>
         <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
           <a href="#" id="logoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
@@ -284,17 +317,11 @@
           <a href="/manage_employees.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="users" class="w-5 h-5 mr-3"></i><span>Manajemen Karyawan</span>
           </a>
-          <a href="/add_employee.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="user-plus" class="w-5 h-5 mr-3"></i><span>Tambah Karyawan</span>
-          </a>
           <a href="/manage_departments.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="grid" class="w-5 h-5 mr-3"></i><span>Manajemen Departemen</span>
           </a>
-          <a href="/add_department.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="plus-square" class="w-5 h-5 mr-3"></i><span>Tambah Departemen</span>
-          </a>
           <button type="button" id="generate-qr-menu-btn-mobile" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="qr-code" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
+            <i data-feather="square" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
           </button>
           <a href="/list_attendance.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="clock" class="w-5 h-5 mr-3"></i><span>Laporan Absensi</span>
@@ -305,8 +332,8 @@
           >
             <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Pengajuan Cuti & Izin</span>
           </a>
-          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
-            <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Penggajian</span>
+          <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
           </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
             <a href="#" id="mobileLogoutButton" class="flex items-center px-4 py-3 mt-2 text-base font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors duration-200">
@@ -331,6 +358,29 @@
         <div class="p-4 flex-grow overflow-auto flex items-center justify-center bg-gray-100">
           <div id="attachmentContent" class="w-full h-full"></div>
           <p id="attachmentErrorMessage" class="text-red-500 text-center hidden"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrCodeModal" class="qr-modal-overlay hidden">
+      <div class="qr-modal-content flex flex-col items-center">
+        <div class="flex justify-between items-center w-full mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">QR Code Absensi</h2>
+          <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+            <i data-feather="x" class="w-7 h-7"></i>
+          </button>
+        </div>
+
+        <div id="modal-qr-code-display" class="w-full max-w-[256px] h-auto p-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-4 min-h-[256px]">
+          <img id="modal-qr-code-image" class="w-full h-auto hidden opacity-0 scale-95 transition-all duration-300" alt="QR Code" />
+          <span id="modal-qr-placeholder" class="text-gray-500 text-center">Memuat QR Code...</span>
+        </div>
+        <p id="modal-qr-expires-at" class="text-sm text-gray-500 mt-0 mb-4"></p>
+
+        <div class="flex space-x-3 mt-2">
+          <button type="button" id="modal-generate-qr-btn" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors duration-200">Refresh QR Code</button>
+          <button type="button" id="modal-close-qr-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200">Tutup QR</button>
         </div>
       </div>
     </div>

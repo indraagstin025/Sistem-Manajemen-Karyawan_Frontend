@@ -6,7 +6,6 @@ import 'toastify-js/src/toastify.css';
 
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js"; 
-// ✨ IMPORT BARU ✨
 import { getUserPhotoBlobUrl } from '../utils/photoUtils.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -15,7 +14,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initializeSidebar();
     initializeLogout();
 
-    const attendanceHistoryTableBody = document.getElementById("attendanceHistoryTableBody");
+    const attendanceCardsContainer = document.getElementById("attendanceCardsContainer");
     const attendanceHistoryMessage = document.getElementById("attendanceHistoryMessage");
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
@@ -23,12 +22,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const paginationControls = document.getElementById('paginationControls');
     const prevPageBtn = document.getElementById('prevPageBtn');
-    const nextPageBtn = document.getElementById('nextPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn'); 
     const currentPageInfo = document.getElementById('currentPageInfo');
+
+    const attendanceSearchInput = document.getElementById('attendanceSearchInput'); 
 
     let currentPage = 1;
     const itemsPerPage = 10;
-    let allAttendanceData = [];
+    let allAttendanceData = []; 
+    let filteredAttendanceData = []; 
 
     const showToast = (message, type = "success") => {
         let backgroundColor;
@@ -56,23 +58,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         }).showToast();
     };
 
-    // ✨ FUNGSI fetchEmployeeProfileDataForHeader Disesuaikan untuk menggunakan photoUtils.js ✨
     const fetchEmployeeProfileDataForHeader = async () => {
         try {
             let user = authService.getCurrentUser();
             if (!user || !user.id) {
                 return null;
             }
-            // Gunakan getUserPhotoBlobUrl dari photoUtils.js
             const photoUrl = await getUserPhotoBlobUrl(user.id, user.name || ''); 
             if (userAvatarNav) {
                 userAvatarNav.src = photoUrl;
                 userAvatarNav.alt = user.name || "User Avatar";
             }
-            // Tidak perlu lagi memanggil userService.getUserByID di sini jika hanya untuk foto & nama
-            // Jika Anda memerlukan data lain seperti 'position' atau 'department' di header, 
-            // Anda harus memanggil userService.getUserByID dan mengambil data tersebut.
-            return user; // Cukup kembalikan objek user dari sesi
+            return user;
         } catch (error) {
             console.error("Error fetching employee profile data for header:", error);
             if (error.status === 401 || error.status === 403) {
@@ -86,11 +83,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     const loadAttendanceHistory = async () => {
-        // Kolom colspan disesuaikan dari 5 menjadi 4 karena Check-Out akan dihapus
-        attendanceHistoryTableBody.innerHTML = `
-            <tr>
-                <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat absensi...</td>
-            </tr>
+        attendanceCardsContainer.innerHTML = `
+            <div class="text-center text-gray-500 py-4">Memuat riwayat absensi...</div>
         `;
         attendanceHistoryMessage.classList.add('hidden');
         paginationControls.classList.add('hidden');
@@ -111,31 +105,28 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
             allAttendanceData = fetchedData;
             allAttendanceData.sort((a, b) => new Date(b.date) - new Date(a.date)); 
+            
+            filteredAttendanceData = [...allAttendanceData];
 
-            if (allAttendanceData.length === 0) {
-                // Kolom colspan disesuaikan dari 5 menjadi 4
-                attendanceHistoryTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Tidak ada riwayat absensi yang ditemukan.</td>
-                    </tr>
+            if (filteredAttendanceData.length === 0) {
+                attendanceCardsContainer.innerHTML = `
+                    <div class="text-center text-gray-500 py-4">Tidak ada riwayat absensi yang ditemukan.</div>
                 `;
                 attendanceHistoryMessage.textContent = 'Anda belum memiliki riwayat absensi.';
                 attendanceHistoryMessage.classList.remove('hidden');
                 attendanceHistoryMessage.classList.add('info');
             } else {
-                renderAttendanceTable(allAttendanceData, currentPage, itemsPerPage);
-                updatePaginationControls(allAttendanceData.length, currentPage, itemsPerPage);
-                if (allAttendanceData.length > itemsPerPage) {
+                renderAttendanceCards(filteredAttendanceData, currentPage, itemsPerPage); 
+                updatePaginationControls(filteredAttendanceData.length, currentPage, itemsPerPage); 
+                if (filteredAttendanceData.length > itemsPerPage) {
                     paginationControls.classList.remove('hidden');
                 }
             }
 
         } catch (error) {
             console.error("Error loading attendance history:", error);
-            attendanceHistoryTableBody.innerHTML = `
-                <tr>
-                    <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-red-500">Gagal memuat riwayat absensi: ${error.message}</td>
-                </tr>
+            attendanceCardsContainer.innerHTML = `
+                <div class="text-center text-red-500 py-4">Gagal memuat riwayat absensi: ${error.message}</div>
             `;
             showToast(error.message || "Gagal memuat riwayat absensi.", "error");
             if (error.status === 401 || error.status === 403) {
@@ -144,102 +135,115 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-const renderAttendanceTable = (data, page, limit) => {
-    attendanceHistoryTableBody.innerHTML = ''; 
-    const startIndex = (page - 1) * limit;
-    const paginatedItems = data.slice(startIndex, startIndex + limit);
+    // ✨ FUNGSI UTAMA: renderAttendanceCards ✨
+    const renderAttendanceCards = (data, page, limit) => {
+        attendanceCardsContainer.innerHTML = ''; 
+        const startIndex = (page - 1) * limit;
+        const paginatedItems = data.slice(startIndex, startIndex + limit);
 
-    paginatedItems.forEach((attendance, index) => {
-        const row = attendanceHistoryTableBody.insertRow();
-        
-        const date = new Date(attendance.date + 'T00:00:00'); 
-        const formattedDate = date.toLocaleDateString('id-ID', { 
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-
-        let statusDisplayText = attendance.status || '-';
-        let statusClass = 'text-gray-700';
-        let noteDisplayText = attendance.note || '-'; // Default catatan adalah note dari backend
-
-        switch (attendance.status) {
-            case 'Hadir':
-                statusClass = 'text-green-600 font-semibold';
-                break;
-            case 'Terlambat':
-                statusClass = 'text-orange-600 font-semibold';
-                break;
-            case 'Sakit':
-                statusClass = 'text-blue-600 font-semibold';
-                statusDisplayText = 'Sakit'; // Hapus catatan di status
-                break;
-            case 'Cuti':
-                statusClass = 'text-purple-600 font-semibold';
-                statusDisplayText = 'Cuti'; // Hapus catatan di status
-                break;
-            case 'Tidak Absen': 
-                statusClass = 'text-red-600 font-semibold';
-                statusDisplayText = 'Tidak Absen'; // Hapus catatan di status
-                break;
-            default:
-                statusClass = 'text-gray-900';
-                break;
+        if (paginatedItems.length === 0) {
+             attendanceCardsContainer.innerHTML = `
+                 <div class="text-center text-gray-500 py-4">Tidak ada riwayat absensi untuk halaman ini.</div>
+             `;
+             return;
         }
 
-        // ✨ LOGIKA BARU UNTUK MERAPIKAN KOLOM CATATAN ✨
-        // Menggabungkan reason dan note dengan format yang lebih rapi
-        if (attendance.status === 'Sakit' || attendance.status === 'Cuti') {
-            // Jika disetujui, tampilkan alasan asli dan catatan admin
+        paginatedItems.forEach((attendance, indexInPage) => { 
+            const date = new Date(attendance.date + 'T00:00:00'); 
+            const formattedDate = date.toLocaleDateString('id-ID', { 
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            // ✨ PERUBAHAN DI SINI: getStatusBadgeClass untuk 'alpha' dan 'sakit' ✨
+            const getStatusBadgeClass = (status) => {
+                switch (status.toLowerCase()) {
+                    case 'hadir': return 'hadir';
+                    case 'terlambat': return 'terlambat';
+                    case 'izin': return 'izin';
+                    case 'sakit': return 'terlambat'; // Menggunakan kelas 'terlambat' untuk warna oranye
+                    case 'cuti': return 'cuti';
+                    case 'libur': return 'libur';
+                    case 'tidak absen': return 'tidak-absen';
+                    case 'alpha': return 'alpha'; // Menambahkan pemetaan untuk status 'alpha'
+                    default: return '';
+                }
+            };
+
+            const statusClass = getStatusBadgeClass(attendance.status || '');
+            const checkInDisplay = attendance.check_in && attendance.check_in.trim() !== '' 
+                                 ? attendance.check_in 
+                                 : `<span class="empty-note">-</span>`;
+            
+            let noteDisplayText = ''; 
+
             if (attendance.status === 'Sakit' || attendance.status === 'Cuti') {
                 if (attendance.reason && attendance.note && attendance.note.startsWith('Disetujui:')) {
-                    // Untuk status Disetujui, kita tahu formatnya "Disetujui: [alasan]. Catatan admin: [catatan]"
-                    // Kita bisa ambil catatan admin dari note jika formatnya konsisten
-                    // atau cukup tampilkan reason dari pengajuan cuti/sakit dan note admin saja.
-                    // Saya akan asumsikan attendance.reason adalah alasan asli dari pengajuan.
                     noteDisplayText = `Alasan: ${attendance.reason}. Catatan Admin: ${attendance.note.replace('Disetujui: ', '')}`;
                 } else if (attendance.reason) {
-                    noteDisplayText = `Alasan: ${attendance.reason}.`;
-                    if (attendance.note && attendance.note !== '-') {
-                        noteDisplayText += ` Catatan Admin: ${attendance.note}`;
+                    noteDisplayText = `Alasan: ${attendance.reason}`;
+                    if (attendance.note && attendance.note.trim() !== '' && attendance.note !== '-') {
+                        noteDisplayText += `. Catatan Admin: ${attendance.note}`;
                     }
-                } else if (attendance.note) {
+                } else if (attendance.note && attendance.note.trim() !== '' && attendance.note !== '-') {
                     noteDisplayText = attendance.note;
                 }
+            } else if (attendance.status === 'Tidak Absen' || attendance.status === 'Alpha') { // Tambahkan 'Alpha' di sini
+                if (attendance.note && attendance.note.includes('Pengajuan ditolak:')) {
+                    const match = attendance.note.match(/Pengajuan ditolak: (.*?)\. Catatan admin: (.*)/);
+                    if (match) {
+                        noteDisplayText = `Ditolak. Alasan: ${match[1]}. Catatan Admin: ${match[2]}`;
+                    } else if (attendance.reason && attendance.reason.trim() !== '') {
+                        noteDisplayText = `Ditolak. Alasan: ${attendance.reason}. Catatan Admin: ${attendance.note}`;
+                    } else if (attendance.note && attendance.note.trim() !== '' && attendance.note !== '-') {
+                         noteDisplayText = attendance.note;
+                    }
+                } else if (attendance.note && attendance.note.trim() !== '' && attendance.note !== '-') {
+                    noteDisplayText = attendance.note;
+                }
+            } else if (attendance.note && attendance.note.trim() !== '' && attendance.note !== '-') {
+                noteDisplayText = attendance.note;
             }
-        } else if (attendance.status === 'Tidak Absen') {
-             // Jika status 'Tidak Absen' karena pengajuan ditolak
-             if (attendance.note && attendance.note.includes('Pengajuan ditolak:')) {
-                 // Format yang ada di gambar: "Pengajuan ditolak: mau liburan. Catatan admin: belum bisa cuti"
-                 // Kita bisa membagi string ini atau jika backend mengirim 'reason' terpisah, gunakan itu.
-                 // Saya akan berasumsi 'reason' adalah alasan asli pengajuan dan 'note' adalah catatan admin.
-                 if (attendance.reason && attendance.note) {
-                    noteDisplayText = `Pengajuan ditolak. Alasan: ${attendance.reason}. Catatan Admin: ${attendance.note.replace('Pengajuan ditolak: ', '').replace(`: ${attendance.reason}`, '')}`;
-                    // Jika format backend tetap seperti gambar, Anda mungkin perlu regex yang lebih kuat:
-                    // const match = attendance.note.match(/Pengajuan ditolak: (.*?). Catatan admin: (.*)/);
-                    // if (match) { noteDisplayText = `Ditolak. Alasan: ${match[1]}. Catatan Admin: ${match[2]}`; }
-                 } else if (attendance.note) {
-                     noteDisplayText = attendance.note; // Biarkan seperti itu jika tidak bisa diparse
-                 }
-             } else if (attendance.note) {
-                 noteDisplayText = attendance.note; // Jika catatan lain (bukan penolakan pengajuan)
-             }
-        }
-        // Pastikan noteDisplayText tidak kosong jika memang tidak ada catatan
-        if (noteDisplayText === '') {
-            noteDisplayText = '-';
-        }
+            
+            const finalNoteDisplay = (!noteDisplayText.trim() || noteDisplayText === '-') 
+                                     ? `<span class="empty-note">Tidak ada catatan</span>` 
+                                     : `<span>${noteDisplayText}</span>`;
 
-
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${startIndex + index + 1}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${noteDisplayText}</td>
-        `;
-    });
-};
+            const cardHtml = `
+                <div class="attendance-card">
+                    <div class="card-no-col">
+                        <span class="no-label">No</span>
+                        <span class="no-value">${startIndex + indexInPage + 1}</span>
+                    </div>
+                    <div class="card-details-col">
+                        <div class="attendance-data-item">
+                            <span class="data-label">Tanggal</span>
+                            <span class="data-value">${formattedDate}</span>
+                        </div>
+                        <div class="attendance-data-item">
+                            <span class="data-label">Masuk Jam</span>
+                            <span class="data-value">${checkInDisplay}</span>
+                        </div>
+                        <div class="attendance-data-item">
+                            <span class="data-label">Status</span>
+                            <span class="data-value">
+                                <span class="status-badge ${statusClass}">
+                                    ${attendance.status || '-'}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="attendance-data-item note-item">
+                            <span class="data-label">Catatan</span>
+                            <span class="data-value">${finalNoteDisplay}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            attendanceCardsContainer.insertAdjacentHTML('beforeend', cardHtml);
+        });
+        feather.replace(); 
+    };
 
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -255,23 +259,61 @@ const renderAttendanceTable = (data, page, limit) => {
         }
     };
 
+    const performSearch = () => {
+        const searchTerm = attendanceSearchInput.value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            filteredAttendanceData = [...allAttendanceData]; 
+        } else {
+            filteredAttendanceData = allAttendanceData.filter(attendance => {
+                const date = new Date(attendance.date + 'T00:00:00').toLocaleDateString('id-ID', { 
+                    year: 'numeric', month: 'long', day: 'numeric'
+                }).toLowerCase();
+                const checkIn = (attendance.check_in || '').toLowerCase();
+                const status = (attendance.status || '').toLowerCase();
+                const note = (attendance.note || '').toLowerCase();
+                const reason = (attendance.reason || '').toLowerCase();
+
+                return date.includes(searchTerm) ||
+                       checkIn.includes(searchTerm) ||
+                       status.includes(searchTerm) ||
+                       note.includes(searchTerm) ||
+                       reason.includes(searchTerm);
+            });
+        }
+
+        currentPage = 1; 
+        renderAttendanceCards(filteredAttendanceData, currentPage, itemsPerPage);
+        updatePaginationControls(filteredAttendanceData.length, currentPage, itemsPerPage);
+
+        if (filteredAttendanceData.length === 0 && searchTerm !== '') {
+            attendanceCardsContainer.innerHTML = `
+                <div class="text-center text-gray-500 py-4">Tidak ada riwayat absensi yang cocok dengan pencarian Anda.</div>
+            `;
+        }
+    };
+
+    if (attendanceSearchInput) {
+        attendanceSearchInput.addEventListener('input', performSearch);
+    }
+
     if (prevPageBtn) {
         prevPageBtn.addEventListener('click', () => {
             if (currentPage > 1) {
                 currentPage--;
-                renderAttendanceTable(allAttendanceData, currentPage, itemsPerPage);
-                updatePaginationControls(allAttendanceData.length, currentPage, itemsPerPage);
+                renderAttendanceCards(filteredAttendanceData, currentPage, itemsPerPage);
+                updatePaginationControls(filteredAttendanceData.length, currentPage, itemsPerPage);
             }
         });
     }
 
-    if (nextPageBtn) {
+    if (nextPageBtn) { 
         nextPageBtn.addEventListener('click', () => {
-            const totalPages = Math.ceil(allAttendanceData.length / itemsPerPage);
+            const totalPages = Math.ceil(filteredAttendanceData.length / itemsPerPage); 
             if (currentPage < totalPages) {
                 currentPage++;
-                renderAttendanceTable(allAttendanceData, currentPage, itemsPerPage);
-                updatePaginationControls(allAttendanceData.length, currentPage, itemsPerPage);
+                renderAttendanceCards(filteredAttendanceData, currentPage, itemsPerPage); 
+                updatePaginationControls(filteredAttendanceData.length, currentPage, itemsPerPage); 
             }
         });
     }
