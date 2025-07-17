@@ -7,13 +7,13 @@ import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
-import { initTheme } from "../utils/darkmode.js";
+
 
 document.addEventListener("DOMContentLoaded", async () => {
   
   initializeSidebar(); 
   initializeFormValidation();
-  initTheme();
+
 
   // Initialize QR Code Manager
   QRCodeManager.initialize({

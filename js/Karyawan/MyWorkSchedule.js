@@ -4,11 +4,9 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import idLocale from "@fullcalendar/core/locales/id";
 
 import WorkScheduleServices from "../Services/WorkScheduleServices.js";
-import { initTheme } from "../utils/darkmode.js";
 import Swal from "sweetalert2";
 
 document.addEventListener("DOMContentLoaded", () => {
-  initTheme();
   let calendar;
 
   const fetchMySchedules = async () => {

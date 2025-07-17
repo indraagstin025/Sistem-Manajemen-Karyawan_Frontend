@@ -5,7 +5,6 @@ import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js"; // Import fungsi sidebar
 import { initializeLogout } from "../components/logoutHandler.js"; // Import fungsi logout
 import { QRCodeManager } from "../components/qrCodeHandler.js"; // Import QRCodeManager
-import { initTheme } from "../utils/darkmode.js";
 import Swal from 'sweetalert2'; // Import SweetAlert2
 import Toastify from 'toastify-js'; // Import Toastify jika masih digunakan oleh QRCodeManager
 

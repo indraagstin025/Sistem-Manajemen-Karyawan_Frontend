@@ -7,11 +7,11 @@ import "toastify-js/src/toastify.css";
 import Swal from "sweetalert2";
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
-import { initTheme } from "../utils/darkmode.js"; 
+
 
 document.addEventListener("DOMContentLoaded", async () => {
   feather.replace();
-  initTheme();
+
 
   initializeSidebar();
 

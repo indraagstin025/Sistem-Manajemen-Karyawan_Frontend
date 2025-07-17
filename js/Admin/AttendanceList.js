@@ -4,7 +4,7 @@ import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from '../components/logoutHandler.js';
 import { QRCodeManager } from '../components/qrCodeHandler.js';
 import { getUserPhotoBlobUrl } from '../utils/photoUtils.js';
-import { initTheme } from '../utils/darkmode.js';
+
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     initializeSidebar();
-    initTheme()
+
     QRCodeManager.initialize({ toastCallback: showToast });
     initializeLogout({ preLogoutCallback: QRCodeManager.close });
 

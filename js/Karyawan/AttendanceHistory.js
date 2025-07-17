@@ -7,14 +7,12 @@ import 'toastify-js/src/toastify.css';
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js"; 
 import { getUserPhotoBlobUrl } from '../utils/photoUtils.js';
-import { initTheme } from '../utils/darkmode.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
     feather.replace();
 
     initializeSidebar();
     initializeLogout();
-    initTheme();
 
     const attendanceCardsContainer = document.getElementById("attendanceCardsContainer");
     const attendanceHistoryMessage = document.getElementById("attendanceHistoryMessage");
