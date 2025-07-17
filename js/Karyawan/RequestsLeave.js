@@ -2,7 +2,7 @@
 
 import { authService } from '../Services/AuthServices.js';
 import { userService } from "../Services/UserServices.js";
-import { LeaveRequestService } from '../Services/LeaveRequestsServices.js'; // Menggunakan export const
+import { LeaveRequestService } from '../Services/LeaveRequestsServices.js';
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
@@ -27,13 +27,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const newPasswordInput = document.getElementById("newPassword");
     const confirmNewPasswordInput = document.getElementById("confirmNewPassword");
     const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
-    const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage");
+    const changePasswordSuccessMessage = document = document.getElementById("changePasswordSuccessMessage");
 
     // Elemen Formulir Pengajuan Cuti/Izin
     const leaveRequestForm = document.getElementById("leaveRequestForm");
     const requestTypeInput = document.getElementById("requestType");
     const startDateInput = document.getElementById("startDate");
-    const endDateInput = document.getElementById("endDate");
+    const endDateInput = document.getElementById("endDate"); // Elemen endDate tetap ada di sini
+    const endDateField = document.getElementById("endDateField"); // Referensi ke div pembungkus endDate
     const reasonInput = document.getElementById("reason");
     const attachmentSection = document.getElementById("attachmentSection");
     const attachmentInput = document.getElementById("attachment");
@@ -47,9 +48,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nextPageBtn = document.getElementById('nextPageBtn');
     const currentPageInfo = document.getElementById('currentPageInfo');
 
-    // ✨ Elemen baru untuk menampilkan ringkasan batasan cuti ✨
+    // Elemen untuk menampilkan ringkasan batasan cuti
     const leaveLimitSummaryElement = document.getElementById("leaveLimitSummary");
-
 
     let currentPage = 1;
     const itemsPerPage = 5; // Lebih sedikit untuk riwayat pengajuan
@@ -153,7 +153,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             }
 
-            // ✨ Panggil fungsi baru untuk memuat ringkasan cuti setelah riwayat dimuat ✨
+            // Panggil fungsi baru untuk memuat ringkasan cuti setelah riwayat dimuat
             await updateLeaveLimitSummary();
 
         } catch (error) {
@@ -170,9 +170,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // ✨ FUNGSI BARU: Untuk memperbarui ringkasan batasan cuti di UI ✨
+    // --- Fungsi untuk memperbarui ringkasan batasan cuti di UI ---
     const updateLeaveLimitSummary = async () => {
-        if (!leaveLimitSummaryElement) return; // Pastikan elemen ada
+        if (!leaveLimitSummaryElement) return;
 
         leaveLimitSummaryElement.innerHTML = `<p class="text-gray-500">Memuat informasi batasan cuti...</p>`;
         leaveLimitSummaryElement.classList.remove('hidden');
@@ -181,27 +181,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             // Panggil service untuk mendapatkan ringkasan cuti dari backend
             const summary = await LeaveRequestService.getLeaveSummary();
             const currentYear = new Date().getFullYear();
-            const currentMonthName = new Date().toLocaleDateString('id-ID', { month: 'long' });
 
             let annualMessage = `Anda sudah mengajukan <span class="font-bold">${summary.annual_leave_count}</span> kali cuti di tahun ${currentYear}. (Batas: 12 kali)`;
             let annualClass = 'text-gray-700';
             if (summary.annual_leave_count >= 12) {
                 annualMessage = `<span class="font-bold text-red-600">Anda telah mencapai batas maksimal 12 kali pengajuan cuti untuk tahun ${currentYear}.</span>`;
                 annualClass = 'text-red-600';
-            } else if (summary.annual_leave_count >= 10) { // Contoh: mendekati batas
+            } else if (summary.annual_leave_count >= 10) {
                 annualClass = 'text-orange-500';
-            }
-
-            let monthlyMessage = `Di bulan ${currentMonthName}, Anda sudah mengajukan <span class="font-bold">${summary.current_month_leave_count}</span> kali cuti. (Batas: 1 kali)`;
-            let monthlyClass = 'text-gray-700';
-            if (summary.current_month_leave_count > 0) {
-                monthlyMessage = `<span class="font-bold text-red-600">Anda sudah mengajukan cuti di bulan ${currentMonthName} ini.</span>`;
-                monthlyClass = 'text-red-600';
             }
 
             leaveLimitSummaryElement.innerHTML = `
                 <p class="${annualClass}">📅 ${annualMessage}</p>
-                <p class="${monthlyClass}">🗓️ ${monthlyMessage}</p>
+                <p class="text-sm text-gray-500 mt-2">Catatan: Pengajuan cuti dapat dilakukan berkali-kali dalam sebulan selama kuota tahunan masih ada.</p>
             `;
             leaveLimitSummaryElement.classList.remove('hidden');
 
@@ -209,7 +201,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Error updating leave limit summary:", error);
             leaveLimitSummaryElement.innerHTML = `<p class="text-red-500">Gagal memuat informasi batasan cuti.</p>`;
             leaveLimitSummaryElement.classList.remove('hidden');
-            // Jika error adalah Unauthorized/Forbidden, arahkan ke login
             if (error.status === 401 || error.status === 403) {
                 showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
                 setTimeout(() => authService.logout(), 2000);
@@ -227,9 +218,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         paginatedItems.forEach(request => {
             const row = leaveHistoryTableBody.insertRow();
-
-            const startDate = new Date(request.start_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-            const endDate = new Date(request.end_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            // Tampilkan rentang tanggal jika StartDate dan EndDate berbeda
+            let dateDisplay = new Date(request.start_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            if (request.start_date !== request.end_date) {
+                const endDate = new Date(request.end_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+                dateDisplay = `${dateDisplay} - ${endDate}`;
+            }
 
             let statusClass = '';
             let statusText = request.status;
@@ -252,8 +247,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${startDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${endDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${dateDisplay}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${request.request_type || '-'}</td>
                 <td class="px-6 py-4 text-sm text-gray-700 max-w-xs overflow-hidden text-ellipsis">${request.reason || '-'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass} font-semibold">${statusText}</td>
@@ -301,19 +295,48 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // --- Logika untuk menampilkan/menyembunyikan bagian lampiran ---
+    // --- Logika untuk menampilkan/menyembunyikan bagian lampiran dan mengontrol input EndDate ---
     requestTypeInput.addEventListener('change', () => {
-        // ✨ Pastikan juga update summary saat tipe berubah, karena batas cuti hanya untuk 'Cuti' ✨
-        updateLeaveLimitSummary(); 
+        updateLeaveLimitSummary(); // Selalu update summary saat tipe berubah
+
+        // Kontrol visibilitas dan persyaratan input attachment
         if (requestTypeInput.value === 'Sakit') {
             attachmentSection.classList.remove('hidden');
             attachmentInput.setAttribute('required', 'required');
         } else {
             attachmentSection.classList.add('hidden');
             attachmentInput.removeAttribute('required');
-            attachmentInput.value = '';
+            attachmentInput.value = ''; // Kosongkan file jika tidak diperlukan
+        }
+
+        // Kontrol visibilitas dan persyaratan input endDate
+        if (requestTypeInput.value === 'Cuti') {
+            endDateField.classList.add('hidden'); // Sembunyikan div parent dari endDateInput
+            endDateInput.removeAttribute('required'); // Hapus atribut required
+            endDateInput.value = startDateInput.value; // Atur endDate sama dengan startDate
+
+            // Set min dan max date untuk startDate agar pengguna tidak bisa memilih rentang tanggal
+            startDateInput.setAttribute('max', startDateInput.value); 
+            startDateInput.setAttribute('min', startDateInput.value); 
+        } else { // Jika Sakit atau jenis lain
+            endDateField.classList.remove('hidden'); // Tampilkan endDate
+            endDateInput.setAttribute('required', 'required'); // Wajibkan endDate
+            startDateInput.removeAttribute('max'); // Hapus batasan max dari startDate
+            startDateInput.removeAttribute('min'); // Hapus batasan min dari startDate
         }
     });
+
+    // Event listener tambahan untuk memastikan endDate tetap sama dengan startDate jika type adalah Cuti
+    startDateInput.addEventListener('change', () => {
+        if (requestTypeInput.value === 'Cuti') {
+            endDateInput.value = startDateInput.value;
+            // Pastikan juga max/min date diperbarui jika startDate berubah,
+            // ini penting agar input date HTML membatasi pilihan pengguna
+            startDateInput.setAttribute('max', startDateInput.value); 
+            startDateInput.setAttribute('min', startDateInput.value); 
+        }
+    });
+
 
     // --- Event Listener Submit Formulir Pengajuan Cuti/Izin ---
     let isSubmitting = false;
@@ -329,47 +352,45 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const requestType = requestTypeInput.value;
         const startDate = startDateInput.value;
-        // const endDate = endDateInput.value; // Tidak digunakan langsung dalam formData
+        const endDate = endDateInput.value; // Ambil nilai endDate
         const reason = reasonInput.value;
         const file = attachmentInput.files[0];
 
-        // ✨ PENGECEKAN BATASAN CUTI DI FRONTEND ✨
+        // Validasi Tanggal Umum (StartDate tidak boleh setelah EndDate)
+        if (new Date(startDate) > new Date(endDate)) {
+            showToast("Tanggal selesai tidak boleh sebelum tanggal mulai.", "error");
+            formMessage.textContent = "Tanggal selesai tidak boleh sebelum tanggal mulai.";
+            formMessage.classList.remove("hidden");
+            formMessage.classList.add("error");
+            isSubmitting = false;
+            return;
+        }
+
+        // --- PENGECEKAN BATASAN KHUSUS BERDASARKAN TIPE PENGAJUAN ---
         if (requestType === 'Cuti') {
+            // Validasi Frontend: Tanggal mulai dan selesai harus sama untuk Cuti
+            if (startDate !== endDate) {
+                showToast("Untuk pengajuan 'Cuti', tanggal mulai dan tanggal selesai harus sama.", "error");
+                formMessage.textContent = "Untuk pengajuan 'Cuti', tanggal mulai dan tanggal selesai harus sama.";
+                formMessage.classList.remove("hidden");
+                formMessage.classList.add("error");
+                isSubmitting = false;
+                return;
+            }
+
+            // Cek Batasan Tahunan Cuti
             try {
                 const summary = await LeaveRequestService.getLeaveSummary();
-                const selectedStartDate = new Date(startDate);
                 const currentYear = new Date().getFullYear();
 
-                // Cek batasan tahunan
                 if (summary.annual_leave_count >= 12) {
                     showToast(`Anda telah mencapai batas maksimal 12 kali pengajuan Cuti untuk tahun ${currentYear}.`, "error");
                     formMessage.textContent = `Anda telah mencapai batas maksimal 12 kali pengajuan Cuti untuk tahun ${currentYear}.`;
                     formMessage.classList.remove("hidden");
                     formMessage.classList.add("error");
                     isSubmitting = false;
-                    return; // Hentikan proses submit
+                    return;
                 }
-
-                // Cek batasan bulanan (gunakan data dari summary API yang lebih akurat)
-                // Kita perlu membandingkan bulan yang diajukan dengan bulan sekarang
-                const submittedMonth = selectedStartDate.getMonth(); // 0-11
-                const submittedYear = selectedStartDate.getFullYear();
-
-                const today = new Date();
-                const currentMonth = today.getMonth();
-                const currentMonthName = today.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-
-
-                // Jika tanggal mulai pengajuan ada di bulan yang sama dengan bulan sekarang DAN summary menunjukkan sudah ada pengajuan di bulan ini
-                if (submittedMonth === currentMonth && submittedYear === currentYear && summary.current_month_leave_count > 0) {
-                     showToast(`Anda hanya dapat mengajukan Cuti satu kali dalam bulan ${currentMonthName}. Anda sudah memiliki pengajuan cuti di bulan ini.`, "error");
-                     formMessage.textContent = `Anda hanya dapat mengajukan Cuti satu kali dalam bulan ${currentMonthName}. Anda sudah memiliki pengajuan cuti di bulan ini.`;
-                     formMessage.classList.remove("hidden");
-                     formMessage.classList.add("error");
-                     isSubmitting = false;
-                     return; // Hentikan proses submit
-                }
-
             } catch (error) {
                 console.error("Error saat memeriksa batasan cuti di frontend:", error);
                 showToast("Gagal memeriksa batasan cuti. Silakan coba lagi.", "error");
@@ -380,7 +401,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
         }
-        // ✨ AKHIR PENGECEKAN BATASAN CUTI ✨
+        // Tidak ada validasi khusus untuk Sakit di sini selain lampiran,
+        // karena tumpang tindih akan ditangani oleh backend untuk rentang tanggal.
 
         // Validasi file attachment dan buat FormData
         if (file) {
@@ -392,7 +414,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 isSubmitting = false;
                 return;
             }
-        } else if (requestTypeInput.value === 'Sakit' && attachmentInput.hasAttribute('required')) {
+        } else if (requestType === 'Sakit' && attachmentInput.hasAttribute('required')) {
             showToast("Lampiran (surat dokter) wajib untuk pengajuan Sakit.", "error");
             formMessage.textContent = "Lampiran (surat dokter) wajib untuk pengajuan Sakit.";
             formMessage.classList.remove("hidden");
@@ -404,7 +426,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const formData = new FormData();
         formData.append("request_type", requestType);
         formData.append("start_date", startDate);
-        formData.append("end_date", endDateInput.value); // Pastikan endDate juga ditambahkan
+        formData.append("end_date", endDate); // Pastikan endDate dikirim
         formData.append("reason", reason);
         if (file) {
             formData.append("attachment", file);
@@ -421,8 +443,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             leaveRequestForm.reset();
             attachmentSection.classList.add('hidden');
             attachmentInput.removeAttribute('required');
-            attachmentInput.value = ''; // Penting untuk mereset input file
-            await loadLeaveHistory(); // Muat ulang riwayat dan ringkasan setelah submit
+            attachmentInput.value = '';
+            // Panggil event change secara manual untuk mereset tampilan input tanggal setelah reset form
+            requestTypeInput.dispatchEvent(new Event('change'));
+            await loadLeaveHistory();
         } catch (error) {
             console.error("Error submitting leave request:", error);
             const errorMessage = error.message || "Gagal mengirim pengajuan. Silakan coba lagi.";
@@ -599,6 +623,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     // --- Inisialisasi Halaman ---
-    fetchEmployeeProfileDataForHeader(); // Muat data profil untuk avatar di header
-    loadLeaveHistory(); // Muat riwayat pengajuan saat halaman dimuat (akan memicu updateLeaveLimitSummary juga)
+    fetchEmployeeProfileDataForHeader();
+    await loadLeaveHistory(); // Memuat riwayat dan summary
+
+    // Panggil event change secara manual saat DOM dimuat untuk inisialisasi tampilan input tanggal yang benar
+    // Ini penting agar endDateField diatur sembunyi/tampil berdasarkan nilai default requestTypeInput
+    requestTypeInput.dispatchEvent(new Event('change'));
 });
