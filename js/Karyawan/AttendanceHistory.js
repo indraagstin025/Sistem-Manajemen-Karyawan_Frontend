@@ -6,6 +6,8 @@ import 'toastify-js/src/toastify.css';
 
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js"; 
+// ✨ IMPORT BARU ✨
+import { getUserPhotoBlobUrl } from '../utils/photoUtils.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
     feather.replace();
@@ -54,19 +56,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         }).showToast();
     };
 
+    // ✨ FUNGSI fetchEmployeeProfileDataForHeader Disesuaikan untuk menggunakan photoUtils.js ✨
     const fetchEmployeeProfileDataForHeader = async () => {
         try {
             let user = authService.getCurrentUser();
             if (!user || !user.id) {
                 return null;
             }
-            
-            const employeeData = await userService.getUserByID(user.id); 
-            if (employeeData && userAvatarNav) {
-               userAvatarNav.src = employeeData.photo || "https://via.placeholder.com/40x40/E2E8F0/4A5568?text=ME";
-                userAvatarNav.alt = employeeData.name;
+            // Gunakan getUserPhotoBlobUrl dari photoUtils.js
+            const photoUrl = await getUserPhotoBlobUrl(user.id, user.name || ''); 
+            if (userAvatarNav) {
+                userAvatarNav.src = photoUrl;
+                userAvatarNav.alt = user.name || "User Avatar";
             }
-            return employeeData;
+            // Tidak perlu lagi memanggil userService.getUserByID di sini jika hanya untuk foto & nama
+            // Jika Anda memerlukan data lain seperti 'position' atau 'department' di header, 
+            // Anda harus memanggil userService.getUserByID dan mengambil data tersebut.
+            return user; // Cukup kembalikan objek user dari sesi
         } catch (error) {
             console.error("Error fetching employee profile data for header:", error);
             if (error.status === 401 || error.status === 403) {
@@ -80,9 +86,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     const loadAttendanceHistory = async () => {
+        // Kolom colspan disesuaikan dari 5 menjadi 4 karena Check-Out akan dihapus
         attendanceHistoryTableBody.innerHTML = `
             <tr>
-                <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat absensi...</td>
+                <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat absensi...</td>
             </tr>
         `;
         attendanceHistoryMessage.classList.add('hidden');
@@ -106,9 +113,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             allAttendanceData.sort((a, b) => new Date(b.date) - new Date(a.date)); 
 
             if (allAttendanceData.length === 0) {
+                // Kolom colspan disesuaikan dari 5 menjadi 4
                 attendanceHistoryTableBody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Tidak ada riwayat absensi yang ditemukan.</td>
+                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Tidak ada riwayat absensi yang ditemukan.</td>
                     </tr>
                 `;
                 attendanceHistoryMessage.textContent = 'Anda belum memiliki riwayat absensi.';
@@ -126,7 +134,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Error loading attendance history:", error);
             attendanceHistoryTableBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-red-500">Gagal memuat riwayat absensi: ${error.message}</td>
+                    <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-red-500">Gagal memuat riwayat absensi: ${error.message}</td>
                 </tr>
             `;
             showToast(error.message || "Gagal memuat riwayat absensi.", "error");
@@ -136,69 +144,61 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-// file: AttendanceHistory.js
+    // ✨ FUNGSI renderAttendanceTable Disesuaikan ✨
+    const renderAttendanceTable = (data, page, limit) => {
+        attendanceHistoryTableBody.innerHTML = ''; 
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedItems = data.slice(startIndex, endIndex);
 
-const renderAttendanceTable = (data, page, limit) => {
-    attendanceHistoryTableBody.innerHTML = ''; 
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedItems = data.slice(startIndex, endIndex);
+        paginatedItems.forEach(attendance => {
+            const row = attendanceHistoryTableBody.insertRow();
+            
+            const date = new Date(attendance.date + 'T00:00:00'); 
+            const formattedDate = date.toLocaleDateString('id-ID', { 
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
 
-    paginatedItems.forEach(attendance => {
-        const row = attendanceHistoryTableBody.insertRow();
-        
-        const date = new Date(attendance.date + 'T00:00:00'); 
-        const formattedDate = date.toLocaleDateString('id-ID', { 
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+            let statusDisplayText = attendance.status || '-';
+            let statusClass = 'text-gray-700';
+
+            switch (attendance.status) {
+                case 'Hadir':
+                    statusClass = 'text-green-600 font-semibold';
+                    break;
+                case 'Terlambat':
+                    statusClass = 'text-orange-600 font-semibold';
+                    break;
+                case 'Sakit':
+                    statusClass = 'text-blue-600 font-semibold';
+                    // Catatan tetap di kolom Catatan, jadi statusDisplayText hanya 'Sakit'
+                    statusDisplayText = 'Sakit';
+                    break;
+                case 'Cuti':
+                    statusClass = 'text-purple-600 font-semibold';
+                    // Catatan tetap di kolom Catatan, jadi statusDisplayText hanya 'Cuti'
+                    statusDisplayText = 'Cuti';
+                    break;
+                case 'Tidak Absen': // Mengganti 'Alpha' dengan 'Tidak Absen'
+                    statusClass = 'text-red-600 font-semibold';
+                    // Catatan tetap di kolom Catatan, jadi statusDisplayText hanya 'Tidak Absen'
+                    statusDisplayText = 'Tidak Absen';
+                    break;
+                default:
+                    statusClass = 'text-gray-900';
+                    break;
+            }
+
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.note || '-'}</td>
+            `;
         });
-
-        let statusDisplayText = attendance.status || '-';
-        let statusClass = 'text-gray-700';
-
-        // Perubahan ada di dalam blok switch ini
-        switch (attendance.status) {
-            case 'Hadir':
-                statusClass = 'text-green-600 font-semibold';
-                break;
-            // DIUBAH: 'Telat' menjadi 'Terlambat' agar sesuai dengan backend
-            case 'Terlambat':
-                statusClass = 'text-orange-600 font-semibold';
-                break;
-            // DIHAPUS: case 'Izin' tidak lagi digunakan
-            /* case 'Izin':
-                statusClass = 'text-purple-600 font-semibold';
-                if (attendance.note) { statusDisplayText = `Izin (${attendance.note})`; }
-                break;
-            */
-            case 'Sakit':
-                // Diubah sedikit untuk konsistensi, warna menjadi biru
-                statusClass = 'text-blue-600 font-semibold';
-                if (attendance.note) { statusDisplayText = `Sakit (${attendance.note})`; }
-                break;
-            case 'Cuti':
-                // Diubah sedikit untuk konsistensi, warna menjadi ungu
-                statusClass = 'text-purple-600 font-semibold';
-                if (attendance.note) { statusDisplayText = `Cuti (${attendance.note})`; }
-                break;
-            case 'Alpha':
-                statusClass = 'text-red-600 font-semibold'; // Warna diubah agar lebih kontras
-                if (attendance.note) { statusDisplayText = `Alpha (${attendance.note})`; }
-                break;
-            default:
-                statusClass = 'text-gray-900';
-        }
-
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_out || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.note || '-'}</td>
-        `;
-    });
-};
+    };
 
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage);

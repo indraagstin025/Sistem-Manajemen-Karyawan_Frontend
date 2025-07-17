@@ -42,14 +42,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadDashboardData = async () => {
     const totalKaryawanEl = document.getElementById("totalKaryawan");
     const karyawanAktifEl = document.getElementById("karyawanAktif");
-    const karyawanCutiEl = document.getElementById("karyawanCuti");
     const totalDepartemenEl = document.getElementById("totalDepartemen");
     const chartCanvas = document.getElementById("departmentChart");
     try {
       const stats = await dashboardService.getDashboardStats();
       if (totalKaryawanEl) totalKaryawanEl.innerText = stats.total_karyawan || 0;
       if (karyawanAktifEl) karyawanAktifEl.innerText = stats.karyawan_aktif || 0;
-      if (karyawanCutiEl) karyawanCutiEl.innerText = stats.karyawan_cuti || 0;
       if (totalDepartemenEl) totalDepartemenEl.innerText = stats.total_departemen || 0;
 
       if (chartCanvas && stats.distribusi_departemen) {

@@ -3,7 +3,7 @@
 import { userService } from "../Services/UserServices.js";
 import { authService } from "../Services/AuthServices.js";
 import AttendanceService from "../Services/AttendanceServices.js";
-import { LeaveRequestService } from '../Services/LeaveRequestsServices.js'; // Pastikan ini diimpor
+import { LeaveRequestService } from '../Services/LeaveRequestsServices.js';
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 import Swal from "sweetalert2";
@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const employeePosition = document.getElementById("employeePosition");
     const employeeDepartment = document.getElementById("employeeDepartment");
     const todayAttendanceStatusSummary = document.getElementById("todayAttendanceStatus");
-    const remainingLeave = document.getElementById("remainingLeave"); // Elemen untuk menampilkan sisa cuti
+    const remainingLeave = document.getElementById("remainingLeave");
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
@@ -39,10 +39,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const attendanceNoteDisplay = document.getElementById("attendance-note-display");
     const attendanceNoteSpan = document.getElementById("attendance-note");
 
-    let html5QrCodeInstance = null;
+    let html5QrCodeInstance = null; // Ini mungkin tidak digunakan jika hanya full screen scanner
     let html5QrCodeFullInstance = null;
     let isProcessingScan = false;
     let isScannerActivelyScanning = false;
+    // let isScannerInitialized = false; // Jika Anda memiliki variabel ini, pastikan untuk menghapusnya juga jika tidak digunakan
 
 
     function showSweetAlert(title, message, icon = "success", showConfirmButton = false, timer = 2000) {
@@ -149,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const readerFullDiv = document.getElementById("readerFull");
         if (readerFullDiv) readerFullDiv.innerHTML = "";
         if (qrScanResult) qrScanResult.textContent = "";
-        // isScannerInitialized = false; // Jika ini variabel global, pastikan terdefinisi
+        // isScannerInitialized = false; // Jika Anda memiliki variabel ini, pastikan untuk menghapus/menentukan di mana ia digunakan
         html5QrCodeFullInstance = null;
     }
 
@@ -174,9 +175,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
 
             loadMyTodayAttendance();
-            // ✨ Muat ulang data profil untuk memperbarui sisa cuti setelah absensi (jika absensi mempengaruhi cuti) ✨
-            // Jika absensi tidak mempengaruhi sisa cuti, baris ini bisa dihilangkan
-            fetchEmployeeProfileData(); 
+            // Muat ulang data profil untuk memperbarui sisa cuti setelah absensi (jika absensi mempengaruhi cuti)
+            // Ini biasanya tidak perlu jika absensi tidak mempengaruhi sisa cuti.
+            // fetchEmployeeProfileData(); 
 
         } catch (error) {
             console.error("ERROR: Gagal saat memproses absensi di server:", error);
@@ -224,7 +225,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // ✨ FUNGSI fetchEmployeeProfileData Disesuaikan ✨
     const fetchEmployeeProfileData = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -251,10 +251,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return null;
             }
 
-            // ✨ AMBIL DATA PROFIL KARYAWAN (nama, posisi, departemen) ✨
             const employeeData = await userService.getUserByID(user.id); 
-            
-            // ✨ AMBIL RINGKASAN CUTI DARI SERVICE BARU ✨
             const leaveSummary = await LeaveRequestService.getLeaveSummary();
 
             if (employeeData) {
@@ -280,23 +277,21 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (employeePosition) employeePosition.textContent = employeeData.position || "-";
                 if (employeeDepartment) employeeDepartment.textContent = employeeData.department || "-";
 
-                // ✨ PERBARUI BAGIAN SISA CUTI DENGAN DATA DARI leaveSummary ✨
                 if (remainingLeave) {
-                    const maxAnnualLeave = 12; // Batas maksimal cuti per tahun
-                    const usedLeave = leaveSummary.annual_leave_count || 0; // Jumlah cuti yang sudah diajukan/disetujui
-                    const actualRemaining = Math.max(0, maxAnnualLeave - usedLeave); // Sisa cuti sebenarnya (tidak boleh negatif)
+                    const maxAnnualLeave = 12;
+                    const usedLeave = leaveSummary.annual_leave_count || 0;
+                    const actualRemaining = Math.max(0, maxAnnualLeave - usedLeave);
 
-                    remainingLeave.textContent = `${actualRemaining} Kali`; // Menampilkan sisa DALAM KALI, bukan hari
+                    remainingLeave.textContent = `${actualRemaining} Kali`;
                     
-                    // Opsional: berikan warna atau peringatan jika sisa cuti menipis
-                    if (actualRemaining <= 3) { // Contoh: jika sisa 3 kali atau kurang
+                    if (actualRemaining <= 3) {
                         remainingLeave.classList.add('text-red-600', 'font-semibold');
                     } else {
                         remainingLeave.classList.remove('text-red-600', 'font-semibold');
                     }
                 }
             }
-            return employeeData; // Tetap kembalikan employeeData jika ada kebutuhan lain
+            return employeeData;
         } catch (error) {
             console.error("Error fetching employee profile data:", error);
             showSweetAlert("Gagal Memuat Profil", error.message || "Gagal memuat data profil.", "error");
@@ -308,7 +303,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     window.openFullscreenScanner = async function () {
-        if (!qrFullscreenContainer || !readerFullDiv || !closeScannerBtn) { // closeScannerBtn tidak didefinisikan di sini
+        // closeScannerBtn harus didefinisikan di sini atau di scope yang lebih luas
+        const closeScannerBtn = document.getElementById("closeScannerBtn"); 
+        if (!qrFullscreenContainer || !readerFullDiv || !closeScannerBtn) {
             return console.error("ERROR: Elemen HTML untuk scanner fullscreen tidak ditemukan.");
         }
 
@@ -317,8 +314,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         readerFullDiv.innerHTML = "";
         qrScanResultText.textContent = "Memulai kamera...";
 
-        // Pastikan Html5Qrcode diimpor atau tersedia secara global
-        // Jika belum, Anda mungkin perlu mengimpornya: import { Html5Qrcode } from "html5-qrcode";
+        // Pastikan Html5Qrcode diimpor atau tersedia secara global (dari script CDN di HTML)
         html5QrCodeFullInstance = new Html5Qrcode(readerFullDiv.id);
 
         try {
@@ -387,7 +383,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    const currentUser = await fetchEmployeeProfileData(); // Panggil fetchEmployeeProfileData saat DOMContentLoaded
+    const currentUser = await fetchEmployeeProfileData();
     if (currentUser) {
         loadMyTodayAttendance();
     }

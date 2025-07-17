@@ -180,15 +180,6 @@
                 <p class="text-4xl font-extrabold text-gray-900" id="karyawanAktif">0</p>
               </div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-orange-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
-              <div class="bg-orange-100 text-orange-600 p-3 rounded-full">
-                <i data-feather="user-minus" class="w-7 h-7"></i>
-              </div>
-              <div>
-                <p class="text-sm font-medium text-gray-500">Karyawan Cuti</p>
-                <p class="text-4xl font-extrabold text-gray-900" id="karyawanCuti">0</p>
-              </div>
-            </div>
             <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-purple-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
               <div class="bg-purple-100 text-purple-600 p-3 rounded-full">
                 <i data-feather="grid" class="w-7 h-7"></i>
@@ -199,45 +190,11 @@
               </div>
             </div>
           </div>
-
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
               <h3 class="font-semibold text-gray-800 mb-4 text-xl">Distribusi Karyawan Berdasarkan Departemen</h3> <div class="h-80">
                 <canvas id="departmentChart"></canvas>
               </div>
-            </div>
-            
-            <div class="bg-white rounded-xl shadow-lg p-6">
-              <h2 class="text-xl font-bold text-gray-900 mb-4">Aktivitas Terbaru</h2>
-              <ul class="space-y-4" id="adminActivityList">
-                <li class="flex items-start bg-gray-50 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                  <div class="bg-blue-100 text-blue-600 rounded-full p-2 mr-4 flex-shrink-0">
-                    <i data-feather="user-plus" class="w-5 h-5"></i>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-gray-900">Karyawan baru <span class="font-bold">John Doe</span> telah ditambahkan.</p>
-                    <p class="text-xs text-gray-500 mt-1">Baru saja</p>
-                  </div>
-                </li>
-                <li class="flex items-start bg-gray-50 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                  <div class="bg-green-100 text-green-600 rounded-full p-2 mr-4 flex-shrink-0">
-                    <i data-feather="check-circle" class="w-5 h-5"></i>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-gray-900">Pengajuan cuti <span class="font-bold">Jane Smith</span> telah disetujui.</p>
-                    <p class="text-xs text-gray-500 mt-1">1 jam yang lalu</p>
-                  </div>
-                </li>
-                <li class="flex items-start bg-gray-50 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                  <div class="bg-orange-100 text-orange-600 rounded-full p-2 mr-4 flex-shrink-0">
-                    <i data-feather="alert-triangle" class="w-5 h-5"></i>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-gray-900">2 karyawan terlambat absen hari ini.</p>
-                    <p class="text-xs text-gray-500 mt-1">Pagi ini</p>
-                  </div>
-                </li>
-              </ul>
             </div>
           </div>
         </main>

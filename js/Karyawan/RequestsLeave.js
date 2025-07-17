@@ -1,4 +1,4 @@
-// js/Karyawan/request_leave.js (atau RequestsLeave.js, pastikan namanya konsisten!)
+// js/Karyawan/RequestsLeave.js (Pastikan nama file fisik Anda benar: RequestsLeave.js)
 
 import { authService } from '../Services/AuthServices.js';
 import { userService } from "../Services/UserServices.js";
@@ -6,31 +6,22 @@ import { LeaveRequestService } from '../Services/LeaveRequestsServices.js';
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
+// ✨ IMPOR BARU ✨
+import { initializeLogout } from '../components/logoutHandler.js'; // Pastikan path benar
+import { getUserPhotoBlobUrl } from '../utils/photoUtils.js';     // Pastikan path benar
+
 document.addEventListener("DOMContentLoaded", async () => {
-    // Pastikan Feather Icons sudah dimuat di <head> atau sebelum script ini.
-    // Jika masih ada error 'feather is not defined', cek urutan script di HTML Anda.
-    feather.replace(); 
+    feather.replace(); // Inisialisasi ikon Feather
 
     // --- Seleksi Elemen DOM ---
     const userAvatarNav = document.getElementById("userAvatar");
     const dropdownMenu = document.getElementById("dropdownMenu");
     const userDropdownContainer = document.getElementById("userDropdown");
-    const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
+    // const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton"); // ✨ DIHAPUS - Dikelola oleh logoutHandler.js ✨
     const sidebarToggle = document.getElementById("sidebarToggle");
     const mobileSidebar = document.getElementById("mobileSidebar");
     const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
     const closeSidebar = document.getElementById("closeSidebar");
-    const changePasswordModal = document.getElementById("changePasswordModal");
-    const openChangePasswordModalBtn = document.getElementById("openChangePasswordModalBtn");
-    const closeChangePasswordModalBtn = document.getElementById("closeChangePasswordModalBtn");
-    const cancelChangePasswordBtn = document.getElementById("cancelChangePasswordBtn");
-    const changePasswordForm = document.getElementById("changePasswordForm");
-    const oldPasswordInput = document.getElementById("oldPassword");
-    const newPasswordInput = document.getElementById("newPassword");
-    const confirmNewPasswordInput = document.getElementById("confirmNewPassword");
-    const changePasswordErrorMessage = document.getElementById("changePasswordErrorMessage");
-    // ✨ PERBAIKAN PENTING DI SINI ✨
-    const changePasswordSuccessMessage = document.getElementById("changePasswordSuccessMessage"); 
 
     // Elemen Formulir Pengajuan Cuti/Izin
     const leaveRequestForm = document.getElementById("leaveRequestForm");
@@ -88,21 +79,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     // --- Fungsi untuk memuat data profil karyawan (untuk avatar di header) ---
     const fetchEmployeeProfileDataForHeader = async () => {
         try {
-            let user = authService.getCurrentUser();
+            const user = authService.getCurrentUser();
             if (!user || !user.id) {
                 return null;
             }
-            const employeeData = await userService.getUserByID(user.id);
-            if (employeeData && userAvatarNav) {
-                userAvatarNav.src = employeeData.photo || "https://via.placeholder.com/40x40/E2E8F0/4A5568?text=ME";
-                userAvatarNav.alt = employeeData.name;
+            // ✨ GUNAKAN getUserPhotoBlobUrl dari photoUtils.js ✨
+            const photoUrl = await getUserPhotoBlobUrl(user.id, user.name || ''); 
+            if (userAvatarNav) {
+                userAvatarNav.src = photoUrl;
+                userAvatarNav.alt = user.name || "User Avatar"; // Gunakan user.name jika ada
             }
-            return employeeData;
+            return user; // Cukup kembalikan objek user dari sesi
         } catch (error) {
             console.error("Error fetching employee profile data for header:", error);
             if (error.status === 401 || error.status === 403) {
                 showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
-                setTimeout(() => authService.logout(), 2000);
+                authService.logout(); // Langsung panggil logout
             } else {
                 showToast(error.message || "Gagal memuat data profil header.", "error");
             }
@@ -124,7 +116,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const currentUser = authService.getCurrentUser();
             if (!currentUser || currentUser.role !== 'karyawan') {
                 showToast("Akses ditolak. Anda tidak memiliki izin untuk melihat halaman ini.", "error");
-                setTimeout(() => authService.logout(), 2000);
+                authService.logout(); 
                 return;
             }
 
@@ -167,12 +159,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             `;
             showToast(error.message || "Gagal memuat riwayat pengajuan.", "error");
             if (error.status === 401 || error.status === 403) {
-                setTimeout(() => authService.logout(), 2000);
+                authService.logout();
             }
         }
     };
 
-    // --- Fungsi untuk memperbarui ringkasan batasan cuti di UI ---
     const updateLeaveLimitSummary = async () => {
         if (!leaveLimitSummaryElement) return;
 
@@ -204,13 +195,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             leaveLimitSummaryElement.classList.remove('hidden');
             if (error.status === 401 || error.status === 403) {
                 showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
-                setTimeout(() => authService.logout(), 2000);
+                authService.logout();
             }
         }
     };
 
-
-    // --- Fungsi untuk merender tabel riwayat pengajuan per halaman ---
     const renderLeaveHistoryTable = (data, page, limit) => {
         leaveHistoryTableBody.innerHTML = '';
         const startIndex = (page - 1) * limit;
@@ -258,7 +247,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
-    // --- Fungsi untuk memperbarui kontrol paginasi ---
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         currentPageInfo.textContent = `Halaman ${currentPage} dari ${totalPages}`;
@@ -295,50 +283,40 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // --- Logika untuk menampilkan/menyembunyikan bagian lampiran dan mengontrol input EndDate ---
     requestTypeInput.addEventListener('change', () => {
-        updateLeaveLimitSummary(); // Selalu update summary saat tipe berubah
-
-        // Kontrol visibilitas dan persyaratan input attachment
+        updateLeaveLimitSummary(); 
         if (requestTypeInput.value === 'Sakit') {
             attachmentSection.classList.remove('hidden');
             attachmentInput.setAttribute('required', 'required');
         } else {
             attachmentSection.classList.add('hidden');
             attachmentInput.removeAttribute('required');
-            attachmentInput.value = ''; // Kosongkan file jika tidak diperlukan
+            attachmentInput.value = '';
         }
 
-        // Kontrol visibilitas dan persyaratan input endDate
         if (requestTypeInput.value === 'Cuti') {
-            endDateField.classList.add('hidden'); // Sembunyikan div parent dari endDateInput
-            endDateInput.removeAttribute('required'); // Hapus atribut required
-            endDateInput.value = startDateInput.value; // Atur endDate sama dengan startDate
+            endDateField.classList.add('hidden'); 
+            endDateInput.removeAttribute('required'); 
+            endDateInput.value = startDateInput.value; 
 
-            // Set min dan max date untuk startDate agar pengguna tidak bisa memilih rentang tanggal
             startDateInput.setAttribute('max', startDateInput.value); 
             startDateInput.setAttribute('min', startDateInput.value); 
-        } else { // Jika Sakit atau jenis lain
-            endDateField.classList.remove('hidden'); // Tampilkan endDate
-            endDateInput.setAttribute('required', 'required'); // Wajibkan endDate
-            startDateInput.removeAttribute('max'); // Hapus batasan max dari startDate
-            startDateInput.removeAttribute('min'); // Hapus batasan min dari startDate
+        } else { 
+            endDateField.classList.remove('hidden'); 
+            endDateInput.setAttribute('required', 'required'); 
+            startDateInput.removeAttribute('max'); 
+            startDateInput.removeAttribute('min'); 
         }
     });
 
-    // Event listener tambahan untuk memastikan endDate tetap sama dengan startDate jika type adalah Cuti
     startDateInput.addEventListener('change', () => {
         if (requestTypeInput.value === 'Cuti') {
             endDateInput.value = startDateInput.value;
-            // Pastikan juga max/min date diperbarui jika startDate berubah,
-            // ini penting agar input date HTML membatasi pilihan pengguna
             startDateInput.setAttribute('max', startDateInput.value); 
             startDateInput.setAttribute('min', startDateInput.value); 
         }
     });
 
-
-    // --- Event Listener Submit Formulir Pengajuan Cuti/Izin ---
     let isSubmitting = false;
 
     leaveRequestForm.addEventListener("submit", async (event) => {
@@ -352,7 +330,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const requestType = requestTypeInput.value;
         const startDate = startDateInput.value;
-        const endDate = endDateInput.value; // Ambil nilai endDate
+        const endDate = endDateInput.value; 
         const reason = reasonInput.value;
         const file = attachmentInput.files[0];
 
@@ -368,7 +346,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // --- PENGECEKAN BATASAN KHUSUS BERDASARKAN TIPE PENGAJUAN ---
         if (requestType === 'Cuti') {
-            // Validasi Frontend: Tanggal mulai dan selesai harus sama untuk Cuti
             if (startDate !== endDate) {
                 showToast("Untuk pengajuan 'Cuti', tanggal mulai dan tanggal selesai harus sama.", "error");
                 formMessage.textContent = "Untuk pengajuan 'Cuti', tanggal mulai dan tanggal selesai harus sama.";
@@ -378,7 +355,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
 
-            // Cek Batasan Tahunan Cuti
             try {
                 const summary = await LeaveRequestService.getLeaveSummary();
                 const currentYear = new Date().getFullYear();
@@ -401,8 +377,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 return;
             }
         }
-        // Tidak ada validasi khusus untuk Sakit di sini selain lampiran,
-        // karena tumpang tindih akan ditangani oleh backend untuk rentang tanggal.
 
         // Validasi file attachment dan buat FormData
         if (file) {
@@ -426,7 +400,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const formData = new FormData();
         formData.append("request_type", requestType);
         formData.append("start_date", startDate);
-        formData.append("end_date", endDate); // Pastikan endDate dikirim
+        formData.append("end_date", endDate); 
         formData.append("reason", reason);
         if (file) {
             formData.append("attachment", file);
@@ -444,7 +418,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             attachmentSection.classList.add('hidden');
             attachmentInput.removeAttribute('required');
             attachmentInput.value = '';
-            // Panggil event change secara manual untuk mereset tampilan input tanggal setelah reset form
             requestTypeInput.dispatchEvent(new Event('change')); 
             await loadLeaveHistory();
         } catch (error) {
@@ -456,101 +429,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             formMessage.classList.add("error");
 
             if (error.status === 401 || error.status === 403) {
-                setTimeout(() => authService.logout(), 2000);
+                authService.logout();
             }
         } finally {
             isSubmitting = false;
         }
     });
 
-
-    // --- Change Password Modal Logic (disalin dari EmployeeDashboard.js) ---
-    const resetChangePasswordForm = () => {
-        changePasswordForm.reset();
-        changePasswordErrorMessage.classList.add("hidden");
-        changePasswordSuccessMessage.classList.add("hidden");
-        changePasswordErrorMessage.textContent = "";
-        changePasswordSuccessMessage.textContent = "";
-    };
-
-    if (openChangePasswordModalBtn) {
-        openChangePasswordModalBtn.addEventListener("click", (event) => {
-            event.preventDefault();
-            resetChangePasswordForm();
-            changePasswordModal.classList.remove("hidden");
-            setTimeout(() => changePasswordModal.classList.add("active"), 10);
-            if (dropdownMenu) dropdownMenu.classList.remove("active");
-        });
-    }
-
-    if (closeChangePasswordModalBtn) {
-        closeChangePasswordModalBtn.addEventListener("click", () => {
-            changePasswordModal.classList.remove("active");
-            setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
-        });
-    }
-
-    if (cancelChangePasswordBtn) {
-        cancelChangePasswordBtn.addEventListener("click", () => {
-            changePasswordModal.classList.remove("active");
-            setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
-        });
-    }
-
-    if (changePasswordForm) {
-        changePasswordForm.addEventListener("submit", async (event) => {
-            event.preventDefault();
-            changePasswordErrorMessage.classList.add("hidden");
-            changePasswordSuccessMessage.classList.add("hidden");
-            changePasswordErrorMessage.textContent = "";
-            changePasswordSuccessMessage.textContent = "";
-
-            const oldPassword = oldPasswordInput.value;
-            const newPassword = newPasswordInput.value;
-            const confirmNewPassword = confirmNewPasswordInput.value;
-
-            if (newPassword !== confirmNewPassword) {
-                changePasswordErrorMessage.textContent = "Password baru dan konfirmasi password tidak cocok.";
-                changePasswordErrorMessage.classList.remove("hidden");
-                return;
-            }
-
-            if (newPassword.length < 6) {
-                changePasswordErrorMessage.textContent = "Password baru minimal 6 karakter.";
-                changePasswordErrorMessage.classList.remove("hidden");
-                return;
-            }
-
-            const currentUser = authService.getCurrentUser();
-            if (!currentUser || !currentUser.id) {
-                showToast("Sesi tidak valid. Harap login kembali.", "error");
-                setTimeout(() => authService.logout(), 2000);
-                return;
-            }
-
-            try {
-                await authService.changePassword(oldPassword, newPassword);
-                changePasswordSuccessMessage.textContent = "Password berhasil diubah!";
-                changePasswordSuccessMessage.classList.remove("hidden");
-                showToast("Password berhasil diubah!", "success");
-
-                setTimeout(() => {
-                    changePasswordModal.classList.remove("active");
-                    setTimeout(() => changePasswordModal.classList.add("hidden"), 300);
-                }, 1500);
-
-            } catch (error) {
-                console.error("Error changing password:", error);
-                const errorMessage = error.message || "Gagal mengubah password. Silakan coba lagi.";
-                changePasswordErrorMessage.textContent = errorMessage;
-                changePasswordErrorMessage.classList.remove("hidden");
-                showToast(errorMessage, "error");
-            }
-        });
-    }
-
-
-    // --- Event Listeners UI Umum ---
     if (userDropdownContainer) {
         userDropdownContainer.addEventListener("click", () => {
             dropdownMenu.classList.toggle("active");
@@ -561,15 +446,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
     }
+    initializeLogout({
 
-    allLogoutButtons.forEach(button => {
-        button.addEventListener("click", (event) => {
-            event.preventDefault();
-            showLogoutConfirmation();
-        });
     });
 
-    // Logika Sidebar Mobile
     if (sidebarToggle && mobileSidebar && mobileSidebarPanel && closeSidebar) {
         const showMobileSidebar = () => {
             mobileSidebar.classList.remove("hidden");
@@ -590,43 +470,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    const showLogoutConfirmation = () => {
-        const toastNode = document.createElement("div");
-        toastNode.className = "flex flex-col items-center p-2";
-        toastNode.innerHTML = `
-            <p class="font-semibold text-white text-base mb-4">Anda yakin ingin keluar?</p>
-            <div class="flex space-x-3">
-                <button id="confirmLogoutBtn" class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700">Ya, Keluar</button>
-                <button id="cancelLogoutBtn" class="px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-md hover:bg-gray-600">Batal</button>
-            </div>
-        `;
-        const toast = Toastify({
-            node: toastNode,
-            duration: -1,
-            gravity: "top",
-            position: "center",
-            close: true,
-            style: {
-                background: "linear-gradient(to right, #4f46e5, #7c3aed)",
-                borderRadius: "12px",
-                padding: "1rem"
-            }
-        }).showToast();
-
-        toastNode.querySelector("#confirmLogoutBtn").addEventListener("click", () => {
-            authService.logout();
-            toast.hideToast();
-        });
-        toastNode.querySelector("#cancelLogoutBtn").addEventListener("click", () => {
-            toast.hideToast();
-        });
-    };
-
-    // --- Inisialisasi Halaman ---
     fetchEmployeeProfileDataForHeader();
-    await loadLeaveHistory(); // Memuat riwayat dan summary
+    await loadLeaveHistory();
 
-    // Panggil event change secara manual saat DOM dimuat untuk inisialisasi tampilan input tanggal yang benar
-    // Ini penting agar endDateField diatur sembunyi/tampil berdasarkan nilai default requestTypeInput
     requestTypeInput.dispatchEvent(new Event('change'));
 });
