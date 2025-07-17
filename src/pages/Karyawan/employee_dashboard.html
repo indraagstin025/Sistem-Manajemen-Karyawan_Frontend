@@ -37,8 +37,6 @@
       }
 
       /* Gaya untuk QR Scanner Container */
-      /* Anda memiliki gaya #reader yang tidak digunakan di JS yang Anda berikan */
-      /* Jika ini untuk scanner lain, pertahankan. Jika tidak, bisa dihapus */
       #reader {
         width: 100%;
         max-width: 400px; /* Batasi lebar scanner */
@@ -186,7 +184,13 @@
                 <p class="text-4xl font-extrabold text-gray-900" id="todayAttendanceStatus">Memuat...</p>
               </div>
 
-              <div class="col-span-1 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+              <div class="col-span-1 bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center border-b-4 border-purple-500">
+                <div class="bg-purple-100 text-purple-600 p-4 rounded-full mb-3">
+                  <i data-feather="briefcase" class="w-8 h-8"></i> </div>
+                <p class="text-lg font-medium text-gray-500 mb-2">Sisa Kuota Cuti Tahunan</p>
+                <p class="text-4xl font-extrabold text-gray-900" id="remainingLeave">Memuat...</p>
+              </div>
+              <div class="col-span-1 md:col-span-2 lg:col-span-1 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                 <button
                   id="scanQrButton"
                   class="w-full h-full flex flex-col items-center justify-center text-center p-4 rounded-xl transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-indigo-300 focus:ring-opacity-75 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:transform-none disabled:hover:-translate-y-0"
