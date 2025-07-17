@@ -3,19 +3,19 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import idLocale from "@fullcalendar/core/locales/id";
-
 import WorkScheduleServices from "../Services/WorkScheduleServices.js";
 import { authService } from "../Services/AuthServices.js";
-
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
+import { initTheme } from "../utils/darkmode.js";
 import Swal from 'sweetalert2';
 import Toastify from 'toastify-js';
 
 document.addEventListener("DOMContentLoaded", async () => {
     feather.replace();
     initializeSidebar();
+    initTheme();
     initializeLogout({
         preLogoutCallback: () => {
             if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {

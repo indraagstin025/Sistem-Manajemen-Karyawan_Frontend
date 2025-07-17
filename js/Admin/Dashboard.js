@@ -1,11 +1,13 @@
 import { authService, dashboardService } from "../Services/AuthServices.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
+import { initTheme } from "../utils/darkmode.js";
 import Toastify from 'toastify-js'; 
 import 'toastify-js/src/toastify.css'; 
 
 document.addEventListener("DOMContentLoaded", () => {
   feather.replace();
+  initTheme();
 
   const showToast = (message, type = "success") => {
     const backgroundColor = {

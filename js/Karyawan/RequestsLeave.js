@@ -9,9 +9,11 @@ import 'toastify-js/src/toastify.css';
 // ✨ IMPOR BARU ✨
 import { initializeLogout } from '../components/logoutHandler.js'; // Pastikan path benar
 import { getUserPhotoBlobUrl } from '../utils/photoUtils.js';     // Pastikan path benar
+import { initTheme } from '../utils/darkmode.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
     feather.replace(); // Inisialisasi ikon Feather
+    initTheme();
 
     // --- Seleksi Elemen DOM ---
     const userAvatarNav = document.getElementById("userAvatar");

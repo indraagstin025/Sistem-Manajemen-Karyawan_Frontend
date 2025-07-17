@@ -5,14 +5,18 @@ import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js"; // Import fungsi sidebar
 import { initializeLogout } from "../components/logoutHandler.js"; // Import fungsi logout
 import { QRCodeManager } from "../components/qrCodeHandler.js"; // Import QRCodeManager
+import { initTheme } from "../utils/darkmode.js";
 import Swal from 'sweetalert2'; // Import SweetAlert2
 import Toastify from 'toastify-js'; // Import Toastify jika masih digunakan oleh QRCodeManager
+
 
 document.addEventListener("DOMContentLoaded", async () => {
     // Inisialisasi komponen global
     feather.replace(); // Memastikan Feather Icons dirender di seluruh halaman
     initializeSidebar(); // Menginisialisasi fungsionalitas sidebar mobile
+    initTheme();
     initializeLogout({ // Menginisialisasi semua tombol logout
+    
         preLogoutCallback: () => {
             // Callback opsional untuk menutup modal QR sebelum logout
             if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {

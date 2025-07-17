@@ -3,9 +3,11 @@ import { authService } from "../Services/AuthServices.js";
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 import { validateChangePasswordForm } from '../Validations/changePasswordValidation.js';
+import { initTheme } from "../utils/darkmode.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     feather.replace(); // Memuat ikon Feather di awal
+    initTheme();
 
     const profilePhotoPreview = document.getElementById("profilePhotoPreview");
     const photoUploadInput = document.getElementById("photoUpload");
