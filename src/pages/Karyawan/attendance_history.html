@@ -136,36 +136,37 @@
           </div>
         </header>
 
-        <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
-          <div id="attendanceHistoryMessage" class="notification hidden"></div>
+<main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
+    <div id="attendanceHistoryMessage" class="notification hidden"></div>
 
-          <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">Daftar Riwayat Absensi Anda</h2>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Daftar Riwayat Absensi Anda</h2>
+        
+        <div class="overflow-x-auto"> 
+            <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
-                  <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No.</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
-                  </tr>
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No.</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catatan</th>
+                    </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200" id="attendanceHistoryTableBody">
-                  <tr>
-                    <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat absensi...</td>
-                  </tr>
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat absensi...</td>
+                    </tr>
                 </tbody>
-              </table>
-            </div>
-            <div id="paginationControls" class="mt-4 flex justify-center items-center space-x-2 hidden">
-                <button id="prevPageBtn" class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">Sebelumnya</button>
-                <span id="currentPageInfo" class="text-gray-700">Halaman 1</span>
-                <button id="nextPageBtn" class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">Selanjutnya</button>
-            </div>
-          </div>
-        </main>
+            </table>
+        </div>
+        <div id="paginationControls" class="mt-4 flex justify-center items-center space-x-2 hidden">
+            <button id="prevPageBtn" class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">Sebelumnya</button>
+            <span id="currentPageInfo" class="text-gray-700">Halaman 1</span>
+            <button id="nextPageBtn" class="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed">Selanjutnya</button>
+        </div>
+    </div>
+</main>
       </div>
     </div>
 

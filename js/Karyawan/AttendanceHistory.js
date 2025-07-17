@@ -147,12 +147,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 const renderAttendanceTable = (data, page, limit) => {
     attendanceHistoryTableBody.innerHTML = ''; 
     const startIndex = (page - 1) * limit;
-    const paginatedItems = data.slice(startIndex, startIndex + limit); // Menggunakan startIndex + limit untuk endIndex
+    const paginatedItems = data.slice(startIndex, startIndex + limit);
 
-    paginatedItems.forEach((attendance, index) => { // ✨ Tambahkan 'index' ✨
+    paginatedItems.forEach((attendance, index) => {
         const row = attendanceHistoryTableBody.insertRow();
         
-        const formattedDate = new Date(attendance.date + 'T00:00:00').toLocaleDateString('id-ID', { 
+        const date = new Date(attendance.date + 'T00:00:00'); 
+        const formattedDate = date.toLocaleDateString('id-ID', { 
             year: 'numeric',
             month: 'long',
             day: 'numeric'
@@ -160,6 +161,7 @@ const renderAttendanceTable = (data, page, limit) => {
 
         let statusDisplayText = attendance.status || '-';
         let statusClass = 'text-gray-700';
+        let noteDisplayText = attendance.note || '-'; // Default catatan adalah note dari backend
 
         switch (attendance.status) {
             case 'Hadir':
@@ -170,26 +172,71 @@ const renderAttendanceTable = (data, page, limit) => {
                 break;
             case 'Sakit':
                 statusClass = 'text-blue-600 font-semibold';
-                statusDisplayText = 'Sakit';
+                statusDisplayText = 'Sakit'; // Hapus catatan di status
                 break;
             case 'Cuti':
                 statusClass = 'text-purple-600 font-semibold';
-                statusDisplayText = 'Cuti';
+                statusDisplayText = 'Cuti'; // Hapus catatan di status
                 break;
             case 'Tidak Absen': 
                 statusClass = 'text-red-600 font-semibold';
-                statusDisplayText = 'Tidak Absen';
+                statusDisplayText = 'Tidak Absen'; // Hapus catatan di status
                 break;
             default:
                 statusClass = 'text-gray-900';
                 break;
         }
 
+        // ✨ LOGIKA BARU UNTUK MERAPIKAN KOLOM CATATAN ✨
+        // Menggabungkan reason dan note dengan format yang lebih rapi
+        if (attendance.status === 'Sakit' || attendance.status === 'Cuti') {
+            // Jika disetujui, tampilkan alasan asli dan catatan admin
+            if (attendance.status === 'Sakit' || attendance.status === 'Cuti') {
+                if (attendance.reason && attendance.note && attendance.note.startsWith('Disetujui:')) {
+                    // Untuk status Disetujui, kita tahu formatnya "Disetujui: [alasan]. Catatan admin: [catatan]"
+                    // Kita bisa ambil catatan admin dari note jika formatnya konsisten
+                    // atau cukup tampilkan reason dari pengajuan cuti/sakit dan note admin saja.
+                    // Saya akan asumsikan attendance.reason adalah alasan asli dari pengajuan.
+                    noteDisplayText = `Alasan: ${attendance.reason}. Catatan Admin: ${attendance.note.replace('Disetujui: ', '')}`;
+                } else if (attendance.reason) {
+                    noteDisplayText = `Alasan: ${attendance.reason}.`;
+                    if (attendance.note && attendance.note !== '-') {
+                        noteDisplayText += ` Catatan Admin: ${attendance.note}`;
+                    }
+                } else if (attendance.note) {
+                    noteDisplayText = attendance.note;
+                }
+            }
+        } else if (attendance.status === 'Tidak Absen') {
+             // Jika status 'Tidak Absen' karena pengajuan ditolak
+             if (attendance.note && attendance.note.includes('Pengajuan ditolak:')) {
+                 // Format yang ada di gambar: "Pengajuan ditolak: mau liburan. Catatan admin: belum bisa cuti"
+                 // Kita bisa membagi string ini atau jika backend mengirim 'reason' terpisah, gunakan itu.
+                 // Saya akan berasumsi 'reason' adalah alasan asli pengajuan dan 'note' adalah catatan admin.
+                 if (attendance.reason && attendance.note) {
+                    noteDisplayText = `Pengajuan ditolak. Alasan: ${attendance.reason}. Catatan Admin: ${attendance.note.replace('Pengajuan ditolak: ', '').replace(`: ${attendance.reason}`, '')}`;
+                    // Jika format backend tetap seperti gambar, Anda mungkin perlu regex yang lebih kuat:
+                    // const match = attendance.note.match(/Pengajuan ditolak: (.*?). Catatan admin: (.*)/);
+                    // if (match) { noteDisplayText = `Ditolak. Alasan: ${match[1]}. Catatan Admin: ${match[2]}`; }
+                 } else if (attendance.note) {
+                     noteDisplayText = attendance.note; // Biarkan seperti itu jika tidak bisa diparse
+                 }
+             } else if (attendance.note) {
+                 noteDisplayText = attendance.note; // Jika catatan lain (bukan penolakan pengajuan)
+             }
+        }
+        // Pastikan noteDisplayText tidak kosong jika memang tidak ada catatan
+        if (noteDisplayText === '') {
+            noteDisplayText = '-';
+        }
+
+
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${startIndex + index + 1}</td> <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${startIndex + index + 1}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.note || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${noteDisplayText}</td>
         `;
     });
 };
