@@ -58,6 +58,111 @@
         background-color: #dbeafe;
         color: #1e40af;
       }
+
+      /* --- Gaya Responsif Tabel Absensi --- */
+      @media (max-width: 767px) {
+        /* Sembunyikan header tabel di mobile */
+        .attendance-table thead {
+          display: none;
+        }
+
+        .attendance-table tbody,
+        .attendance-table tr {
+          display: block;
+          width: 100%;
+        }
+
+        .attendance-table tr {
+          margin-bottom: 1rem;
+          border: 1px solid #e5e7eb;
+          border-radius: 0.75rem;
+          background-color: #ffffff;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .attendance-table td {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.5rem 0;
+          border-bottom: none; /* Hapus border antar sel di mobile */
+        }
+
+        .attendance-table td::before {
+          content: attr(data-label);
+          font-weight: 600;
+          color: #4b5563; /* Warna abu-abu yang sedikit lebih gelap */
+          flex-shrink: 0; /* Pastikan label tidak menyusut */
+          width: 80px; /* Lebar tetap untuk label */
+          text-align: left;
+          padding-right: 1rem; /* Spasi antara label dan nilai */
+        }
+        
+        /* Gaya khusus untuk status agar lebih menarik */
+        .attendance-table td.attendance-status {
+          justify-content: flex-start; /* Ratakan ke kiri */
+          gap: 0.5rem; /* Jarak antara label dan span status */
+        }
+
+        .attendance-table td.attendance-status::before {
+          width: auto; /* Biarkan label status menyesuaikan */
+        }
+
+        /* Hapus padding horizontal bawaan */
+        .attendance-table td.px-6.py-4 {
+          padding-left: 0;
+          padding-right: 0;
+        }
+      }
+
+      /* Gaya untuk badge status */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.3rem 0.75rem;
+        border-radius: 9999px; /* Full rounded */
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 600; /* font-semibold */
+        line-height: 1;
+      }
+
+      .status-badge.hadir {
+        background-color: #d1fae5; /* bg-emerald-100 */
+        color: #065f46; /* text-emerald-800 */
+      }
+
+      .status-badge.terlambat {
+        background-color: #ffedd5; /* bg-orange-100 */
+        color: #9a3412; /* text-orange-800 */
+      }
+
+      .status-badge.izin {
+        background-color: #dbeafe; /* bg-blue-100 */
+        color: #1e40af; /* text-blue-800 */
+      }
+
+      .status-badge.sakit {
+        background-color: #fee2e2; /* bg-red-100 */
+        color: #991b1b; /* text-red-800 */
+      }
+      .status-badge.cuti {
+        background-color: #e0f2fe; /* bg-sky-100 */
+        color: #0c4a6e; /* text-sky-800 */
+      }
+      .status-badge.libur {
+        background-color: #e0e7ff; /* bg-indigo-100 */
+        color: #3730a3; /* text-indigo-800 */
+      }
+
+      /* Gaya untuk catatan kosong */
+      .empty-note {
+        color: #6b7280; /* text-gray-500 */
+        font-style: italic;
+      }
     </style>
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
@@ -85,7 +190,7 @@
           <a href="/request_leave.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
             <i data-feather="file-text" class="w-5 h-5 mr-3"></i><span>Cuti & Izin Saya</span>
           </a>
-          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl transition-colors duration-200">
+          <a href="#" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="dollar-sign" class="w-5 h-5 mr-3"></i><span>Slip Gaji Saya</span>
           </a>
           <div class="mt-auto pt-6 border-t border-gray-200 mx-4">
@@ -140,7 +245,7 @@
             <h2 class="text-xl font-bold text-gray-900 mb-4">Daftar Riwayat Absensi Anda</h2>
             
             <div class="overflow-x-auto"> 
-              <table class="min-w-full divide-y divide-gray-200">
+              <table class="min-w-full divide-y divide-gray-200 attendance-table">
                 <thead class="bg-gray-50">
                   <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No.</th>
@@ -154,7 +259,7 @@
                   <tr>
                     <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Memuat riwayat absensi...</td>
                   </tr>
-                </tbody>
+                  </tbody>
               </table>
             </div>
             <div id="paginationControls" class="mt-4 flex justify-center items-center space-x-2 hidden">
