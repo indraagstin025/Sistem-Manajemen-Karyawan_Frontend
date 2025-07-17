@@ -3,8 +3,7 @@
 import { userService } from "../Services/UserServices.js";
 import { authService } from "../Services/AuthServices.js";
 import AttendanceService from "../Services/AttendanceServices.js";
-// ✨ Import LeaveRequestService yang baru kita tambahkan fungsi getLeaveSummary-nya ✨
-import { LeaveRequestService } from '../Services/LeaveRequestsServices.js'; 
+import { LeaveRequestService } from '../Services/LeaveRequestsServices.js'; // Pastikan ini diimpor
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 import Swal from "sweetalert2";
@@ -13,386 +12,383 @@ import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  feather.replace();
+    feather.replace();
 
-  initializeSidebar();
-  initializeLogout();
+    initializeSidebar();
+    initializeLogout();
 
-  const profilePhoto = document.getElementById("profilePhoto");
-  const employeeName = document.getElementById("employeeName");
-  const employeePosition = document.getElementById("employeePosition");
-  const employeeDepartment = document.getElementById("employeeDepartment");
-  const todayAttendanceStatusSummary = document.getElementById("todayAttendanceStatus");
-  const remainingLeave = document.getElementById("remainingLeave"); // Elemen untuk menampilkan sisa cuti
-  const userAvatarNav = document.getElementById("userAvatar");
-  const dropdownMenu = document.getElementById("dropdownMenu");
-  const userDropdownContainer = document.getElementById("userDropdown");
-  const scanQrButton = document.getElementById("scanQrButton");
-const qrFullscreenContainer = document.getElementById("qrFullscreenContainer");
-const readerFullDiv = document.getElementById("readerFull");
-const qrScanResultText = document.getElementById("qrScanResultText");
+    const profilePhoto = document.getElementById("profilePhoto");
+    const employeeName = document.getElementById("employeeName");
+    const employeePosition = document.getElementById("employeePosition");
+    const employeeDepartment = document.getElementById("employeeDepartment");
+    const todayAttendanceStatusSummary = document.getElementById("todayAttendanceStatus");
+    const remainingLeave = document.getElementById("remainingLeave"); // Elemen untuk menampilkan sisa cuti
+    const userAvatarNav = document.getElementById("userAvatar");
+    const dropdownMenu = document.getElementById("dropdownMenu");
+    const userDropdownContainer = document.getElementById("userDropdown");
+    const scanQrButton = document.getElementById("scanQrButton");
+    const qrFullscreenContainer = document.getElementById("qrFullscreenContainer");
+    const readerFullDiv = document.getElementById("readerFull");
+    const qrScanResultText = document.getElementById("qrScanResultText");
+
+    const qrScanResult = document.getElementById("qr-scan-result");
+
+    const currentDateSpan = document.getElementById("current-date");
+    const checkInTimeSpan = document.getElementById("check-in-time");
+    const attendanceStatusSpan = document.getElementById("attendance-status");
+    const attendanceNoteDisplay = document.getElementById("attendance-note-display");
+    const attendanceNoteSpan = document.getElementById("attendance-note");
+
+    let html5QrCodeInstance = null;
+    let html5QrCodeFullInstance = null;
+    let isProcessingScan = false;
+    let isScannerActivelyScanning = false;
 
 
-  const qrScanResult = document.getElementById("qr-scan-result");
+    function showSweetAlert(title, message, icon = "success", showConfirmButton = false, timer = 2000) {
+        Swal.fire({
+            title: title,
+            text: message,
+            icon: icon,
+            showConfirmButton: showConfirmButton,
+            timer: timer,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener("mouseenter", Swal.stopTimer);
+                toast.addEventListener("mouseleave", Swal.resumeTimer);
+            },
+        });
+    }
 
-  const currentDateSpan = document.getElementById("current-date");
-  const checkInTimeSpan = document.getElementById("check-in-time");
-  const attendanceStatusSpan = document.getElementById("attendance-status");
-  const attendanceNoteDisplay = document.getElementById("attendance-note-display");
-  const attendanceNoteSpan = document.getElementById("attendance-note");
+    function showToast(message, type = "success") {
+        let backgroundColor;
+        if (type === "success") {
+            backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
+        } else if (type === "error") {
+            backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
+        } else {
+            backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
+        }
 
-  let html5QrCodeInstance = null;
-  let html5QrCodeFullInstance = null;
-  let isProcessingScan = false;
-  let isScannerActivelyScanning = false;
+        Toastify({
+            text: message,
+            duration: 3000,
+            close: true,
+            gravity: "top",
+            position: "center",
+            stopOnFocus: true,
+            style: {
+                background: backgroundColor,
+                borderRadius: "8px",
+                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                padding: "12px 20px",
+            },
+        }).showToast();
+    }
 
+    function formatTime(timeString) {
+        return timeString || "-";
+    }
 
-  function showSweetAlert(title, message, icon = "success", showConfirmButton = false, timer = 2000) {
-    Swal.fire({
-      title: title,
-      text: message,
-      icon: icon,
-      showConfirmButton: showConfirmButton,
-      timer: timer,
-      timerProgressBar: true,
-      didOpen: (toast) => {
-        toast.addEventListener("mouseenter", Swal.stopTimer);
-        toast.addEventListener("mouseleave", Swal.resumeTimer);
-      },
-    });
-  }
+    function updateAttendanceStatusUI(attendance) {
+        const today = new Date().toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
+        if (currentDateSpan) currentDateSpan.textContent = today;
+        if (attendanceStatusSpan) attendanceStatusSpan.className = "";
+        if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.className = "text-lg font-bold";
 
-  function showToast(message, type = "success") {
-    let backgroundColor;
-    if (type === "success") {
-      backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
-    } else if (type === "error") {
-      backgroundColor = "linear-gradient(to right, #ef4444, #dc2626)";
-    } else {
-      backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
-    }
+        if (attendance) {
+            const displayStatus = attendance.status;
+            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.textContent = displayStatus;
 
-    Toastify({
-      text: message,
-      duration: 3000,
-      close: true,
-      gravity: "top",
-      position: "center",
-      stopOnFocus: true,
-      style: {
-        background: backgroundColor,
-        borderRadius: "8px",
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-        padding: "12px 20px",
-      },
-    }).showToast();
-  }
+            if (displayStatus === "Hadir") {
+                if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-green-600");
+                if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-green-600", "font-semibold");
+            } else if (displayStatus === "Terlambat") {
+                if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-orange-500");
+                if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-orange-500", "font-semibold");
+            } else if (["Sakit", "Cuti"].includes(displayStatus)) {
+                if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-blue-600");
+                if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-blue-600", "font-semibold");
+                if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
+            } else { // Ini akan menangani "Alpha" dan status lainnya
+                if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-red-600");
+                if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-red-600", "font-semibold");
+                if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
+            }
 
-  function formatTime(timeString) {
-    return timeString || "-";
-  }
+            if (attendance.check_in) {
+                if (checkInTimeSpan) checkInTimeSpan.textContent = formatTime(attendance.check_in);
+            }
 
-// file: EmployeeDashboard.js
+            if (attendanceStatusSpan) attendanceStatusSpan.textContent = displayStatus;
+        } else {
+            if (todayAttendanceStatusSummary) {
+                todayAttendanceStatusSummary.textContent = "Belum Absen";
+                todayAttendanceStatusSummary.classList.add("text-red-600");
+            }
 
-function updateAttendanceStatusUI(attendance) {
-    const today = new Date().toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
-    if (currentDateSpan) currentDateSpan.textContent = today;
-    if (attendanceStatusSpan) attendanceStatusSpan.className = "";
-    if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.className = "text-lg font-bold";
+            if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
+            if (attendanceStatusSpan) {
+                attendanceStatusSpan.textContent = "Belum Absen";
+                attendanceStatusSpan.classList.add("text-red-600", "font-semibold");
+            }
+        }
+    }
 
-    if (attendance) {
-        const displayStatus = attendance.status;
-        if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.textContent = displayStatus;
+    async function stopAndClearScanner() {
+        if (html5QrCodeFullInstance && html5QrCodeFullInstance.isScanning) {
+            try {
+                await html5QrCodeFullInstance.stop();
+                await html5QrCodeFullInstance.clear();
+                console.log("Scanner dihentikan dan dibersihkan.");
+            } catch (err) {
+                console.warn("Gagal menghentikan/membersihkan scanner:", err);
+            }
+            isScannerActivelyScanning = false;
+        }
+        const readerFullDiv = document.getElementById("readerFull");
+        if (readerFullDiv) readerFullDiv.innerHTML = "";
+        if (qrScanResult) qrScanResult.textContent = "";
+        // isScannerInitialized = false; // Jika ini variabel global, pastikan terdefinisi
+        html5QrCodeFullInstance = null;
+    }
 
-        if (displayStatus === "Hadir") {
-            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-green-600");
-            if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-green-600", "font-semibold");
-        } else if (displayStatus === "Terlambat") {
-            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-orange-500");
-            if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-orange-500", "font-semibold");
-        } else if (["Sakit", "Cuti"].includes(displayStatus)) {
-            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-blue-600");
-            if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-blue-600", "font-semibold");
-            if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
-        } else { // Ini akan menangani "Alpha" dan status lainnya
-            if (todayAttendanceStatusSummary) todayAttendanceStatusSummary.classList.add("text-red-600");
-            if (attendanceStatusSpan) attendanceStatusSpan.classList.add("text-red-600", "font-semibold");
-            if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
-        }
+    async function onScanSuccess(decodedText) {
+        console.log(`INFO: QR Code terdeteksi, data: ${decodedText}. Memulai proses absensi.`);
 
-        if (attendance.check_in) {
-            if (checkInTimeSpan) checkInTimeSpan.textContent = formatTime(attendance.check_in);
-        }
+        const currentUser = authService.getCurrentUser();
+        if (!currentUser || !currentUser.id) {
+            showSweetAlert("Error Autentikasi", "Sesi pengguna tidak valid. Silakan login kembali.", "error");
+            isProcessingScan = false;
+            return;
+        }
 
-        if (attendanceStatusSpan) attendanceStatusSpan.textContent = displayStatus;
-    } else {
-        if (todayAttendanceStatusSummary) {
-            todayAttendanceStatusSummary.textContent = "Belum Absen";
-            todayAttendanceStatusSummary.classList.add("text-red-600");
-        }
+        try {
+            const response = await AttendanceService.scanQR(decodedText, currentUser.id);
 
-        if (checkInTimeSpan) checkInTimeSpan.textContent = "-";
-        if (attendanceStatusSpan) {
-            attendanceStatusSpan.textContent = "Belum Absen";
-            attendanceStatusSpan.classList.add("text-red-600", "font-semibold");
-        }
-    }
-}
+            Swal.fire({
+                title: "Absensi Berhasil!",
+                text: response.message,
+                icon: "success",
+                confirmButtonText: "Selesai",
+            });
 
-  async function stopAndClearScanner() {
-    if (html5QrCodeFullInstance && html5QrCodeFullInstance.isScanning) {
-      try {
-        await html5QrCodeFullInstance.stop();
-        await html5QrCodeFullInstance.clear();
-        console.log("Scanner dihentikan dan dibersihkan.");
-      } catch (err) {
-        console.warn("Gagal menghentikan/membersihkan scanner:", err);
-      }
-      isScannerActivelyScanning = false;
-    }
-    const readerFullDiv = document.getElementById("readerFull");
-    if (readerFullDiv) readerFullDiv.innerHTML = "";
-    if (qrScanResult) qrScanResult.textContent = "";
-    isScannerInitialized = false;
-    html5QrCodeFullInstance = null;
-  }
+            loadMyTodayAttendance();
+            // ✨ Muat ulang data profil untuk memperbarui sisa cuti setelah absensi (jika absensi mempengaruhi cuti) ✨
+            // Jika absensi tidak mempengaruhi sisa cuti, baris ini bisa dihilangkan
+            fetchEmployeeProfileData(); 
 
-/**
- * ✅ FUNGSI UTAMA UNTUK MEMPROSES DATA ABSENSI KE SERVER
- * Menggunakan logika asli Anda untuk memastikan kompatibilitas dengan backend.
- */
-async function onScanSuccess(decodedText) {
-    console.log(`INFO: QR Code terdeteksi, data: ${decodedText}. Memulai proses absensi.`);
+        } catch (error) {
+            console.error("ERROR: Gagal saat memproses absensi di server:", error);
+            const message = error?.response?.data?.error || error.message || "Terjadi kesalahan saat menghubungi server.";
+            const icon = error.response?.status === 409 ? "info" : "error";
+            const title = icon === "info" ? "Info Absensi" : "Absensi Gagal!";
+            showSweetAlert(title, message, icon);
+        } finally {
+            isProcessingScan = false;
+        }
+    }
 
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser || !currentUser.id) {
-        showSweetAlert("Error Autentikasi", "Sesi pengguna tidak valid. Silakan login kembali.", "error");
-        isProcessingScan = false; // Penting untuk mereset flag
-        return;
-    }
+    function onScanFailure(error) {
+        // console.error("Scanner error:", error); // Biarkan ini dikomentari jika terlalu banyak log
+    }
 
-    try {
-        const response = await AttendanceService.scanQR(decodedText, currentUser.id);
+    async function loadMyTodayAttendance() {
+        try {
+            const history = await AttendanceService.getMyHistory();
+            const today = new Date().toISOString().slice(0, 10);
+            const todayAttendance = history.find(att => att.date === today);
 
-        Swal.fire({
-            title: "Absensi Berhasil!",
-            text: response.message,
-            icon: "success",
-            confirmButtonText: "Selesai",
-        });
+            updateAttendanceStatusUI(todayAttendance);
 
-        loadMyTodayAttendance();
+            const sudahAbsenLengkap = todayAttendance && ['Hadir', 'Terlambat', 'Sakit', 'Cuti'].includes(todayAttendance.status);
 
-    } catch (error) {
-        console.error("ERROR: Gagal saat memproses absensi di server:", error);
-        const message = error?.response?.data?.error || error.message || "Terjadi kesalahan saat menghubungi server.";
-        const icon = error.response?.status === 409 ? "info" : "error";
-        const title = icon === "info" ? "Info Absensi" : "Absensi Gagal!";
-        showSweetAlert(title, message, icon);
-    } finally {
-        isProcessingScan = false;
-    }
-}
+            if (scanQrButton) {
+                if (sudahAbsenLengkap) {
+                    scanQrButton.disabled = true;
+                    scanQrButton.classList.add("bg-gray-400", "cursor-not-allowed");
+                    scanQrButton.classList.remove("bg-indigo-600", "hover:bg-indigo-700");
+                    scanQrButton.innerText = "Anda Sudah Absen Hari Ini";
+                } else {
+                    scanQrButton.disabled = false;
+                    scanQrButton.classList.remove("bg-gray-400", "cursor-not-allowed");
+                    scanQrButton.classList.add("bg-indigo-600", "hover:bg-indigo-700");
+                    scanQrButton.innerText = "Scan QR Code Absensi";
+                }
+            }
 
-  function onScanFailure(error) {
-  }
+        } catch (error) {
+            console.error("ERROR: Gagal memuat riwayat absensi:", error);
+            updateAttendanceStatusUI(null);
+            if (scanQrButton) scanQrButton.disabled = false;
+        }
+    }
 
-  /*
-    async function startScanner() {
-    }
-    */
+    // ✨ FUNGSI fetchEmployeeProfileData Disesuaikan ✨
+    const fetchEmployeeProfileData = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                showSweetAlert("Sesi Tidak Valid", "Sesi tidak valid. Mengarahkan ke halaman login...", "error");
+                setTimeout(() => authService.logout(), 2000);
+                return null;
+            }
 
-/**
- * ✅ FUNGSI UNTUK MENGONTROL UI BERDASARKAN STATUS ABSENSI
- * Tugasnya hanya mengelola tampilan, terutama tombol scan.
- */
-// file: EmployeeDashboard.js
+            let user;
+            try {
+                user = authService.getCurrentUser();
+                if (!user) {
+                    throw new Error("Data pengguna tidak ditemukan di sesi.");
+                }
+            } catch (e) {
+                console.error("Error parsing user from localStorage:", e);
+                throw new Error("Data pengguna di sesi rusak.");
+            }
 
-async function loadMyTodayAttendance() {
-    try {
-        const history = await AttendanceService.getMyHistory();
-        const today = new Date().toISOString().slice(0, 10);
-        const todayAttendance = history.find(att => att.date === today);
+            if (user.role !== "karyawan") {
+                showSweetAlert("Akses Ditolak", "Akses ditolak. Peran tidak sesuai untuk halaman ini.", "error");
+                setTimeout(() => authService.logout(), 2000);
+                return null;
+            }
 
-        updateAttendanceStatusUI(todayAttendance);
+            // ✨ AMBIL DATA PROFIL KARYAWAN (nama, posisi, departemen) ✨
+            const employeeData = await userService.getUserByID(user.id); 
+            
+            // ✨ AMBIL RINGKASAN CUTI DARI SERVICE BARU ✨
+            const leaveSummary = await LeaveRequestService.getLeaveSummary();
 
-        // DIUBAH: Menggunakan "Terlambat" dan menghapus "Izin"
-        const sudahAbsenLengkap = todayAttendance && ['Hadir', 'Terlambat', 'Sakit', 'Cuti'].includes(todayAttendance.status);
+            if (employeeData) {
+                try {
+                    const blob = await userService.getProfilePhoto(user.id);
+                    const photoUrl = URL.createObjectURL(blob);
+                    if (profilePhoto) profilePhoto.src = photoUrl;
+                    if (userAvatarNav) {
+                        userAvatarNav.src = photoUrl;
+                        userAvatarNav.alt = employeeData.name;
+                    }
+                } catch (e) {
+                    console.error("Error fetching profile photo:", e);
+                    const fallback = "https://via.placeholder.com/96x96/E2E8F0/4A5568?text=ME";
+                    if (profilePhoto) profilePhoto.src = fallback;
+                    if (userAvatarNav) {
+                        userAvatarNav.src = fallback;
+                        userAvatarNav.alt = employeeData.name;
+                    }
+                }
 
-        if (scanQrButton) {
-            if (sudahAbsenLengkap) {
-                scanQrButton.disabled = true;
-                scanQrButton.classList.add("bg-gray-400", "cursor-not-allowed");
-                scanQrButton.classList.remove("bg-indigo-600", "hover:bg-indigo-700");
-                scanQrButton.innerText = "Anda Sudah Absen Hari Ini";
-            } else {
-                scanQrButton.disabled = false;
-                scanQrButton.classList.remove("bg-gray-400", "cursor-not-allowed");
-                scanQrButton.classList.add("bg-indigo-600", "hover:bg-indigo-700");
-                scanQrButton.innerText = "Scan QR Code Absensi";
-            }
-        }
+                if (employeeName) employeeName.textContent = employeeData.name;
+                if (employeePosition) employeePosition.textContent = employeeData.position || "-";
+                if (employeeDepartment) employeeDepartment.textContent = employeeData.department || "-";
 
-    } catch (error) {
-        console.error("ERROR: Gagal memuat riwayat absensi:", error);
-        updateAttendanceStatusUI(null);
-        if (scanQrButton) scanQrButton.disabled = false;
-    }
-}
+                // ✨ PERBARUI BAGIAN SISA CUTI DENGAN DATA DARI leaveSummary ✨
+                if (remainingLeave) {
+                    const maxAnnualLeave = 12; // Batas maksimal cuti per tahun
+                    const usedLeave = leaveSummary.annual_leave_count || 0; // Jumlah cuti yang sudah diajukan/disetujui
+                    const actualRemaining = Math.max(0, maxAnnualLeave - usedLeave); // Sisa cuti sebenarnya (tidak boleh negatif)
 
-  const fetchEmployeeProfileData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        showSweetAlert("Sesi Tidak Valid", "Sesi tidak valid. Mengarahkan ke halaman login...", "error");
-        setTimeout(() => authService.logout(), 2000);
-        return null;
-      }
+                    remainingLeave.textContent = `${actualRemaining} Kali`; // Menampilkan sisa DALAM KALI, bukan hari
+                    
+                    // Opsional: berikan warna atau peringatan jika sisa cuti menipis
+                    if (actualRemaining <= 3) { // Contoh: jika sisa 3 kali atau kurang
+                        remainingLeave.classList.add('text-red-600', 'font-semibold');
+                    } else {
+                        remainingLeave.classList.remove('text-red-600', 'font-semibold');
+                    }
+                }
+            }
+            return employeeData; // Tetap kembalikan employeeData jika ada kebutuhan lain
+        } catch (error) {
+            console.error("Error fetching employee profile data:", error);
+            showSweetAlert("Gagal Memuat Profil", error.message || "Gagal memuat data profil.", "error");
+            if (error.status === 401 || (error.message && (error.message.includes("token") || error.message.includes("sesi") || error.message.includes("Peran tidak sesuai") || error.message.includes("Data pengguna di sesi rusak")))) {
+                setTimeout(() => authService.logout(), 2000);
+            }
+            return null;
+        }
+    };
 
-      let user;
-      try {
-        user = authService.getCurrentUser();
-        if (!user) {
-          throw new Error("Data pengguna tidak ditemukan di sesi.");
-        }
-      } catch (e) {
-        console.error("Error parsing user from localStorage:", e);
-        throw new Error("Data pengguna di sesi rusak.");
-      }
+    window.openFullscreenScanner = async function () {
+        if (!qrFullscreenContainer || !readerFullDiv || !closeScannerBtn) { // closeScannerBtn tidak didefinisikan di sini
+            return console.error("ERROR: Elemen HTML untuk scanner fullscreen tidak ditemukan.");
+        }
 
-      if (user.role !== "karyawan") {
-        showSweetAlert("Akses Ditolak", "Akses ditolak. Peran tidak sesuai untuk halaman ini.", "error");
-        setTimeout(() => authService.logout(), 2000);
-        return null;
-      }
+        isProcessingScan = false;
+        qrFullscreenContainer.classList.remove("hidden");
+        readerFullDiv.innerHTML = "";
+        qrScanResultText.textContent = "Memulai kamera...";
 
-      // const employeeData = await userService.getUserByID(user.id); // Kita tidak lagi ambil sisa cuti dari sini
+        // Pastikan Html5Qrcode diimpor atau tersedia secara global
+        // Jika belum, Anda mungkin perlu mengimpornya: import { Html5Qrcode } from "html5-qrcode";
+        html5QrCodeFullInstance = new Html5Qrcode(readerFullDiv.id);
 
-      if (employeeData) { // Baris ini akan menjadi masalah jika employeeData tidak didefinisikan
-        try {
-          const blob = await userService.getProfilePhoto(user.id);
-          const photoUrl = URL.createObjectURL(blob);
-          if (profilePhoto) profilePhoto.src = photoUrl;
-          if (userAvatarNav) {
-            userAvatarNav.src = photoUrl;
-            userAvatarNav.alt = employeeData.name;
-          }
-        } catch (e) {
-          console.error("Error fetching profile photo:", e);
-          const fallback = "https://via.placeholder.com/96x96/E2E8F0/4A5568?text=ME";
-          if (profilePhoto) profilePhoto.src = fallback;
-          if (userAvatarNav) {
-            userAvatarNav.src = fallback;
-            userAvatarNav.alt = employeeData.name;
-          }
-        }
+        try {
+            const cameras = await Html5Qrcode.getCameras();
+            if (!cameras || cameras.length === 0) throw new Error("Kamera tidak ditemukan di perangkat ini.");
 
-        if (employeeName) employeeName.textContent = employeeData.name;
-        if (employeePosition) employeePosition.textContent = employeeData.position || "-";
-        if (employeeDepartment) employeeDepartment.textContent = employeeData.department || "-";
+            const rearCamera = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
+            console.log("INFO: Menggunakan kamera:", rearCamera.label);
 
-        // Bagian ini akan diubah
-        if (employeeData.annual_leave_balance !== undefined && employeeData.annual_leave_balance !== null) {
-          if (remainingLeave) remainingLeave.textContent = `${employeeData.annual_leave_balance} Hari`;
-        } else {
-          if (remainingLeave) remainingLeave.textContent = `N/A`;
-        }
-      }
-      return employeeData;
-    } catch (error) {
-      console.error("Error fetching employee profile data:", error);
-      showSweetAlert("Gagal Memuat Profil", error.message || "Gagal memuat data profil.", "error");
-      if (error.status === 401 || (error.message && (error.message.includes("token") || error.message.includes("sesi") || error.message.includes("Peran tidak sesuai") || error.message.includes("Data pengguna di sesi rusak")))) {
-        setTimeout(() => authService.logout(), 2000);
-      }
-      return null;
-    }
-  };
+            await html5QrCodeFullInstance.start(
+                rearCamera.id,
+                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+                async (decodedText, decodedResult) => {
+                    if (isProcessingScan) return;
+                    isProcessingScan = true;
 
-/**
- * ✅ FUNGSI UNTUK MEMBUKA DAN MENGELOLA SCANNER FULLSCREEN
- * Tugasnya hanya mengurus kamera, lalu menyerahkan data ke 'onScanSuccess'.
- */
-window.openFullscreenScanner = async function () {
-    if (!qrFullscreenContainer || !readerFullDiv || !closeScannerBtn) {
-        return console.error("ERROR: Elemen HTML untuk scanner fullscreen tidak ditemukan.");
-    }
+                    if (html5QrCodeFullInstance?.isScanning) {
+                        await html5QrCodeFullInstance.stop();
+                    }
 
-    isProcessingScan = false;
-    qrFullscreenContainer.classList.remove("hidden");
-    readerFullDiv.innerHTML = "";
-    qrScanResultText.textContent = "Memulai kamera...";
+                    qrFullscreenContainer.classList.add("hidden");
+                    showToast("QR Code terbaca, memproses...", "info");
 
-    html5QrCodeFullInstance = new Html5Qrcode(readerFullDiv.id);
+                    onScanSuccess(decodedText);
+                },
+                (errorMessage) => { /* Abaikan error per frame */ }
+            );
+            qrScanResultText.textContent = "Arahkan kamera ke QR Code Absensi";
 
-    try {
-        const cameras = await Html5Qrcode.getCameras();
-        if (!cameras || cameras.length === 0) throw new Error("Kamera tidak ditemukan di perangkat ini.");
+        } catch (err) {
+            console.error("ERROR: Gagal memulai scanner:", err);
+            showSweetAlert("Gagal Membuka Kamera", err.message, "error");
+            qrFullscreenContainer.classList.add("hidden");
+        }
+    };
+    if (userDropdownContainer) {
+        userDropdownContainer.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (dropdownMenu) dropdownMenu.classList.toggle("active");
+        });
+        document.addEventListener("click", (event) => {
+            if (dropdownMenu && userDropdownContainer && !userDropdownContainer.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                dropdownMenu.classList.remove("active");
+            }
+        });
+    }
 
-        const rearCamera = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
-        console.log("INFO: Menggunakan kamera:", rearCamera.label);
+    const closeScannerBtn = document.getElementById("closeScannerBtn");
+    if (closeScannerBtn) {
+        closeScannerBtn.addEventListener("click", async () => {
+            const fullscreenContainer = document.getElementById("qrFullscreenContainer");
+            if (html5QrCodeFullInstance) {
+                try {
+                    await html5QrCodeFullInstance.stop();
+                    console.log("Scanner fullscreen dihentikan via tombol tutup.");
+                } catch (e) {
+                    console.warn("Gagal menghentikan scanner fullscreen via tombol tutup:", e);
+                }
+            }
+            if (fullscreenContainer) fullscreenContainer.classList.add("hidden");
+            const readerFullDiv = document.getElementById("readerFull");
+            if (readerFullDiv) readerFullDiv.innerHTML = "";
+            if (qrScanResult) qrScanResult.textContent = "";
+            isScannerActivelyScanning = false;
+            html5QrCodeFullInstance = null;
+        });
+    }
 
-        await html5QrCodeFullInstance.start(
-            rearCamera.id,
-            { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-            async (decodedText, decodedResult) => {
-                if (isProcessingScan) return;
-                isProcessingScan = true;
-
-                if (html5QrCodeFullInstance?.isScanning) {
-                    await html5QrCodeFullInstance.stop();
-                }
-                
-                qrFullscreenContainer.classList.add("hidden");
-                showToast("QR Code terbaca, memproses...", "info");
-
-                onScanSuccess(decodedText);
-            },
-            (errorMessage) => { /* Abaikan error per frame */ }
-        );
-        qrScanResultText.textContent = "Arahkan kamera ke QR Code Absensi";
-
-    } catch (err) {
-        console.error("ERROR: Gagal memulai scanner:", err);
-        showSweetAlert("Gagal Membuka Kamera", err.message, "error");
-        qrFullscreenContainer.classList.add("hidden");
-    }
-};
-  if (userDropdownContainer) {
-    userDropdownContainer.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (dropdownMenu) dropdownMenu.classList.toggle("active");
-    });
-    document.addEventListener("click", (event) => {
-      if (dropdownMenu && userDropdownContainer && !userDropdownContainer.contains(event.target) && !dropdownMenu.contains(event.target)) {
-        dropdownMenu.classList.remove("active");
-      }
-    });
-  }
-
-  const closeScannerBtn = document.getElementById("closeScannerBtn");
-  if (closeScannerBtn) {
-    closeScannerBtn.addEventListener("click", async () => {
-      const fullscreenContainer = document.getElementById("qrFullscreenContainer");
-      if (html5QrCodeFullInstance) {
-        try {
-          await html5QrCodeFullInstance.stop();
-          console.log("Scanner fullscreen dihentikan via tombol tutup.");
-        } catch (e) {
-          console.warn("Gagal menghentikan scanner fullscreen via tombol tutup:", e);
-        }
-      }
-      if (fullscreenContainer) fullscreenContainer.classList.add("hidden");
-      const readerFullDiv = document.getElementById("readerFull");
-      if (readerFullDiv) readerFullDiv.innerHTML = "";
-      if (qrScanResult) qrScanResult.textContent = "";
-      isScannerActivelyScanning = false;
-      html5QrCodeFullInstance = null;
-    });
-  }
-
-  const currentUser = await fetchEmployeeProfileData();
-  if (currentUser) {
-    loadMyTodayAttendance();
-  }
+    const currentUser = await fetchEmployeeProfileData(); // Panggil fetchEmployeeProfileData saat DOMContentLoaded
+    if (currentUser) {
+        loadMyTodayAttendance();
+    }
 });
