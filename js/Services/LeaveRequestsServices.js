@@ -67,5 +67,24 @@ export const LeaveRequestService = {
             throw error;
         }
     },
+
+
+        /**
+     * Mengambil ringkasan jumlah pengajuan cuti (per bulan dan per tahun) untuk pengguna saat ini.
+     * Endpoint ini memanggil /api/v1/leave-requests/summary di backend Go.
+     * @returns {Promise<Object>} Objek berisi { current_month_leave_count: number, annual_leave_count: number }.
+     * @throws {Error} Jika respons API bukan 2xx.
+     */
+    getLeaveSummary: async () => {
+        try {
+            const response = await apiClient.get('/leave-requests/summary');
+            return response.data; // Backend diharapkan mengembalikan { "current_month_leave_count": N, "annual_leave_count": M }
+        } catch (error) {
+            console.error("Error di LeaveRequestService.getLeaveSummary:", error);
+            // Tambahkan penanganan error spesifik jika diperlukan
+            throw error;
+        }
+    },
 };
+
 

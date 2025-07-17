@@ -47,6 +47,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nextPageBtn = document.getElementById('nextPageBtn');
     const currentPageInfo = document.getElementById('currentPageInfo');
 
+    // ✨ Elemen baru untuk menampilkan ringkasan batasan cuti ✨
+    const leaveLimitSummaryElement = document.getElementById("leaveLimitSummary");
+
+
     let currentPage = 1;
     const itemsPerPage = 5; // Lebih sedikit untuk riwayat pengajuan
     let allLeaveRequestsData = []; // Untuk menyimpan seluruh data pengajuan
@@ -81,22 +85,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     // --- Fungsi untuk memuat data profil karyawan (untuk avatar di header) ---
     const fetchEmployeeProfileDataForHeader = async () => {
         try {
-            // Tidak perlu mendapatkan 'token' secara terpisah lagi di sini
             let user = authService.getCurrentUser();
-            if (!user || !user.id) { 
+            if (!user || !user.id) {
                 return null;
             }
-            // Parameter 'token' dihapus karena sudah di-handle oleh interceptor apiClient
-            const employeeData = await userService.getUserByID(user.id); 
+            const employeeData = await userService.getUserByID(user.id);
             if (employeeData && userAvatarNav) {
-                // Ganti placehold.co dengan via.placeholder.com atau URL lokal yang valid
                 userAvatarNav.src = employeeData.photo || "https://via.placeholder.com/40x40/E2E8F0/4A5568?text=ME";
                 userAvatarNav.alt = employeeData.name;
             }
             return employeeData;
         } catch (error) {
             console.error("Error fetching employee profile data for header:", error);
-            // Tangani error Unauthorized/Forbidden dari interceptor
             if (error.status === 401 || error.status === 403) {
                 showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
                 setTimeout(() => authService.logout(), 2000);
@@ -118,26 +118,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         paginationControls.classList.add('hidden');
 
         try {
-            // Pengecekan user dan token yang lebih ringkas
             const currentUser = authService.getCurrentUser();
             if (!currentUser || currentUser.role !== 'karyawan') {
                 showToast("Akses ditolak. Anda tidak memiliki izin untuk melihat halaman ini.", "error");
                 setTimeout(() => authService.logout(), 2000);
                 return;
             }
-            
-            // Parameter 'token' dihapus karena sudah di-handle oleh interceptor apiClient
-            let fetchedData = await LeaveRequestService.getMyLeaveRequests(); 
 
-            // Pastikan fetchedData adalah array. Jika bukan, set menjadi array kosong.
+            let fetchedData = await LeaveRequestService.getMyLeaveRequests();
+
             if (!Array.isArray(fetchedData)) {
                 console.warn("Peringatan: API /leave-requests/my-requests tidak mengembalikan array. Menerima:", fetchedData);
-                fetchedData = []; // Set menjadi array kosong untuk mencegah error sort
-                showToast("Peringatan: Format data riwayat pengajuan tidak valid dari server.", "info"); 
+                fetchedData = [];
+                showToast("Peringatan: Format data riwayat pengajuan tidak valid dari server.", "info");
             }
 
             allLeaveRequestsData = fetchedData;
-            allLeaveRequestsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Urutkan dari terbaru
+            allLeaveRequestsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
             if (allLeaveRequestsData.length === 0) {
                 leaveHistoryTableBody.innerHTML = `
@@ -146,7 +143,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </tr>
                 `;
                 leaveHistoryMessage.textContent = 'Anda belum memiliki riwayat pengajuan cuti atau sakit.';
-
                 leaveHistoryMessage.classList.remove('hidden');
                 leaveHistoryMessage.classList.add('info');
             } else {
@@ -157,6 +153,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 }
             }
 
+            // ✨ Panggil fungsi baru untuk memuat ringkasan cuti setelah riwayat dimuat ✨
+            await updateLeaveLimitSummary();
+
         } catch (error) {
             console.error("Error loading leave history:", error);
             leaveHistoryTableBody.innerHTML = `
@@ -165,12 +164,59 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </tr>
             `;
             showToast(error.message || "Gagal memuat riwayat pengajuan.", "error");
-            // Perbarui kondisi error untuk redirect logout (gunakan error.status dari interceptor)
             if (error.status === 401 || error.status === 403) {
                 setTimeout(() => authService.logout(), 2000);
             }
         }
     };
+
+    // ✨ FUNGSI BARU: Untuk memperbarui ringkasan batasan cuti di UI ✨
+    const updateLeaveLimitSummary = async () => {
+        if (!leaveLimitSummaryElement) return; // Pastikan elemen ada
+
+        leaveLimitSummaryElement.innerHTML = `<p class="text-gray-500">Memuat informasi batasan cuti...</p>`;
+        leaveLimitSummaryElement.classList.remove('hidden');
+
+        try {
+            // Panggil service untuk mendapatkan ringkasan cuti dari backend
+            const summary = await LeaveRequestService.getLeaveSummary();
+            const currentYear = new Date().getFullYear();
+            const currentMonthName = new Date().toLocaleDateString('id-ID', { month: 'long' });
+
+            let annualMessage = `Anda sudah mengajukan <span class="font-bold">${summary.annual_leave_count}</span> kali cuti di tahun ${currentYear}. (Batas: 12 kali)`;
+            let annualClass = 'text-gray-700';
+            if (summary.annual_leave_count >= 12) {
+                annualMessage = `<span class="font-bold text-red-600">Anda telah mencapai batas maksimal 12 kali pengajuan cuti untuk tahun ${currentYear}.</span>`;
+                annualClass = 'text-red-600';
+            } else if (summary.annual_leave_count >= 10) { // Contoh: mendekati batas
+                annualClass = 'text-orange-500';
+            }
+
+            let monthlyMessage = `Di bulan ${currentMonthName}, Anda sudah mengajukan <span class="font-bold">${summary.current_month_leave_count}</span> kali cuti. (Batas: 1 kali)`;
+            let monthlyClass = 'text-gray-700';
+            if (summary.current_month_leave_count > 0) {
+                monthlyMessage = `<span class="font-bold text-red-600">Anda sudah mengajukan cuti di bulan ${currentMonthName} ini.</span>`;
+                monthlyClass = 'text-red-600';
+            }
+
+            leaveLimitSummaryElement.innerHTML = `
+                <p class="${annualClass}">📅 ${annualMessage}</p>
+                <p class="${monthlyClass}">🗓️ ${monthlyMessage}</p>
+            `;
+            leaveLimitSummaryElement.classList.remove('hidden');
+
+        } catch (error) {
+            console.error("Error updating leave limit summary:", error);
+            leaveLimitSummaryElement.innerHTML = `<p class="text-red-500">Gagal memuat informasi batasan cuti.</p>`;
+            leaveLimitSummaryElement.classList.remove('hidden');
+            // Jika error adalah Unauthorized/Forbidden, arahkan ke login
+            if (error.status === 401 || error.status === 403) {
+                showToast("Sesi tidak valid. Mengarahkan ke halaman login...", "error");
+                setTimeout(() => authService.logout(), 2000);
+            }
+        }
+    };
+
 
     // --- Fungsi untuk merender tabel riwayat pengajuan per halaman ---
     const renderLeaveHistoryTable = (data, page, limit) => {
@@ -181,7 +227,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         paginatedItems.forEach(request => {
             const row = leaveHistoryTableBody.insertRow();
-            
+
             const startDate = new Date(request.start_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
             const endDate = new Date(request.end_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -257,82 +303,141 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // --- Logika untuk menampilkan/menyembunyikan bagian lampiran ---
     requestTypeInput.addEventListener('change', () => {
-        if (requestTypeInput.value === 'Sakit') { // Hanya tampilkan jika jenisnya 'Sakit'
+        // ✨ Pastikan juga update summary saat tipe berubah, karena batas cuti hanya untuk 'Cuti' ✨
+        updateLeaveLimitSummary(); 
+        if (requestTypeInput.value === 'Sakit') {
             attachmentSection.classList.remove('hidden');
-            attachmentInput.setAttribute('required', 'required'); // Lampiran wajib jika sakit
+            attachmentInput.setAttribute('required', 'required');
         } else {
             attachmentSection.classList.add('hidden');
             attachmentInput.removeAttribute('required');
-            attachmentInput.value = ''; // Kosongkan file yang dipilih jika disembunyikan
+            attachmentInput.value = '';
         }
     });
 
     // --- Event Listener Submit Formulir Pengajuan Cuti/Izin ---
-let isSubmitting = false;
+    let isSubmitting = false;
 
-leaveRequestForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+    leaveRequestForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
 
-    if (isSubmitting) return; // Cegah klik ganda
-    isSubmitting = true;
+        if (isSubmitting) return;
+        isSubmitting = true;
 
-    formMessage.classList.add("hidden");
-    formMessage.textContent = '';
+        formMessage.classList.add("hidden");
+        formMessage.textContent = '';
 
-    const formData = new FormData();
-    formData.append("request_type", requestTypeInput.value);
-    formData.append("start_date", startDateInput.value);
-    formData.append("end_date", endDateInput.value);
-    formData.append("reason", reasonInput.value);
+        const requestType = requestTypeInput.value;
+        const startDate = startDateInput.value;
+        // const endDate = endDateInput.value; // Tidak digunakan langsung dalam formData
+        const reason = reasonInput.value;
+        const file = attachmentInput.files[0];
 
-    const file = attachmentInput.files[0];
-    if (file) {
-        if (file.size > 2 * 1024 * 1024) {
-            showToast("Ukuran file terlalu besar! Maksimal 2MB.", "error");
-            formMessage.textContent = "Ukuran file terlalu besar! Maksimal 2MB.";
+        // ✨ PENGECEKAN BATASAN CUTI DI FRONTEND ✨
+        if (requestType === 'Cuti') {
+            try {
+                const summary = await LeaveRequestService.getLeaveSummary();
+                const selectedStartDate = new Date(startDate);
+                const currentYear = new Date().getFullYear();
+
+                // Cek batasan tahunan
+                if (summary.annual_leave_count >= 12) {
+                    showToast(`Anda telah mencapai batas maksimal 12 kali pengajuan Cuti untuk tahun ${currentYear}.`, "error");
+                    formMessage.textContent = `Anda telah mencapai batas maksimal 12 kali pengajuan Cuti untuk tahun ${currentYear}.`;
+                    formMessage.classList.remove("hidden");
+                    formMessage.classList.add("error");
+                    isSubmitting = false;
+                    return; // Hentikan proses submit
+                }
+
+                // Cek batasan bulanan (gunakan data dari summary API yang lebih akurat)
+                // Kita perlu membandingkan bulan yang diajukan dengan bulan sekarang
+                const submittedMonth = selectedStartDate.getMonth(); // 0-11
+                const submittedYear = selectedStartDate.getFullYear();
+
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentMonthName = today.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+
+                // Jika tanggal mulai pengajuan ada di bulan yang sama dengan bulan sekarang DAN summary menunjukkan sudah ada pengajuan di bulan ini
+                if (submittedMonth === currentMonth && submittedYear === currentYear && summary.current_month_leave_count > 0) {
+                     showToast(`Anda hanya dapat mengajukan Cuti satu kali dalam bulan ${currentMonthName}. Anda sudah memiliki pengajuan cuti di bulan ini.`, "error");
+                     formMessage.textContent = `Anda hanya dapat mengajukan Cuti satu kali dalam bulan ${currentMonthName}. Anda sudah memiliki pengajuan cuti di bulan ini.`;
+                     formMessage.classList.remove("hidden");
+                     formMessage.classList.add("error");
+                     isSubmitting = false;
+                     return; // Hentikan proses submit
+                }
+
+            } catch (error) {
+                console.error("Error saat memeriksa batasan cuti di frontend:", error);
+                showToast("Gagal memeriksa batasan cuti. Silakan coba lagi.", "error");
+                formMessage.textContent = "Gagal memeriksa batasan cuti. Silakan coba lagi.";
+                formMessage.classList.remove("hidden");
+                formMessage.classList.add("error");
+                isSubmitting = false;
+                return;
+            }
+        }
+        // ✨ AKHIR PENGECEKAN BATASAN CUTI ✨
+
+        // Validasi file attachment dan buat FormData
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                showToast("Ukuran file terlalu besar! Maksimal 2MB.", "error");
+                formMessage.textContent = "Ukuran file terlalu besar! Maksimal 2MB.";
+                formMessage.classList.remove("hidden");
+                formMessage.classList.add("error");
+                isSubmitting = false;
+                return;
+            }
+        } else if (requestTypeInput.value === 'Sakit' && attachmentInput.hasAttribute('required')) {
+            showToast("Lampiran (surat dokter) wajib untuk pengajuan Sakit.", "error");
+            formMessage.textContent = "Lampiran (surat dokter) wajib untuk pengajuan Sakit.";
             formMessage.classList.remove("hidden");
             formMessage.classList.add("error");
-            isSubmitting = false; // Jangan lupa reset jika gagal validasi!
+            isSubmitting = false;
             return;
         }
-        formData.append("attachment", file);
-    } else if (requestTypeInput.value === 'Sakit' && attachmentInput.hasAttribute('required')) {
-        showToast("Lampiran (surat dokter) wajib untuk pengajuan Sakit.", "error");
-        formMessage.textContent = "Lampiran (surat dokter) wajib untuk pengajuan Sakit.";
-        formMessage.classList.remove("hidden");
-        formMessage.classList.add("error");
-        isSubmitting = false;
-        return;
-    }
 
-    try {
-        const response = await LeaveRequestService.createLeaveRequest(formData);
-        showToast(response.message || "Pengajuan berhasil dikirim!", "success");
-
-        formMessage.textContent = "Pengajuan berhasil dikirim dan menunggu persetujuan admin.";
-        formMessage.classList.remove("hidden", "error");
-        formMessage.classList.add("success");
-
-        leaveRequestForm.reset();
-        attachmentSection.classList.add('hidden');
-        attachmentInput.removeAttribute('required');
-        loadLeaveHistory();
-    } catch (error) {
-        console.error("Error submitting leave request:", error);
-        const errorMessage = error.message || "Gagal mengirim pengajuan. Silakan coba lagi.";
-        showToast(errorMessage, "error");
-        formMessage.textContent = errorMessage;
-        formMessage.classList.remove("hidden", "success");
-        formMessage.classList.add("error");
-
-        if (error.status === 401 || error.status === 403) {
-            setTimeout(() => authService.logout(), 2000);
+        const formData = new FormData();
+        formData.append("request_type", requestType);
+        formData.append("start_date", startDate);
+        formData.append("end_date", endDateInput.value); // Pastikan endDate juga ditambahkan
+        formData.append("reason", reason);
+        if (file) {
+            formData.append("attachment", file);
         }
-    } finally {
-        isSubmitting = false; // Pastikan status submit direset
-    }
-});
 
+        try {
+            const response = await LeaveRequestService.createLeaveRequest(formData);
+            showToast(response.message || "Pengajuan berhasil dikirim!", "success");
+
+            formMessage.textContent = "Pengajuan berhasil dikirim dan menunggu persetujuan admin.";
+            formMessage.classList.remove("hidden", "error");
+            formMessage.classList.add("success");
+
+            leaveRequestForm.reset();
+            attachmentSection.classList.add('hidden');
+            attachmentInput.removeAttribute('required');
+            attachmentInput.value = ''; // Penting untuk mereset input file
+            await loadLeaveHistory(); // Muat ulang riwayat dan ringkasan setelah submit
+        } catch (error) {
+            console.error("Error submitting leave request:", error);
+            const errorMessage = error.message || "Gagal mengirim pengajuan. Silakan coba lagi.";
+            showToast(errorMessage, "error");
+            formMessage.textContent = errorMessage;
+            formMessage.classList.remove("hidden", "success");
+            formMessage.classList.add("error");
+
+            if (error.status === 401 || error.status === 403) {
+                setTimeout(() => authService.logout(), 2000);
+            }
+        } finally {
+            isSubmitting = false;
+        }
+    });
 
 
     // --- Change Password Modal Logic (disalin dari EmployeeDashboard.js) ---
@@ -393,16 +498,14 @@ leaveRequestForm.addEventListener("submit", async (event) => {
             }
 
             const currentUser = authService.getCurrentUser();
-            if (!currentUser || !currentUser.id) { // Tidak perlu lagi cek localStorage.getItem('token')
+            if (!currentUser || !currentUser.id) {
                 showToast("Sesi tidak valid. Harap login kembali.", "error");
                 setTimeout(() => authService.logout(), 2000);
                 return;
             }
-            // const token = localStorage.getItem('token'); // <<-- Hapus ini, tidak lagi diperlukan
 
             try {
-                // Parameter 'token' dihapus
-                await authService.changePassword(oldPassword, newPassword); 
+                await authService.changePassword(oldPassword, newPassword);
                 changePasswordSuccessMessage.textContent = "Password berhasil diubah!";
                 changePasswordSuccessMessage.classList.remove("hidden");
                 showToast("Password berhasil diubah!", "success");
@@ -473,17 +576,17 @@ leaveRequestForm.addEventListener("submit", async (event) => {
                 <button id="cancelLogoutBtn" class="px-4 py-2 bg-gray-500 text-white text-sm font-medium rounded-md hover:bg-gray-600">Batal</button>
             </div>
         `;
-        const toast = Toastify({ 
-            node: toastNode, 
-            duration: -1, 
-            gravity: "top", 
-            position: "center", 
-            close: true, 
-            style: { 
-                background: "linear-gradient(to right, #4f46e5, #7c3aed)", 
+        const toast = Toastify({
+            node: toastNode,
+            duration: -1,
+            gravity: "top",
+            position: "center",
+            close: true,
+            style: {
+                background: "linear-gradient(to right, #4f46e5, #7c3aed)",
                 borderRadius: "12px",
-                padding: "1rem" 
-            } 
+                padding: "1rem"
+            }
         }).showToast();
 
         toastNode.querySelector("#confirmLogoutBtn").addEventListener("click", () => {
@@ -497,5 +600,5 @@ leaveRequestForm.addEventListener("submit", async (event) => {
 
     // --- Inisialisasi Halaman ---
     fetchEmployeeProfileDataForHeader(); // Muat data profil untuk avatar di header
-    loadLeaveHistory(); // Muat riwayat pengajuan saat halaman dimuat
+    loadLeaveHistory(); // Muat riwayat pengajuan saat halaman dimuat (akan memicu updateLeaveLimitSummary juga)
 });
