@@ -144,61 +144,55 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    // ✨ FUNGSI renderAttendanceTable Disesuaikan ✨
-    const renderAttendanceTable = (data, page, limit) => {
-        attendanceHistoryTableBody.innerHTML = ''; 
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + limit;
-        const paginatedItems = data.slice(startIndex, endIndex);
+const renderAttendanceTable = (data, page, limit) => {
+    attendanceHistoryTableBody.innerHTML = ''; 
+    const startIndex = (page - 1) * limit;
+    const paginatedItems = data.slice(startIndex, startIndex + limit); // Menggunakan startIndex + limit untuk endIndex
 
-        paginatedItems.forEach(attendance => {
-            const row = attendanceHistoryTableBody.insertRow();
-            
-            const date = new Date(attendance.date + 'T00:00:00'); 
-            const formattedDate = date.toLocaleDateString('id-ID', { 
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-
-            let statusDisplayText = attendance.status || '-';
-            let statusClass = 'text-gray-700';
-
-            switch (attendance.status) {
-                case 'Hadir':
-                    statusClass = 'text-green-600 font-semibold';
-                    break;
-                case 'Terlambat':
-                    statusClass = 'text-orange-600 font-semibold';
-                    break;
-                case 'Sakit':
-                    statusClass = 'text-blue-600 font-semibold';
-                    // Catatan tetap di kolom Catatan, jadi statusDisplayText hanya 'Sakit'
-                    statusDisplayText = 'Sakit';
-                    break;
-                case 'Cuti':
-                    statusClass = 'text-purple-600 font-semibold';
-                    // Catatan tetap di kolom Catatan, jadi statusDisplayText hanya 'Cuti'
-                    statusDisplayText = 'Cuti';
-                    break;
-                case 'Tidak Absen': // Mengganti 'Alpha' dengan 'Tidak Absen'
-                    statusClass = 'text-red-600 font-semibold';
-                    // Catatan tetap di kolom Catatan, jadi statusDisplayText hanya 'Tidak Absen'
-                    statusDisplayText = 'Tidak Absen';
-                    break;
-                default:
-                    statusClass = 'text-gray-900';
-                    break;
-            }
-
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.note || '-'}</td>
-            `;
+    paginatedItems.forEach((attendance, index) => { // ✨ Tambahkan 'index' ✨
+        const row = attendanceHistoryTableBody.insertRow();
+        
+        const formattedDate = new Date(attendance.date + 'T00:00:00').toLocaleDateString('id-ID', { 
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
-    };
+
+        let statusDisplayText = attendance.status || '-';
+        let statusClass = 'text-gray-700';
+
+        switch (attendance.status) {
+            case 'Hadir':
+                statusClass = 'text-green-600 font-semibold';
+                break;
+            case 'Terlambat':
+                statusClass = 'text-orange-600 font-semibold';
+                break;
+            case 'Sakit':
+                statusClass = 'text-blue-600 font-semibold';
+                statusDisplayText = 'Sakit';
+                break;
+            case 'Cuti':
+                statusClass = 'text-purple-600 font-semibold';
+                statusDisplayText = 'Cuti';
+                break;
+            case 'Tidak Absen': 
+                statusClass = 'text-red-600 font-semibold';
+                statusDisplayText = 'Tidak Absen';
+                break;
+            default:
+                statusClass = 'text-gray-900';
+                break;
+        }
+
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${startIndex + index + 1}</td> <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.check_in || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusDisplayText}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${attendance.note || '-'}</td>
+        `;
+    });
+};
 
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {
         const totalPages = Math.ceil(totalItems / itemsPerPage);
