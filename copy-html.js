@@ -12,6 +12,7 @@ const pages = [
   ["src/pages/Admin/manage_departments.html", "manage_departments.html"],
   ["src/pages/Admin/manage_employees.html", "manage_employees.html"],
   ["src/pages/Admin/manage_work_schedules.html", "manage_work_schedules.html"],
+  ["src/pages/Admin/admin_profile.html", "admin_profile.html"] ,
   ["src/pages/Karyawan/employee_dashboard.html", "employee_dashboard.html"],
   ["src/pages/Karyawan/employee_profile.html", "employee_profile.html"],
   ["src/pages/Karyawan/request_leave.html", "request_leave.html"],

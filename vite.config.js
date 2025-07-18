@@ -51,6 +51,7 @@ export default defineConfig({
         manage_departments: resolve(__dirname, 'src/pages/Admin/manage_departments.html'),
         manage_employees: resolve(__dirname, 'src/pages/Admin/manage_employees.html'),
         manage_work_schedules: resolve(__dirname,'src/pages/Admin/manage_work_schedules.html'),
+        admin_profile: resolve(__dirname,'src/pages/Admin/admin_profile.html'),
         // Karyawan
         employee_dashboard: resolve(__dirname, 'src/pages/Karyawan/employee_dashboard.html'),
         employee_profile: resolve(__dirname, 'src/pages/Karyawan/employee_profile.html'),

@@ -1,1 +1,0 @@
-function o(){const t=new Date().getHours();return t>=18||t<6}function n(e){const t=document.documentElement;e?t.classList.add("dark"):t.classList.remove("dark")}function s(){const e=localStorage.getItem("theme");n(e?e==="dark":o())}export{s as i};
