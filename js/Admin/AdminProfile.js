@@ -4,6 +4,7 @@ import { userService } from "../Services/UserServices.js";
 import { authService } from "../Services/AuthServices.js";
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
+import { getUserPhotoBlobUrl } from '../utils/photoUtils.js'; // Import fungsi photoUtils
 
 document.addEventListener("DOMContentLoaded", () => {
     feather.replace(); // Memuat ikon Feather di awal
@@ -96,17 +97,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Perbarui avatar di header jika ada
                 const userAvatarHeader = document.getElementById("userAvatar");
                 if (userAvatarHeader) {
-                    userAvatarHeader.src = adminData.photo_url || "https://placehold.co/40x40/E2E8F0/4A5568?text=AD";
+                    // Gunakan getUserPhotoBlobUrl untuk avatar header juga
+                    userAvatarHeader.src = await getUserPhotoBlobUrl(user.id, adminData.name, 40); // Ukuran 40x40 untuk header
                 }
 
-                // Muat foto profil utama
-                try {
-                    const blob = await userService.getProfilePhoto(user.id);
-                    const photoUrl = URL.createObjectURL(blob);
-                    profilePhotoPreview.src = photoUrl;
-                } catch {
-                    profilePhotoPreview.src = "https://placehold.co/128x128/E2E8F0/4A5568?text=AD";
-                }
+                // Muat foto profil utama menggunakan getUserPhotoBlobUrl
+                profilePhotoPreview.src = await getUserPhotoBlobUrl(user.id, adminData.name, 128); // Ukuran 128x128 untuk profil utama
             }
         } catch (error) {
             console.error("Error loading admin profile data:", error);
@@ -200,14 +196,16 @@ document.addEventListener("DOMContentLoaded", () => {
                         return;
                     }
 
-                    const uploadResponse = await userService.uploadProfilePhoto(user.id, photoFile);
-                    const blob = await userService.getProfilePhoto(user.id);
-                    profilePhotoPreview.src = URL.createObjectURL(blob);
+                    // Unggah foto
+                    await userService.uploadProfilePhoto(user.id, photoFile);
+                    
+                    // Setelah sukses upload, muat ulang foto profil menggunakan getUserPhotoBlobUrl
+                    profilePhotoPreview.src = await getUserPhotoBlobUrl(user.id, initialProfileData.name, 128);
 
-                    const currentUserData = authService.getCurrentUser();
-                    if (currentUserData) {
-                        currentUserData.photo_url = uploadResponse.photo_url || `/api/users/${user.id}/photo`;
-                        localStorage.setItem('user', JSON.stringify(currentUserData));
+                    // Perbarui juga foto di header jika user avatar adalah yang diupdate
+                    const userAvatarHeader = document.getElementById("userAvatar");
+                    if (userAvatarHeader) {
+                        userAvatarHeader.src = await getUserPhotoBlobUrl(user.id, initialProfileData.name, 40);
                     }
                 }
 

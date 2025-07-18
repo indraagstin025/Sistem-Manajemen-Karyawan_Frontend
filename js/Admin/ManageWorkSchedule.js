@@ -8,6 +8,7 @@ import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; // Import getUserPhotoBlobUrl
 import Swal from 'sweetalert2';
 import Toastify from 'toastify-js';
 
@@ -32,7 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else {
                 backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
             }
-        
+
             Toastify({
                 text: message,
                 duration: 3000,
@@ -64,6 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const recurrenceUntilInput = document.getElementById("recurrence-until");
 
     const userAvatarNav = document.getElementById('userAvatar');
+    const userNameNav = document.getElementById('userNameNav'); // Make sure this element exists in your HTML
     const userDropdownContainer = document.getElementById('userDropdown');
     const dropdownMenu = document.getElementById('dropdownMenu');
 
@@ -72,7 +74,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const showSweetAlert = (title, message, icon = "success", showConfirmButton = false, timer = 2000) => {
         Swal.fire({
             title: title,
-            html: message, 
+            html: message,
             icon: icon,
             showConfirmButton: showConfirmButton,
             timer: timer,
@@ -86,19 +88,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
+    // --- Updated loadUserProfile to use getUserPhotoBlobUrl ---
     const loadUserProfile = async () => {
         try {
             const user = await authService.getCurrentUser();
-            if (user && user.photo_url && userAvatarNav) {
-                userAvatarNav.src = user.photo_url;
-            } else if (userAvatarNav) {
-                userAvatarNav.src = "/assets/default-avatar.png"; 
+            if (user && user.role === 'admin') { // Ensure it's an admin
+                // Use getUserPhotoBlobUrl for the admin's header avatar
+                const photoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); // 40x40 for header avatar
+                if (userAvatarNav) {
+                    userAvatarNav.src = photoUrl;
+                    userAvatarNav.alt = user.name || "Admin";
+                }
+                if (userNameNav) { // Update username in header as well
+                    userNameNav.textContent = user.name || "Admin";
+                }
+            } else {
+                // Fallback for non-admin or no user
+                if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png"; // Or a generic admin placeholder
+                if (userNameNav) userNameNav.textContent = "Guest";
             }
         } catch (error) {
-            console.error("Gagal memuat profil pengguna:", error);
+            console.error("Failed to load admin profile for header:", error);
             if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
+            if (userNameNav) userNameNav.textContent = "Error";
         }
     };
+    // --- End loadUserProfile update ---
+
 
     recurrenceFreqInput.addEventListener("change", () => {
         if (recurrenceFreqInput.value === "WEEKLY") {
@@ -119,7 +135,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 .filter(cb => cb.checked)
                 .map(cb => cb.value);
             if (selectedDays.length === 0) {
-                showSweetAlert("Validasi Gagal", "Pilih minimal satu hari untuk jadwal mingguan.", "warning");
+                showSweetAlert("Validation Failed", "Please select at least one day for weekly schedule.", "warning");
                 return "";
             }
             rule += `;BYDAY=${selectedDays.join(",")}`;
@@ -130,15 +146,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         return rule;
     };
-    
+
     const openScheduleModal = (mode = "create", scheduleRule = null) => {
         scheduleFormModal.classList.remove("hidden");
-        setTimeout(() => scheduleFormModal.classList.add("active"), 10); 
-        
+        setTimeout(() => scheduleFormModal.classList.add("active"), 10);
+
         deleteScheduleBtn.classList.add("hidden");
 
         if (mode === "create") {
-            formModalTitle.textContent = "Tambah Jadwal Kerja";
+            formModalTitle.textContent = "Add Work Schedule";
             workScheduleForm.reset();
             weeklyOptionsDiv.classList.add("hidden");
             scheduleIdInput.value = "";
@@ -149,7 +165,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             recurrenceFreqInput.value = "NONE";
             recurrenceUntilInput.value = "";
         } else if (mode === "edit" && scheduleRule) {
-            formModalTitle.textContent = "Edit Aturan Jadwal Kerja";
+            formModalTitle.textContent = "Edit Work Schedule Rule";
             scheduleIdInput.value = scheduleRule.id;
             scheduleDateInput.value = scheduleRule.date;
             startTimeInput.value = scheduleRule.start_time.substring(0, 5);
@@ -186,7 +202,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             deleteScheduleBtn.classList.remove("hidden");
         }
     };
-    
+
     const closeScheduleModal = () => {
         scheduleFormModal.classList.remove("active");
         setTimeout(() => {
@@ -217,25 +233,25 @@ document.addEventListener("DOMContentLoaded", async () => {
                             end_date: info.endStr.split("T")[0],
                         };
                         const response = await WorkScheduleServices.getAllWorkSchedules(filters);
-                        
+
                         return (response.data || []).map(s => ({
                             id: s.id,
                             title: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}`,
                             start: s.date,
-                            extendedProps: { 
+                            extendedProps: {
                                 start_time: s.start_time,
                                 end_time: s.end_time,
                                 note: s.note,
-                                recurrence_rule: s.recurrence_rule, 
+                                recurrence_rule: s.recurrence_rule,
                             },
                             allDay: true,
                             color: '#38b2ac',
                             textColor: 'white',
-                            display: 'block', 
+                            display: 'block',
                         }));
                     } catch (error) {
                         console.error("Error fetching work schedules:", error);
-                        showSweetAlert('Error Fetching Schedules', `Gagal memuat jadwal kerja: ${error.message || "Terjadi kesalahan."}`, 'error', true);
+                        showSweetAlert('Error Fetching Schedules', `Failed to load work schedules: ${error.message || "An error occurred."}`, 'error', true);
                         if (error.status === 401 || error.status === 403) {
                             setTimeout(() => authService.logout(), 2000);
                         }
@@ -252,15 +268,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                         const year = info.start.getFullYear();
                         const holidays = await WorkScheduleServices.getHolidays(year);
                         return (holidays || []).map(holiday => ({
-                            title: holiday.Name, 
-                            start: holiday.Date, 
+                            title: holiday.Name,
+                            start: holiday.Date,
                             allDay: true,
                             display: 'background',
                             color: '#ff9f89',
                         }));
                     } catch (error) {
                         console.error("Error fetching holidays:", error);
-                        showSweetAlert('Error Fetching Holidays', `Gagal memuat hari libur: ${error.message || "Terjadi kesalahan."}`, 'error', true);
+                        showSweetAlert('Error Fetching Holidays', `Failed to load holidays: ${error.message || "An error occurred."}`, 'error', true);
                         return [];
                     }
                 }
@@ -276,7 +292,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const scheduleRuleId = info.event.id;
 
             if (info.event.display === 'background') {
-                showSweetAlert('Info Hari Libur', `Hari libur: ${info.event.title}`, 'info');
+                showSweetAlert('Holiday Info', `Holiday: ${info.event.title}`, 'info');
                 return;
             }
 
@@ -287,12 +303,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (scheduleRule) {
                     openScheduleModal("edit", scheduleRule);
                 } else {
-                    showSweetAlert("Data Tidak Ditemukan", "Detail jadwal tidak ditemukan.", "error");
+                    showSweetAlert("Data Not Found", "Schedule details not found.", "error");
                 }
 
             } catch (error) {
                 console.error("Error fetching schedule for edit:", error);
-                showSweetAlert("Gagal Memuat Jadwal", `Gagal memuat detail jadwal untuk diedit: ${error.message || "Terjadi kesalahan."}`, "error", true);
+                showSweetAlert("Failed to Load Schedule", `Failed to load schedule details for editing: ${error.message || "An error occurred."}`, "error", true);
                 if (error.status === 401 || error.status === 403) {
                     setTimeout(() => authService.logout(), 2000);
                 }
@@ -329,7 +345,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (userDropdownContainer) {
         userDropdownContainer.addEventListener("click", (event) => {
-            event.stopPropagation(); 
+            event.stopPropagation();
             dropdownMenu.classList.toggle("active");
         });
 
@@ -345,11 +361,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         saveScheduleBtn.disabled = true;
 
         const scheduleId = scheduleIdInput.value;
-        const recurrenceRule = generateRecurrenceRule(); 
-        
+        const recurrenceRule = generateRecurrenceRule();
+
         if (recurrenceFreqInput.value === "WEEKLY" && !recurrenceRule) {
-             saveScheduleBtn.disabled = false;
-             return; 
+            saveScheduleBtn.disabled = false;
+            return;
         }
 
         const payload = {
@@ -357,23 +373,23 @@ document.addEventListener("DOMContentLoaded", async () => {
             start_time: startTimeInput.value,
             end_time: endTimeInput.value,
             note: noteInput.value,
-            recurrence_rule: recurrenceRule, 
+            recurrence_rule: recurrenceRule,
         };
 
         try {
             if (scheduleId) {
                 await WorkScheduleServices.updateWorkSchedule(scheduleId, payload);
-                showSweetAlert("Berhasil!", "Aturan jadwal kerja berhasil diperbarui!", "success", false, 1500);
+                showSweetAlert("Success!", "Work schedule rule successfully updated!", "success", false, 1500);
             } else {
                 await WorkScheduleServices.createWorkSchedule(payload);
-                showSweetAlert("Berhasil!", "Aturan jadwal kerja berhasil disimpan!", "success", false, 1500);
+                showSweetAlert("Success!", "Work schedule rule successfully saved!", "success", false, 1500);
             }
             closeScheduleModal();
-            calendar.refetchEvents();
+            calendar.refetchEvents(); // Refresh calendar events
         } catch (error) {
             console.error("Error saving/updating work schedule:", error);
-            const errorMessage = error.response?.data?.error || error.message || "Terjadi kesalahan saat menyimpan/memperbarui jadwal.";
-            showSweetAlert("Gagal!", errorMessage, "error", true);
+            const errorMessage = error.response?.data?.error || error.message || "An error occurred while saving/updating the schedule.";
+            showSweetAlert("Failed!", errorMessage, "error", true);
             if (error.status === 401 || error.status === 403) {
                 setTimeout(() => authService.logout(), 2000);
             }
@@ -387,26 +403,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!scheduleId) return;
 
         Swal.fire({
-            title: "Anda yakin ingin menghapus?",
-            text: "Aturan jadwal ini akan dihapus secara permanen, termasuk semua kejadian di masa mendatang.",
+            title: "Are you sure you want to delete?",
+            text: "This schedule rule will be permanently deleted, including all future occurrences.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
             cancelButtonColor: "#3085d6",
-            confirmButtonText: "Ya, Hapus!",
-            cancelButtonText: "Batal"
+            confirmButtonText: "Yes, Delete!",
+            cancelButtonText: "Cancel"
         }).then(async (result) => {
             if (result.isConfirmed) {
                 deleteScheduleBtn.disabled = true;
                 try {
                     await WorkScheduleServices.deleteWorkSchedule(scheduleId);
-                    showSweetAlert("Terhapus!", "Aturan jadwal kerja berhasil dihapus!", "success", false, 1500);
+                    showSweetAlert("Deleted!", "Work schedule rule successfully deleted!", "success", false, 1500);
                     closeScheduleModal();
-                    calendar.refetchEvents();
+                    calendar.refetchEvents(); // Refresh calendar events
                 } catch (error) {
                     console.error("Error deleting work schedule:", error);
-                    const errorMessage = error.response?.data?.error || error.message || "Terjadi kesalahan saat menghapus jadwal.";
-                    showSweetAlert("Gagal!", errorMessage, "error", true);
+                    const errorMessage = error.response?.data?.error || error.message || "An error occurred while deleting the schedule.";
+                    showSweetAlert("Failed!", errorMessage, "error", true);
                     if (error.status === 401 || error.status === 403) {
                         setTimeout(() => authService.logout(), 2000);
                     }
@@ -417,5 +433,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-    loadUserProfile();
+    // Call the function to load admin profile photo in the header
+    loadUserProfile(); // Make sure this is called after DOMContentLoaded for all elements to be ready.
 });

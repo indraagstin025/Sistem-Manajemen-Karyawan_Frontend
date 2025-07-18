@@ -1,16 +1,17 @@
-
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
-import { initializeSidebar } from "../components/sidebarHandler.js"; 
+import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; // Import photoUtils
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 
 
 document.addEventListener("DOMContentLoaded", async () => {
-    
-    initializeSidebar(); 
+
+    feather.replace(); // Load Feather icons
+    initializeSidebar();
     initializeLogout();
 
     // Show toast function
@@ -23,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
             backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
         }
-    
+
         Toastify({
             text: message,
             duration: 3000,
@@ -38,6 +39,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     QRCodeManager.initialize({
         toastCallback: showToast,
     });
+
+    // Elements for admin profile in the header
+    const userAvatarNav = document.getElementById("userAvatar"); // Assuming this ID exists in your header HTML
+    const userNameNav = document.getElementById("userNameNav");   // Assuming this ID exists in your header HTML
+
 
     const addDepartmentForm = document.getElementById("addDepartmentForm");
     const departmentNameInput = document.getElementById("departmentName");
@@ -119,7 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         updateSubmitButton();
     });
 
-    updateSubmitButton();
+    updateSubmitButton(); // Initial check for button state
 
     const showMessage = (message, type = "success", targetDiv) => {
         targetDiv.classList.add("hidden");
@@ -146,13 +152,42 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
+    // Function to fetch and display admin profile data in the header
+    const fetchAdminProfileDataForHeader = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return; // Don't proceed if no token
+            
+            const user = authService.getCurrentUser();
+            if (!user || user.role !== "admin") return; // Only for admin role
+
+            // Use getUserPhotoBlobUrl to get the photo URL
+            const photoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); // 40x40 for header avatar
+
+            if (userAvatarNav) {
+                userAvatarNav.src = photoUrl;
+                userAvatarNav.alt = user.name || "Admin";
+            }
+            if (userNameNav) {
+                userNameNav.textContent = user.name || "Admin";
+            }
+        } catch (error) {
+            console.error("Error fetching admin profile data for header:", error);
+            // This error isn't critical, so no toast or logout
+        }
+    };
+
+    // Call the function to load admin profile data for header
+    await fetchAdminProfileDataForHeader();
+
+
     addDepartmentForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        departmentNameInput.dispatchEvent(new Event('blur'));
+        departmentNameInput.dispatchEvent(new Event('blur')); // Trigger blur to show validation messages
 
         if (!isValidDepartmentName) {
-            showMessage("Harap perbaiki kesalahan pada form sebelum melanjutkan.", "error", departmentErrorMessageDiv);
+            showMessage("Harap perbaiki semua kesalahan pada form sebelum melanjutkan.", "error", departmentErrorMessageDiv);
             departmentNameInput.focus();
             return;
         }
@@ -189,9 +224,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             showMessage("Departemen berhasil ditambahkan!", "success", departmentSuccessMessageDiv);
             addDepartmentForm.reset();
-            isValidDepartmentName = false;
+            isValidDepartmentName = false; // Reset validation state
             departmentNameInput.classList.remove('border-red-500');
             departmentNameError.classList.add('hidden');
+            updateSubmitButton(); // Update button state after reset
 
             setTimeout(() => {
                 window.location.href = "/src/pages/Admin/manage_departments.html";
@@ -216,7 +252,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             submitButton.disabled = false;
             submitText.classList.remove('hidden');
             loadingText.classList.add('hidden');
-            updateSubmitButton();
+            updateSubmitButton(); // Ensure button state is updated even on error
         }
     });
 

@@ -1,18 +1,19 @@
 import { userService } from "../Services/UserServices.js";
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
-import { initializeSidebar } from "../components/sidebarHandler.js"; 
+import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
-import { QRCodeManager } from "../components/qrCodeHandler.js"; 
-import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
+import { QRCodeManager } from "../components/qrCodeHandler.js";
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; // Import getUserPhotoBlobUrl
 
-import Swal from 'sweetalert2'; 
+import Swal from 'sweetalert2';
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
 document.addEventListener("DOMContentLoaded", async () => {
-   
-    initializeSidebar(); 
+
+    feather.replace();
+    initializeSidebar();
     initializeLogout({
         preLogoutCallback: () => {
             if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {
@@ -31,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else {
                 backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
             }
-        
+
             Toastify({
                 text: message,
                 duration: 3000,
@@ -68,6 +69,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editAddress = document.getElementById("editAddress");
 
     const userAvatarNav = document.getElementById("userAvatar");
+    const userNameNav = document.getElementById("userNameNav"); // Make sure this element exists in your HTML
     const userDropdownContainer = document.getElementById("userDropdown");
     const dropdownMenu = document.getElementById("dropdownMenu");
 
@@ -94,19 +96,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
+    // --- Updated loadUserProfile to use getUserPhotoBlobUrl ---
     const loadUserProfile = async () => {
         try {
             const user = await authService.getCurrentUser();
-            if (user && user.photo_url && userAvatarNav) {
-                userAvatarNav.src = user.photo_url;
-            } else if (userAvatarNav) {
-                userAvatarNav.src = "/assets/default-avatar.png"; 
+            if (user && user.role === 'admin') { // Ensure it's an admin
+                // Use getUserPhotoBlobUrl for the admin's header avatar
+                const photoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); // 40x40 for header avatar
+                if (userAvatarNav) {
+                    userAvatarNav.src = photoUrl;
+                    userAvatarNav.alt = user.name || "Admin";
+                }
+                if (userNameNav) {
+                    userNameNav.textContent = user.name || "Admin";
+                }
+            } else {
+                // Fallback for non-admin or no user
+                if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png"; // Or a generic admin placeholder
+                if (userNameNav) userNameNav.textContent = "Guest";
             }
         } catch (error) {
-            console.error("Gagal memuat profil pengguna:", error);
+            console.error("Failed to load admin profile for header:", error);
             if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
+            if (userNameNav) userNameNav.textContent = "Error";
         }
     };
+    // --- End loadUserProfile update ---
+
 
     const loadDepartmentsToEditModal = async () => {
         try {
@@ -124,8 +140,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 });
             }
         } catch (error) {
-            console.error("Gagal memuat daftar departemen untuk modal edit:", error);
-            showSweetAlert('Error', 'Gagal memuat daftar departemen. Silakan coba lagi.', 'error', true);
+            console.error("Failed to load department list for edit modal:", error);
+            showSweetAlert('Error', 'Failed to load department list. Please try again.', 'error', true);
             if (error.status === 401 || error.status === 403) {
                 setTimeout(() => authService.logout(), 2000);
             }
@@ -147,25 +163,26 @@ document.addEventListener("DOMContentLoaded", async () => {
                 await renderEmployees(data.data);
                 updatePagination(data.total, data.page, data.limit);
             } else {
-                employeeTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-gray-500">Tidak ada data karyawan.</td></tr>';
-                paginationInfo.textContent = "Menampilkan 0 dari 0 karyawan";
+                employeeTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-gray-500">No employee data found.</td></tr>';
+                paginationInfo.textContent = "Displaying 0 of 0 employees";
                 prevPageBtn.disabled = true;
                 nextPageBtn.disabled = true;
             }
         } catch (error) {
-            console.error("Gagal memuat data karyawan:", error);
+            console.error("Failed to load employee data:", error);
             loadingMessage.classList.add("hidden");
-            let errorMessage = "Gagal memuat data karyawan. Silakan coba lagi.";
+            let errorMessage = "Failed to load employee data. Please try again.";
             if (error.status === 401 || error.status === 403) {
-                errorMessage = "Sesi Anda telah berakhir atau Anda tidak memiliki izin. Silakan login kembali.";
+                errorMessage = "Your session has expired or you do not have permission. Please log in again.";
                 setTimeout(() => authService.logout(), 2000);
             } else if (error.message) {
                 errorMessage = error.message;
             }
-            showSweetAlert('Error Data', errorMessage, 'error', true);
+            showSweetAlert('Data Error', errorMessage, 'error', true);
         }
     };
 
+    // --- Updated renderEmployees to use getUserPhotoBlobUrl for employee photos ---
     const renderEmployees = async (employees) => {
         employeeTableBody.innerHTML = "";
 
@@ -173,14 +190,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             const row = document.createElement("tr");
             row.className = "border-b border-gray-100 hover:bg-gray-50";
 
-            let photoUrl = "/assets/default-avatar.png";
-            try {
-                photoUrl = await getUserPhotoBlobUrl(employee.id, employee.name, 48);
-            } catch (error) {
-                console.warn(`Gagal memuat foto untuk user ${employee.name}:`, error);
-                const initial = employee.name ? employee.name.charAt(0).toUpperCase() : '?';
-                photoUrl = `https://placehold.co/48x48/E2E8F0/4A5568?text=${initial}`;
-            }
+            // Use getUserPhotoBlobUrl for each employee's photo
+            const photoUrl = await getUserPhotoBlobUrl(employee.id, employee.name, 48); // 48x48 for table
 
             row.innerHTML = `
                 <td class="px-4 py-3">
@@ -204,8 +215,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             employeeTableBody.appendChild(row);
         }
 
-        feather.replace();
+        feather.replace(); // Ensure new icons are rendered
 
+        // Attach event listeners after rendering
         document.querySelectorAll(".edit-btn").forEach((button) => {
             button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id));
         });
@@ -213,13 +225,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             button.addEventListener("click", (e) => handleDelete(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
         });
     };
+    // --- End renderEmployees update ---
 
     const updatePagination = (total, page, limit) => {
         const totalPages = Math.ceil(total / limit);
         const startIndex = (page - 1) * limit + 1;
         const endIndex = Math.min(page * limit, total);
-        
-        paginationInfo.textContent = `Menampilkan ${startIndex}-${endIndex} dari ${total} karyawan`;
+
+        paginationInfo.textContent = `Displaying ${startIndex}-${endIndex} of ${total} employees`;
 
         prevPageBtn.disabled = page === 1;
         nextPageBtn.disabled = page >= totalPages;
@@ -245,15 +258,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                 editDepartment.value = employee.department || "";
                 editBaseSalary.value = employee.base_salary || 0;
                 editAddress.value = employee.address || "";
-                
+
                 editEmployeeModal.classList.remove("hidden");
                 setTimeout(() => editEmployeeModal.classList.add("active"), 10);
             } else {
-                showSweetAlert("Data Tidak Ditemukan", "Data karyawan tidak ditemukan.", "error");
+                showSweetAlert("Data Not Found", "Employee data not found.", "error");
             }
         } catch (error) {
-            console.error("Gagal mengambil data karyawan untuk edit:", error);
-            showSweetAlert(`Gagal Memuat Data`, `Gagal memuat data edit: ${error.message || "Terjadi kesalahan"}`, "error", true);
+            console.error("Failed to fetch employee data for edit:", error);
+            showSweetAlert(`Failed to Load Data`, `Failed to load edit data: ${error.message || "An error occurred"}`, "error", true);
             if (error.status === 401 || error.status === 403) {
                 setTimeout(() => authService.logout(), 2000);
             }
@@ -296,10 +309,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             updatedData.base_salary = parseFloat(updatedData.base_salary);
             if (isNaN(updatedData.base_salary)) {
-                showModalMessage("Gaji pokok harus berupa angka yang valid.", "error", editErrorMessageDiv, editSuccessMessageDiv);
+                showSweetAlert("Invalid Input", "Base salary must be a valid number.", "error", true); // Use SweetAlert here
                 return;
             }
-            
+
             const dataToUpdate = {
                 name: updatedData.name,
                 email: updatedData.email,
@@ -311,17 +324,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             try {
                 const response = await userService.updateUser(employeeId, dataToUpdate);
-                console.log("Karyawan berhasil diupdate:", response);
+                console.log("Employee successfully updated:", response);
 
-                showSweetAlert("Berhasil!", "Karyawan berhasil diupdate!", "success", false, 1500);
+                showSweetAlert("Success!", "Employee successfully updated!", "success", false, 1500);
 
                 setTimeout(() => {
                     closeEditModal();
-                    fetchEmployees();
+                    fetchEmployees(); // Re-fetch data to reflect changes
                 }, 1500);
             } catch (error) {
-                console.error("Gagal mengupdate karyawan:", error);
-                let errorMessage = "Terjadi kesalahan saat mengupdate karyawan. Silakan coba lagi.";
+                console.error("Failed to update employee:", error);
+                let errorMessage = "An error occurred while updating the employee. Please try again.";
                 if (error.details) {
                     if (Array.isArray(error.details)) {
                         errorMessage = error.details.map((err) => `${err.Field || "Error"}: ${err.Msg}`).join("<br>");
@@ -331,7 +344,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 } else if (error.message) {
                     errorMessage = error.message;
                 }
-                showSweetAlert("Gagal Update", errorMessage, "error", true);
+                showSweetAlert("Update Failed", errorMessage, "error", true);
                 if (error.status === 401 || error.status === 403) {
                     setTimeout(() => authService.logout(), 2000);
                 }
@@ -341,41 +354,41 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const handleDelete = async (employeeId, employeeName) => {
         Swal.fire({
-            title: `Hapus ${employeeName}?`,
-            text: "Tindakan ini tidak dapat dibatalkan! Data karyawan akan dihapus secara permanen.",
+            title: `Delete ${employeeName}?`,
+            text: "This action cannot be undone! Employee data will be permanently deleted.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
             cancelButtonColor: "#3085d6",
-            confirmButtonText: "Ya, hapus!",
-            cancelButtonText: "Batal"
+            confirmButtonText: "Yes, delete!",
+            cancelButtonText: "Cancel"
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
                     const response = await userService.deleteUser(employeeId);
-                    console.log("Karyawan berhasil dihapus:", response);
+                    console.log("Employee successfully deleted:", response);
 
                     Swal.fire({
-                        title: "Terhapus!",
-                        text: `Karyawan "${employeeName}" berhasil dihapus.`,
+                        title: "Deleted!",
+                        text: `Employee "${employeeName}" successfully deleted.`,
                         icon: "success",
                         timer: 2000,
                         showConfirmButton: false
                     });
 
-                    fetchEmployees();
+                    fetchEmployees(); // Re-fetch data after deletion
                 } catch (error) {
-                    console.error("Gagal menghapus karyawan:", error);
-                    let errorMessage = "Terjadi kesalahan saat menghapus karyawan. Silakan coba lagi.";
+                    console.error("Failed to delete employee:", error);
+                    let errorMessage = "An error occurred while deleting the employee. Please try again.";
                     if (error.status === 401 || error.status === 403) {
-                        errorMessage = "Anda tidak memiliki izin untuk menghapus karyawan ini.";
+                        errorMessage = "You do not have permission to delete this employee.";
                         setTimeout(() => authService.logout(), 2000);
                     } else if (error.message) {
                         errorMessage = error.message;
                     }
 
                     Swal.fire({
-                        title: "Gagal",
+                        title: "Failed",
                         text: errorMessage,
                         icon: "error",
                         confirmButtonText: "OK"
@@ -413,6 +426,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    loadUserProfile();
-    fetchEmployees();
+    // Call functions on page load
+    loadUserProfile(); // Load admin's header profile
+    fetchEmployees();  // Load employee list
 });

@@ -1,16 +1,13 @@
-
-
 import { LeaveRequestService } from "../Services/LeaveRequestsServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
-import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
-
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; // Import fungsi photoUtils
 
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
-import Swal from 'sweetalert2'; 
+import Swal from 'sweetalert2';
 
 
 const BACKEND_URL = "https://sistem-manajemen-karyawanbackend-production.up.railway.app";
@@ -87,10 +84,9 @@ const showLogoutConfirmation = () => {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-    feather.replace(); 
-    initializeSidebar(); 
+    feather.replace();
+    initializeSidebar();
 
-    
     // Initialize QR Code Manager
     QRCodeManager.initialize({
         toastCallback: showToast,
@@ -103,13 +99,13 @@ document.addEventListener("DOMContentLoaded", async () => {
                 QRCodeManager.close();
             }
         }
-    }); 
+    });
 
     const leaveRequestsTableBody = document.getElementById("leaveRequestsTableBody");
     const leaveRequestsMessage = document.getElementById("leaveRequestsMessage");
     const userAvatarNav = document.getElementById("userAvatar");
     const userNameNav = document.getElementById("userNameNav");
-    const dropdownMenu = document.getElementById("dropdownMenu");
+    const dropdownMenu = document.getElementById("dropdownMenu"); // Pastikan ini ada di HTML Anda
     const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
     const paginationControls = document.getElementById("paginationControls");
     const prevPageBtn = document.getElementById("prevPageBtn");
@@ -132,13 +128,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const token = localStorage.getItem("token");
             if (!token) {
-                return null;
+                // Jangan langsung return null, biar loadLeaveRequests yang handle redirect
+                return;
             }
             let user = authService.getCurrentUser();
             if (!user || user.role !== "admin") {
-                return null;
+                // Jangan langsung return null, biar loadLeaveRequests yang handle redirect
+                return;
             }
-            const userPhotoUrl = createFullUrl(user.photo) || "https://placehold.co/40x40/E2E8F0/4A5568?text=AD";
+            
+            // Menggunakan getUserPhotoBlobUrl untuk avatar di header
+            const userPhotoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); // Ukuran 40x40
 
             if (userAvatarNav) {
                 userAvatarNav.src = userPhotoUrl;
@@ -149,6 +149,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         } catch (error) {
             console.error("Error fetching admin profile data for header:", error);
+            // Error di sini tidak fatal, jadi tidak perlu showToast atau logout
         }
     };
 
@@ -178,7 +179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const fetchedData = await LeaveRequestService.getAllLeaveRequests();
             allLeaveRequestsData = fetchedData || [];
-            
+
             allLeaveRequestsData.sort((a, b) => {
                 if (a.status === "pending" && b.status !== "pending") return -1;
                 if (a.status !== "pending" && b.status === "pending") return 1;
@@ -443,44 +444,43 @@ document.addEventListener("DOMContentLoaded", async () => {
                         </div>`
                 : "-";
 
-            const employeeName = request.user_name || request.user_email || request.user_id;
-            const initial = employeeName ? employeeName.charAt(0).toUpperCase() : "?";
-            const placeholderPhoto = `https://placehold.co/36x36/E2E8F0/4A5568?text=${initial}`;
-            const photoElementId = `photo-${request.id}`;
+            const employeeName = request.user_name || request.user_email || "Pengguna Tidak Dikenal"; // Pastikan ada nama default
+            const photoElementId = `photo-${request.id}`; // ID unik untuk setiap gambar
 
             row.innerHTML = `
                 <td>
-                    <div class="employee-info">
-                        <img id="${photoElementId}" class="profile-thumb" src="${placeholderPhoto}" alt="${employeeName}">
+                    <div class="employee-info flex items-center space-x-3 px-6 py-4 whitespace-nowrap">
+                        <img id="${photoElementId}" class="h-9 w-9 rounded-full object-cover" src="https://placehold.co/36x36/E2E8F0/4A5568?text=ME" alt="${employeeName}">
                         <div>
-                            <div class="name">${employeeName}</div>
-                            <div class="email">${request.user_email || "-"}</div>
+                            <div class="text-sm font-medium text-gray-900">${employeeName}</div>
+                            <div class="text-sm text-gray-500">${request.user_email || "-"}</div>
                         </div>
                     </div>
                 </td>
-                <td>${request.request_type || "-"}</td>
-                <td>${formattedStartDate}</td>
-                <td>${formattedEndDate}</td>
-                <td title="${request.reason || ""}">${request.reason || "-"}</td>
-                <td class="text-center">${attachmentLink}</td>
-                <td class="text-center">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${request.request_type || "-"}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formattedStartDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formattedEndDate}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs overflow-hidden text-ellipsis" title="${request.reason || ""}">${request.reason || "-"}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm">${attachmentLink}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
                     <span class="status-badge ${statusClass}">${statusText}</span>
                 </td>
-                <td title="${request.note || ""}">${request.note || "-"}</td>
-                <td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs overflow-hidden text-ellipsis" title="${request.note || ""}">${request.note || "-"}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     ${
                         request.status === "pending"
                             ? `
-                            <div class="action-buttons">
-                                <button data-id="${request.id}" data-action="approve" class="action-btn bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-md transition-colors duration-200">Setujui</button>
-                                <button data-id="${request.id}" data-action="reject" class="action-btn bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition-colors duration-200">Tolak</button>
+                            <div class="action-buttons flex space-x-2 justify-end">
+                                <button data-id="${request.id}" data-action="approve" class="action-btn px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-md transition-colors duration-200">Setujui</button>
+                                <button data-id="${request.id}" data-action="reject" class="action-btn px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition-colors duration-200">Tolak</button>
                             </div>
                             `
-                            : `<span class="text-gray-500 text-sm">Selesai</span>`
+                            : `<span class="text-gray-500 text-xs">Selesai</span>` // Teks lebih kecil untuk status selesai
                     }
                 </td>
             `;
 
+            // Muat foto profil karyawan secara asinkron
             getUserPhotoBlobUrl(request.user_id, employeeName, 36).then((photoUrl) => {
                 const photoEl = document.getElementById(photoElementId);
                 if (photoEl) {
@@ -489,8 +489,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
         });
 
+        // Event listener harus dipasang ulang setiap kali tabel dirender ulang
         leaveRequestsTableBody.querySelectorAll(".view-attachment-btn").forEach(button => {
-            button.removeEventListener("click", handleViewAttachment);
+            button.removeEventListener("click", handleViewAttachment); // Pastikan tidak ada duplikasi listener
             button.addEventListener("click", handleViewAttachment);
         });
         leaveRequestsTableBody.querySelectorAll(".download-btn").forEach(button => {
@@ -535,14 +536,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             confirmText = "Anda akan menyetujui pengajuan cuti/izin ini.";
             inputPlaceholder = "Catatan persetujuan (wajib)";
             inputLabel = "Catatan Persetujuan:";
-            iconType = "success"; 
+            iconType = "success";
         } else if (action === "reject") {
             statusToUpdate = "rejected";
             confirmTitle = "Tolak Pengajuan Ini?";
             confirmText = "Anda akan menolak pengajuan cuti/izin ini.";
             inputPlaceholder = "Catatan penolakan (wajib)";
             inputLabel = "Catatan Penolakan:";
-            iconType = "error"; 
+            iconType = "error";
         } else {
             return;
         }
@@ -551,7 +552,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             title: confirmTitle,
             text: confirmText,
             icon: iconType,
-            input: 'textarea', 
+            input: 'textarea',
             inputLabel: inputLabel,
             inputPlaceholder: inputPlaceholder,
             inputValidator: (value) => {
@@ -562,13 +563,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             showCancelButton: true,
             confirmButtonText: 'Ya, Proses',
             cancelButtonText: 'Batal',
-            confirmButtonColor: action === "approve" ? '#10b981' : '#dc2626', 
+            confirmButtonColor: action === "approve" ? '#10b981' : '#dc2626',
             cancelButtonColor: '#6b7280',
-            reverseButtons: true 
+            reverseButtons: true
         });
 
         if (note === undefined || note === null || note.trim() === "") {
-            showToast("Proses dibatalkan: Catatan tidak diisi.", "info"); 
+            showToast("Proses dibatalkan: Catatan tidak diisi.", "info");
             return;
         }
 
@@ -578,7 +579,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             button.textContent = "Memproses...";
             await LeaveRequestService.updateLeaveRequestStatus(requestId, statusToUpdate, note);
             showToast(`Pengajuan berhasil ${action === "approve" ? "disetujui" : "ditolak"}.`, "success"); // Pesan sukses yang dinamis
-            loadLeaveRequests();
+            loadLeaveRequests(); // Muat ulang daftar pengajuan setelah aksi
         } catch (error) {
             console.error("Error updating leave request status:", error);
             showToast(error.message || "Gagal memperbarui status pengajuan.", "error");
@@ -610,35 +611,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (leaveRequestsTableBody) {
+        // Event listener untuk tombol aksi (Setujui/Tolak) yang didelegasikan ke body tabel
+        // Ini memastikan tombol yang baru ditambahkan setelah render ulang tetap berfungsi
         leaveRequestsTableBody.addEventListener("click", (event) => {
             const target = event.target;
+            // Hanya tanggapi klik pada elemen dengan class 'action-btn', 'view-attachment-btn', 'download-btn'
             if (target.classList.contains("action-btn")) {
                 handleActionButtonClick(event);
+            } else if (target.classList.contains("view-attachment-btn")) {
+                handleViewAttachment(event);
+            } else if (target.classList.contains("download-btn")) {
+                handleDownloadAttachment(event);
             }
         });
     }
 
-    const userDropdownGroup = document.querySelector('.header .relative.group');
-    if (userDropdownGroup) {
+    // Dropdown user (pastikan ID dan kelas sesuai dengan HTML Anda)
+    // Jika Anda menggunakan sidebarHandler.js untuk ini, bagian ini bisa dihapus atau disesuaikan.
+    // Jika dropdown tidak berfungsi setelah perubahan, periksa apakah ada konflik atau duplikasi listener.
+    const userDropdownGroup = document.getElementById('userDropdown'); // Menggunakan ID langsung jika itu ID groupnya
+    if (userDropdownGroup && dropdownMenu) { // Pastikan dropdownMenu juga ditemukan
         userDropdownGroup.addEventListener("click", (event) => {
-            const dropdown = userDropdownGroup.querySelector('#dropdownMenu');
-            if (event.target.closest('#dropdownMenu a')) {
-                return;
-            }
-
-            if (dropdown) {
-                dropdown.classList.toggle("hidden");
-                dropdown.classList.toggle("active");
+            // Cek apakah klik berasal dari dalam dropdown itu sendiri atau tombolnya
+            if (!dropdownMenu.contains(event.target) && event.target.closest('#userAvatar')) {
+                dropdownMenu.classList.toggle("hidden");
+                dropdownMenu.classList.toggle("active");
             }
         });
-       
+
+        // Menutup dropdown saat klik di luar
         document.addEventListener("click", (event) => {
-            const dropdown = userDropdownGroup.querySelector('#dropdownMenu');
-            if (dropdown && !userDropdownGroup.contains(event.target) && !dropdown.contains(event.target)) {
-                dropdown.classList.remove("active");
+            if (dropdownMenu && !userDropdownGroup.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                dropdownMenu.classList.remove("active");
                 setTimeout(() => {
-                    dropdown.classList.add("hidden");
-                }, 200);
+                    dropdownMenu.classList.add("hidden");
+                }, 200); // Sesuaikan dengan durasi transisi CSS
             }
         }, true);
     }
@@ -673,6 +680,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    // Panggil fungsi untuk memuat data saat DOMContentLoaded
     fetchAdminProfileDataForHeader();
     loadLeaveRequests();
 });

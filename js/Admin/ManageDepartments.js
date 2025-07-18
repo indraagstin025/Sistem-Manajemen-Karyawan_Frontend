@@ -2,31 +2,28 @@
 
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
-import { initializeSidebar } from "../components/sidebarHandler.js"; // Import fungsi sidebar
-import { initializeLogout } from "../components/logoutHandler.js"; // Import fungsi logout
-import { QRCodeManager } from "../components/qrCodeHandler.js"; // Import QRCodeManager
-import Swal from 'sweetalert2'; // Import SweetAlert2
-import Toastify from 'toastify-js'; // Import Toastify jika masih digunakan oleh QRCodeManager
+import { initializeSidebar } from "../components/sidebarHandler.js";
+import { initializeLogout } from "../components/logoutHandler.js";
+import { QRCodeManager } from "../components/qrCodeHandler.js";
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; // Import getUserPhotoBlobUrl
+import Swal from 'sweetalert2';
+import Toastify from 'toastify-js';
 
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // Inisialisasi komponen global
-    feather.replace(); // Memastikan Feather Icons dirender di seluruh halaman
-    initializeSidebar(); // Menginisialisasi fungsionalitas sidebar mobile
-    initializeLogout({ // Menginisialisasi semua tombol logout
-    
+    // Initialize global components
+    feather.replace();
+    initializeSidebar();
+    initializeLogout({
         preLogoutCallback: () => {
-            // Callback opsional untuk menutup modal QR sebelum logout
             if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {
                 QRCodeManager.close();
             }
         }
     });
 
-    // Menginisialisasi QRCodeManager jika tombol generate QR ada di halaman ini
     QRCodeManager.initialize({
         toastCallback: (message, type) => {
-            // Fungsi callback untuk menampilkan notifikasi dari QRCodeManager menggunakan Toastify
             let backgroundColor;
             if (type === "success") {
                 backgroundColor = "linear-gradient(to right, #22c55e, #16a34a)";
@@ -35,19 +32,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             } else { // info
                 backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
             }
-        
+
             Toastify({
                 text: message,
                 duration: 3000,
                 close: true,
                 gravity: "top",
-                position: "right", // Posisi notifikasi Toastify
+                position: "right",
                 style: { background: backgroundColor, borderRadius: "8px" },
             }).showToast();
         },
     });
 
-    // --- Seleksi Elemen DOM ---
+    // --- DOM Element Selection ---
     const departmentTableBody = document.getElementById("departmentTableBody");
     const loadingMessage = document.getElementById("loadingMessage");
     const departmentListError = document.getElementById("departmentListError");
@@ -57,7 +54,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nextPageBtn = document.getElementById("nextPageBtn");
     const searchInput = document.getElementById("searchInput");
 
-    // Elemen modal edit
+    // Edit modal elements
     const editDepartmentModal = document.getElementById("editDepartmentModal");
     const closeEditDepartmentModalBtn = document.getElementById("closeEditDepartmentModalBtn");
     const cancelEditDepartmentBtn = document.getElementById("cancelEditDepartmentBtn");
@@ -65,27 +62,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     const editDepartmentErrorMessage = document.getElementById("editDepartmentErrorMessage");
     const editDepartmentSuccessMessage = document.getElementById("editDepartmentSuccessMessage");
 
-    // Input form edit
+    // Edit form inputs
     const editDepartmentId = document.getElementById("editDepartmentId");
     const editDepartmentName = document.getElementById("editDepartmentName");
 
-    // Dropdown pengguna di header (untuk menampilkan foto profil) - ID yang sama dengan admin_dashboard
+    // User dropdown in header (for displaying profile photo)
     const userAvatarNav = document.getElementById("userAvatar");
-    const userDropdownContainer = document.getElementById("userDropdown"); 
-    const dropdownMenu = document.getElementById("dropdownMenu"); 
+    const userNameNav = document.getElementById("userNameNav"); // Assuming this ID exists in your header
+    const userDropdownContainer = document.getElementById("userDropdown");
+    const dropdownMenu = document.getElementById("dropdownMenu");
 
     let currentPage = 1;
-    const itemsPerPage = 10; // Mendefinisikan item per halaman untuk paginasi sisi klien
-    let allDepartmentsData = []; // Untuk menyimpan semua data departemen yang diambil
-    let filteredDepartmentsData = []; // Untuk menyimpan data departemen yang sudah difilter/dicari
-    let currentSearchQuery = ""; // Menyimpan query pencarian saat ini
+    const itemsPerPage = 10;
+    let allDepartmentsData = [];
+    let filteredDepartmentsData = [];
+    let currentSearchQuery = "";
 
-
-    // --- Fungsi Notifikasi (SweetAlert2 untuk pesan penting) ---
+    // --- Notification Function (SweetAlert2 for important messages) ---
     const showSweetAlert = (title, message, icon = "success", showConfirmButton = false, timer = 2000) => {
         Swal.fire({
             title: title,
-            html: message, 
+            html: message,
             icon: icon,
             showConfirmButton: showConfirmButton,
             timer: timer,
@@ -99,19 +96,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     };
 
-    // Fungsi untuk memuat foto profil admin di header
-    const loadUserProfile = async () => {
+    // Function to load admin profile photo in the header
+    const loadAdminProfileForHeader = async () => {
         try {
             const user = await authService.getCurrentUser();
-            if (user && user.photo_url && userAvatarNav) {
-                userAvatarNav.src = user.photo_url;
-            } else if (userAvatarNav) {
-                // Menggunakan default avatar yang sudah ada di HTML
-                userAvatarNav.src = "/assets/default-avatar.png"; 
+            if (user && user.role === 'admin') {
+                const photoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); // 40x40 for header avatar
+                if (userAvatarNav) {
+                    userAvatarNav.src = photoUrl;
+                    userAvatarNav.alt = user.name || "Admin";
+                }
+                if (userNameNav) { // Update username in header as well
+                    userNameNav.textContent = user.name || "Admin";
+                }
+            } else {
+                // Fallback for non-admin or no user
+                if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
+                if (userNameNav) userNameNav.textContent = "Guest";
             }
         } catch (error) {
-            console.error("Gagal memuat profil pengguna:", error);
+            console.error("Failed to load admin profile for header:", error);
             if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
+            if (userNameNav) userNameNav.textContent = "Error";
+            // No toast here as it's not a critical error
         }
     };
 
@@ -119,46 +126,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     const fetchDepartments = async () => {
         departmentTableBody.innerHTML = "";
         loadingMessage.classList.remove("hidden");
-        departmentListError.classList.add("hidden"); 
-        departmentListSuccess.classList.add("hidden"); 
+        departmentListError.classList.add("hidden");
+        departmentListSuccess.classList.add("hidden");
 
         try {
-            // Memanggil getAllDepartments tanpa token, asumsikan authService/interceptor mengelola
-            const departments = await departmentService.getAllDepartments(); 
+            const departments = await departmentService.getAllDepartments();
             loadingMessage.classList.add("hidden");
 
             if (!Array.isArray(departments)) {
-                console.warn("Peringatan: API tidak mengembalikan array departemen. Menerima:", departments);
-                allDepartmentsData = []; // Pastikan ini adalah array
+                console.warn("Warning: API did not return an array of departments. Received:", departments);
+                allDepartmentsData = [];
             } else {
-                allDepartmentsData = departments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Urutkan
+                allDepartmentsData = departments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             }
-            
-            applyFilterAndRender(); // Terapkan filter dan render
+
+            applyFilterAndRender();
 
         } catch (error) {
             loadingMessage.classList.add("hidden");
-            let errorMessage = "Gagal memuat data departemen.";
+            let errorMessage = "Failed to load department data.";
             if (error.status === 401 || error.status === 403) {
-                errorMessage = "Sesi Anda berakhir atau Anda tidak memiliki izin. Silakan login kembali.";
+                errorMessage = "Your session has expired or you do not have permission. Please log in again.";
                 setTimeout(() => authService.logout(), 2000);
             } else if (error.message) {
                 errorMessage = error.message;
             }
-            showSweetAlert('Error Data', errorMessage, 'error', true);
+            showSweetAlert('Data Error', errorMessage, 'error', true);
         }
     };
 
     const applyFilterAndRender = () => {
-        // Filter berdasarkan pencarian
-        filteredDepartmentsData = allDepartmentsData.filter(dept => 
+        filteredDepartmentsData = allDepartmentsData.filter(dept =>
             dept.name.toLowerCase().includes(currentSearchQuery.toLowerCase())
         );
 
-        // Jika tidak ada hasil setelah filter
         if (filteredDepartmentsData.length === 0) {
-            departmentTableBody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">Tidak ada data departemen yang ditemukan.</td></tr>';
-            paginationInfo.textContent = "Menampilkan 0 dari 0 departemen";
+            departmentTableBody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">No department data found.</td></tr>';
+            paginationInfo.textContent = "Displaying 0 of 0 departments";
             prevPageBtn.disabled = true;
             nextPageBtn.disabled = true;
         } else {
@@ -183,7 +187,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         paginatedDepartments.forEach((dept) => {
             const row = document.createElement("tr");
-            row.className = "border-b border-gray-100 hover:bg-gray-50"; 
+            row.className = "border-b border-gray-100 hover:bg-gray-50";
             const createdAt = new Date(dept.created_at).toLocaleDateString("id-ID", {
                 year: "numeric", month: "long", day: "numeric",
             });
@@ -201,7 +205,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             `;
             departmentTableBody.appendChild(row);
         });
-        feather.replace(); 
+        feather.replace();
         document.querySelectorAll(".edit-btn").forEach((button) => {
             button.addEventListener("click", (e) => openEditModal(e.currentTarget.dataset.id, e.currentTarget.dataset.name));
         });
@@ -214,8 +218,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const totalPages = Math.ceil(totalFilteredItems / itemsPerPage);
         const startIndex = (currentPage - 1) * itemsPerPage + 1;
         const endIndex = Math.min(currentPage * itemsPerPage, totalFilteredItems);
-        
-        paginationInfo.textContent = `Menampilkan ${startIndex}-${endIndex} dari ${totalFilteredItems} departemen`;
+
+        paginationInfo.textContent = `Displaying ${startIndex}-${endIndex} of ${totalFilteredItems} departments`;
 
         prevPageBtn.disabled = currentPage === 1;
         nextPageBtn.disabled = currentPage >= totalPages;
@@ -228,7 +232,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         editDepartmentId.value = departmentId;
         editDepartmentName.value = departmentName;
         editDepartmentModal.classList.remove("hidden");
-        setTimeout(() => editDepartmentModal.classList.add("active"), 10); 
+        setTimeout(() => editDepartmentModal.classList.add("active"), 10);
     };
 
     const closeEditModal = () => {
@@ -236,14 +240,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         setTimeout(() => {
             editDepartmentModal.classList.add("hidden");
             editDepartmentForm.reset();
-        }, 300); 
+        }, 300);
     };
 
     if (closeEditDepartmentModalBtn) closeEditDepartmentModalBtn.addEventListener("click", closeEditModal);
     if (cancelEditDepartmentBtn) cancelEditDepartmentBtn.addEventListener("click", closeEditModal);
     if (editDepartmentModal) {
         editDepartmentModal.addEventListener("click", (event) => {
-            if (event.target === editDepartmentModal) { 
+            if (event.target === editDepartmentModal) {
                 closeEditModal();
             }
         });
@@ -251,40 +255,40 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const handleDelete = async (departmentId, departmentName) => {
         Swal.fire({
-            title: `Hapus ${departmentName}?`,
-            text: "Tindakan ini tidak dapat dibatalkan! Departemen ini akan dihapus secara permanen.",
+            title: `Delete ${departmentName}?`,
+            text: "This action cannot be undone! This department will be permanently deleted.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
             cancelButtonColor: "#3085d6",
-            confirmButtonText: "Ya, hapus!",
-            cancelButtonText: "Batal"
+            confirmButtonText: "Yes, delete!",
+            cancelButtonText: "Cancel"
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await departmentService.deleteDepartment(departmentId); 
-                    
+                    await departmentService.deleteDepartment(departmentId);
+
                     Swal.fire({
-                        title: "Terhapus!",
-                        text: `Departemen "${departmentName}" berhasil dihapus.`,
+                        title: "Deleted!",
+                        text: `Department "${departmentName}" successfully deleted.`,
                         icon: "success",
                         timer: 2000,
                         showConfirmButton: false
                     });
-                    
-                    fetchDepartments(); 
+
+                    fetchDepartments();
                 } catch (error) {
-                    console.error("Gagal menghapus departemen:", error);
-                    let errorMessage = "Terjadi kesalahan saat menghapus departemen. Silakan coba lagi.";
+                    console.error("Failed to delete department:", error);
+                    let errorMessage = "An error occurred while deleting the department. Please try again.";
                     if (error.status === 401 || error.status === 403) {
-                        errorMessage = "Anda tidak memiliki izin untuk menghapus departemen ini.";
+                        errorMessage = "You do not have permission to delete this department.";
                         setTimeout(() => authService.logout(), 2000);
                     } else if (error.message) {
                         errorMessage = error.message;
                     }
 
                     Swal.fire({
-                        title: "Gagal",
+                        title: "Failed",
                         text: errorMessage,
                         icon: "error",
                         confirmButtonText: "OK"
@@ -305,19 +309,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             const updatedName = editDepartmentName.value.trim();
 
             if (!updatedName) {
-                showSweetAlert("Validasi Gagal", "Nama departemen tidak boleh kosong.", "error");
+                showSweetAlert("Validation Failed", "Department name cannot be empty.", "error");
                 return;
             }
             try {
                 await departmentService.updateDepartment(departmentId, { name: updatedName });
-                showSweetAlert("Berhasil!", "Departemen berhasil diupdate!", "success", false, 1500);
+                showSweetAlert("Success!", "Department successfully updated!", "success", false, 1500);
                 setTimeout(() => {
                     closeEditModal();
-                    fetchDepartments(); 
+                    fetchDepartments();
                 }, 1500);
             } catch (error) {
-                console.error("Gagal mengupdate departemen:", error);
-                let errorMessage = "Terjadi kesalahan saat mengupdate departemen. Silakan coba lagi.";
+                console.error("Failed to update department:", error);
+                let errorMessage = "An error occurred while updating the department. Please try again.";
                 if (error.details) {
                     if (Array.isArray(error.details)) {
                         errorMessage = error.details.map((err) => `${err.Field || "Error"}: ${err.Msg}`).join("<br>");
@@ -327,7 +331,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 } else if (error.message) {
                     errorMessage = error.message;
                 }
-                showSweetAlert("Gagal Update", errorMessage, "error", true);
+                showSweetAlert("Update Failed", errorMessage, "error", true);
                 if (error.status === 401 || error.status === 403) {
                     setTimeout(() => authService.logout(), 2000);
                 }
@@ -339,7 +343,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         prevPageBtn.addEventListener("click", () => {
             if (currentPage > 1) {
                 currentPage--;
-                applyFilterAndRender(); 
+                applyFilterAndRender();
             }
         });
     }
@@ -349,7 +353,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const totalPages = Math.ceil(filteredDepartmentsData.length / itemsPerPage);
             if (currentPage < totalPages) {
                 currentPage++;
-                applyFilterAndRender(); 
+                applyFilterAndRender();
             }
         });
     }
@@ -360,12 +364,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 currentSearchQuery = searchInput.value;
-                currentPage = 1; 
-                applyFilterAndRender(); 
-            }, 500); 
+                currentPage = 1;
+                applyFilterAndRender();
+            }, 500);
         });
     }
 
-    loadUserProfile();
+    // Call the function to load admin profile photo in the header
+    await loadAdminProfileForHeader(); // Changed to async await
     fetchDepartments();
 });
