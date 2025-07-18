@@ -20,11 +20,18 @@ export const authService = {
     }
   },
 
-  logout: () => {
+logout: async () => {
+  try {
+    await apiClient.post('/auth/logout'); 
+  } catch (error) {
+    console.warn('Logout di server gagal (tidak masalah jika token sudah kadaluarsa)', error);
+  } finally {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/src/pages/login.html'; 
-  },
+    window.location.href = '/src/pages/login.html';
+  }
+},
+
 
   /**
    * Mengambil data user yang sedang login dari localStorage.

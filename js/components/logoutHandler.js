@@ -5,8 +5,8 @@ import Swal from 'sweetalert2';
  * Menampilkan dialog konfirmasi logout menggunakan SweetAlert2.
  * @param {function} preLogoutCallback - Fungsi opsional yang akan dipanggil sebelum logout.
  */
-const showLogoutConfirmation = (preLogoutCallback) => {
-    Swal.fire({
+const showLogoutConfirmation = async (preLogoutCallback) => {
+    const result = await Swal.fire({
         title: 'Anda yakin ingin keluar?',
         text: "Sesi Anda saat ini akan diakhiri.",
         icon: 'warning',
@@ -15,14 +15,23 @@ const showLogoutConfirmation = (preLogoutCallback) => {
         cancelButtonColor: '#3085d6',
         confirmButtonText: 'Ya, Keluar!',
         cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            if (preLogoutCallback && typeof preLogoutCallback === 'function') {
-                preLogoutCallback();
-            }
-            authService.logout();
-        }
     });
+
+    if (result.isConfirmed) {
+        if (typeof preLogoutCallback === 'function') {
+            preLogoutCallback();
+        }
+
+        try {
+            await authService.logout(); // Tunggu logout selesai
+        } catch (error) {
+            console.error("Gagal logout dari server:", error);
+            // Tetap hapus token agar user benar-benar keluar meskipun server error
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/src/pages/login.html';
+        }
+    }
 };
 
 /**
@@ -38,9 +47,9 @@ export function initializeLogout(options = {}) {
     );
 
     allLogoutButtons.forEach((button) => {
-        button.addEventListener("click", (event) => {
+        button.addEventListener("click", async (event) => {
             event.preventDefault();
-            showLogoutConfirmation(preLogoutCallback);
+            await showLogoutConfirmation(preLogoutCallback);
         });
     });
 }
