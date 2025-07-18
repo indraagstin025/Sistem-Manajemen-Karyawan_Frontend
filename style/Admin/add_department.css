@@ -1,0 +1,51 @@
+      body {
+            font-family: "Inter", sans-serif;
+        }
+        /* Custom styles for dropdown animation */
+        .group:hover .group-hover\:block {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+        }
+        .group-hover\:block {
+            transition: all 0.2s ease-out;
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        /* Gaya untuk QR Modal */
+        .qr-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
+        }
+        .qr-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease-out, visibility 0s linear 0s;
+        }
+        .qr-modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+            max-width: 400px;
+            width: 90%;
+        }
+        .qr-modal-overlay.active .qr-modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }

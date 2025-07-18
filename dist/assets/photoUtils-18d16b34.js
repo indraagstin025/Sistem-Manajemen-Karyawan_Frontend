@@ -1,0 +1,1 @@
+import{u as l}from"./UserServices-7521de91.js";async function i(r,o,a=48){const c=o?o.charAt(0).toUpperCase():"?";let e=`https://placehold.co/${a}x${a}/E2E8F0/4A5568?text=${c}`;if(!r)return e;try{const t=await l.getProfilePhoto(r);t&&t.size>0&&(e=URL.createObjectURL(t))}catch(t){console.warn(`Gagal memuat foto untuk user ${o}: ${t.message}`)}return e}export{i as g};

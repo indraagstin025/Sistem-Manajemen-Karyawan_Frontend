@@ -10,159 +10,20 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode.js/qrcode.min.js"></script> 
      
-    <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-        }
-        /* Gaya untuk dropdown */
-        .dropdown-menu {
-            transition: all 0.2s ease-out;
-            opacity: 0;
-            transform: scale(0.95);
-            display: none; /* Sembunyikan secara default */
-        }
-        .dropdown-menu.active {
-            display: block;
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* Gaya untuk Sidebar Mobile */
-        #mobileSidebar {
-            transition: opacity 0.3s ease-out;
-        }
-        #mobileSidebarPanel {
-            transition: transform 0.3s ease-out;
-        }
-
-        /* Gaya untuk Modal (menggunakan active class untuk transisi) */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6); /* Overlay */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
-        }
-        .modal.active {
-            opacity: 1;
-            visibility: visible;
-            transition: opacity 0.3s ease-out, visibility 0s linear 0s;
-        }
-        .modal-content {
-            background-color: white;
-            padding: 2.5rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            transform: translateY(-20px);
-            opacity: 0;
-            transition: all 0.3s ease-out;
-            max-width: 600px; /* Batasi lebar modal */
-            width: 90%;
-        }
-        .modal.active .modal-content {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        /* Gaya untuk Modal QR Code (diperlukan jika ManageDepartments.js mengimpor QRCodeManager) */
-        .qr-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6); /* Overlay gelap */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000; /* Pastikan di atas elemen lain */
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease-out, visibility 0s linear 0.3s; /* Transisi opacity, dan visibility setelah transisi selesai */
-        }
-        .qr-modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-            transition: opacity 0.3s ease-out, visibility 0s linear 0s; /* Tampilkan segera */
-        }
-        .qr-modal-content {
-            background-color: white;
-            padding: 2.5rem; /* p-10 */
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-2xl */
-            transform: translateY(-20px);
-            opacity: 0;
-            transition: all 0.3s ease-out;
-            max-width: 400px; /* Batasi lebar modal */
-            width: 90%;
-            text-align: center; /* Tengah konten modal */
-        }
-        .qr-modal-overlay.active .qr-modal-content {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        /* Style tabel dan responsive */
-        .table-auto {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .table-auto th, .table-auto td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0; /* gray-200 */
-        }
-        .table-auto th {
-            background-color: #f8fafc; /* gray-50 */
-            font-weight: 600;
-            color: #4a5568; /* gray-700 */
-            text-transform: uppercase;
-            font-size: 0.875rem; /* text-sm */
-        }
-        .table-auto tbody tr:hover {
-            background-color: #f0f4f8; /* blue-50, a light hover */
-        }
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        /* Custom scrollbar untuk main content */
-        .custom-scroll::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        .custom-scroll::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background: #cbd5e0;
-            border-radius: 10px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb:hover {
-            background: #a0aec0;
-        }
-    </style>
-  <script type="module" crossorigin src="/assets/manage_departments-85f447e2.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/input-87732271.js">
-  <link rel="modulepreload" crossorigin href="/assets/AuthServices-0f733033.js">
-  <link rel="modulepreload" crossorigin href="/assets/DepartemenServices-5d2df75f.js">
+    
+  <script type="module" crossorigin src="/assets/manage_departments-d19b05cd.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/input-41369e4a.js">
+  <link rel="modulepreload" crossorigin href="/assets/AuthServices-f47c4eb9.js">
+  <link rel="modulepreload" crossorigin href="/assets/DepartemenServices-1b462c09.js">
   <link rel="modulepreload" crossorigin href="/assets/sidebarHandler-d6522c99.js">
-  <link rel="modulepreload" crossorigin href="/assets/logoutHandler-a2e70173.js">
-  <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-9bf2f837.js">
-  <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-3c60f548.js">
-  <link rel="modulepreload" crossorigin href="/assets/UserServices-9109671c.js">
-  <link rel="modulepreload" crossorigin href="/assets/photoUtils-c92e179b.js">
+  <link rel="modulepreload" crossorigin href="/assets/logoutHandler-87b1a96c.js">
+  <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-f61bdc29.js">
+  <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-01879f51.js">
+  <link rel="modulepreload" crossorigin href="/assets/UserServices-7521de91.js">
+  <link rel="modulepreload" crossorigin href="/assets/photoUtils-18d16b34.js">
   <link rel="modulepreload" crossorigin href="/assets/toastify-3acd0462.js">
-  <link rel="stylesheet" href="/assets/input-6912e659.css">
+  <link rel="stylesheet" href="/assets/input-1742bbbe.css">
+  <link rel="stylesheet" href="/assets/manage_departments-629f20f8.css">
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
 

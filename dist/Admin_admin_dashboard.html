@@ -11,102 +11,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode.js/qrcode.min.js"></script> 
     
-
+    
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
-    <style>
-      body {
-        font-family: "Inter", sans-serif;
-      }
-      /* Gaya untuk dropdown */
-      .dropdown-menu {
-        transition: all 0.2s ease-out;
-        opacity: 0;
-        transform: scale(0.95);
-        display: none; /* Sembunyikan secara default */
-      }
-      .dropdown-menu.active {
-        display: block;
-        opacity: 1;
-        transform: scale(1);
-      }
-
-      /* Gaya untuk Sidebar Mobile */
-      #mobileSidebar {
-        transition: opacity 0.3s ease-out;
-      }
-      #mobileSidebarPanel {
-        transition: transform 0.3s ease-out;
-      }
-
-      /* Gaya untuk Modal QR Code */
-      .qr-modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.6); /* Overlay gelap */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000; /* Pastikan di atas elemen lain */
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease-out, visibility 0s linear 0.3s; /* Transisi opacity, dan visibility setelah transisi selesai */
-      }
-      .qr-modal-overlay.active {
-        opacity: 1;
-        visibility: visible;
-        transition: opacity 0.3s ease-out, visibility 0s linear 0s; /* Tampilkan segera */
-      }
-      .qr-modal-content {
-        background-color: white;
-        padding: 2.5rem; /* p-10 */
-        border-radius: 0.75rem; /* rounded-xl */
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-2xl */
-        transform: translateY(-20px);
-        opacity: 0;
-        transition: all 0.3s ease-out;
-        max-width: 400px; /* Batasi lebar modal */
-        width: 90%;
-        text-align: center; /* Tambahkan ini agar konten di tengah seperti gambar Anda */
-      }
-      .qr-modal-overlay.active .qr-modal-content {
-        transform: translateY(0);
-        opacity: 1;
-      }
-
-      /* Custom scrollbar untuk main content */
-      .custom-scroll::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-      }
-
-      .custom-scroll::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 10px;
-      }
-
-      .custom-scroll::-webkit-scrollbar-thumb {
-          background: #cbd5e0;
-          border-radius: 10px;
-      }
-
-      .custom-scroll::-webkit-scrollbar-thumb:hover {
-          background: #a0aec0;
-      }
-    </style>
-    <script type="module" crossorigin src="/assets/admin_dashboard-9529cf9b.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/input-87732271.js">
-    <link rel="modulepreload" crossorigin href="/assets/AuthServices-0f733033.js">
-    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-9bf2f837.js">
-    <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-3c60f548.js">
-    <link rel="modulepreload" crossorigin href="/assets/logoutHandler-a2e70173.js">
-    <link rel="modulepreload" crossorigin href="/assets/UserServices-9109671c.js">
-    <link rel="modulepreload" crossorigin href="/assets/photoUtils-c92e179b.js">
+    <script type="module" crossorigin src="/assets/admin_dashboard-23939fb0.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/input-41369e4a.js">
+    <link rel="modulepreload" crossorigin href="/assets/AuthServices-f47c4eb9.js">
+    <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-f61bdc29.js">
+    <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-01879f51.js">
+    <link rel="modulepreload" crossorigin href="/assets/logoutHandler-87b1a96c.js">
+    <link rel="modulepreload" crossorigin href="/assets/UserServices-7521de91.js">
+    <link rel="modulepreload" crossorigin href="/assets/photoUtils-18d16b34.js">
     <link rel="modulepreload" crossorigin href="/assets/toastify-3acd0462.js">
-    <link rel="stylesheet" href="/assets/input-6912e659.css">
+    <link rel="stylesheet" href="/assets/input-1742bbbe.css">
+    <link rel="stylesheet" href="/assets/admin_dashboard-27630df4.css">
     <link rel="stylesheet" href="/assets/toastify-a461d729.css">
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
