@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Inisialisasi komponen global
     feather.replace(); // Memastikan Feather Icons dirender di seluruh halaman
     initializeSidebar(); // Menginisialisasi fungsionalitas sidebar mobile
-    initTheme();
     initializeLogout({ // Menginisialisasi semua tombol logout
     
         preLogoutCallback: () => {
