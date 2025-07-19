@@ -1,36 +1,35 @@
+// utils/photoUtils.js
 import { userService } from "../Services/UserServices.js";
 
 /**
- * Mendapatkan URL foto profil user (GridFS atau placeholder)
- * 
+ * Mengambil URL foto profil pengguna (dari backend atau fallback avatar lokal)
  * @param {string} userId - ID pengguna
- * @param {string} userName - Nama pengguna untuk inisial
- * @param {number} size - Ukuran foto dalam px (default 48)
- * @returns {Promise<string>} - URL foto profil (ObjectURL atau placeholder)
+ * @param {string} userName - Nama pengguna, digunakan untuk inisial jika perlu
+ * @param {number} size - Ukuran avatar dalam piksel (default: 48)
+ * @returns {Promise<string>} - URL ke foto profil (Blob URL atau default avatar)
  */
-// Dalam photoUtils.js
-// ...
 export async function getUserPhotoBlobUrl(userId, userName, size = 48) {
-    const initial = userName ? userName.charAt(0).toUpperCase() : '?';
-    // Ganti ini dengan path ke default avatar lokal Anda di frontend
-    // Pastikan ini adalah PATH yang benar ke file JPG/PNG default di folder assets frontend Anda
-    let photoUrl = `/assets/default-avatar.png`; // <--- UBAH DI SINI
+    const defaultAvatarPath = "/assets/default-avatar.png"; // Pastikan ini path yang benar di folder frontend public
 
-    if (!userId) return photoUrl; 
+    // Jika tidak ada userId, langsung kembalikan avatar default
+    if (!userId) return defaultAvatarPath;
 
     try {
         const blob = await userService.getProfilePhoto(userId);
-        if (blob && blob.size > 0) {
-            photoUrl = URL.createObjectURL(blob);
+
+        // Jika blob valid dan memiliki isi
+        if (blob instanceof Blob && blob.size > 0) {
+            return URL.createObjectURL(blob);
         } else {
-            // Opsional: Jika backend mengembalikan respons kosong atau tidak valid (tapi 200 OK),
-            // kita tetap bisa fallback ke avatar lokal
-            console.warn(`Backend mengembalikan respons kosong atau tidak valid untuk user ${userName}. Menggunakan default avatar lokal.`);
+            console.warn(
+                `[PhotoUtils] Foto untuk user "${userName}" kosong atau tidak valid. Menggunakan default avatar.`
+            );
         }
     } catch (error) {
-        console.warn(`Gagal memuat foto untuk user ${userName}: ${error.message}. Menggunakan default avatar lokal.`);
-        // `photoUrl` sudah diset ke default avatar lokal di awal fungsi
+        console.warn(
+            `[PhotoUtils] Gagal mengambil foto profil untuk "${userName}" (${userId}): ${error.message}. Gunakan default avatar.`
+        );
     }
 
-    return photoUrl;
+    return defaultAvatarPath;
 }
