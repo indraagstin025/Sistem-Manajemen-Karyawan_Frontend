@@ -91,34 +91,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Fungsi untuk memuat data profil admin untuk header
-    const fetchAdminProfileDataForHeader = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                // Jangan langsung redirect di sini, biar loadDepartments atau AddEmployeeForm yang handle
-                return;
-            }
-            let user = authService.getCurrentUser();
-            if (!user || user.role !== "admin") {
-                // Jangan langsung redirect di sini
-                return;
-            }
+addEmployeeForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-            // Menggunakan getUserPhotoBlobUrl untuk avatar di header
-            const userPhotoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); // Ukuran 40x40
+    if (!isFormValid()) {
+        showAlert("Harap perbaiki semua kesalahan pada form.", "error");
+        return;
+    }
 
-            if (userAvatarNav) {
-                userAvatarNav.src = userPhotoUrl;
-                userAvatarNav.alt = user.name || "Admin"; // Fallback text
-            }
-            if (userNameNav) {
-                userNameNav.textContent = user.name || "Admin"; // Fallback text
-            }
-        } catch (error) {
-            console.error("Error fetching admin profile data for header:", error);
-            // Error di sini tidak fatal untuk fungsi utama halaman, jadi tidak perlu showToast atau logout
-        }
-    };
+    const formData = new FormData(addEmployeeForm);
+    const userData = Object.fromEntries(formData.entries());
+    userData.role = "karyawan";
+    userData.base_salary = parseFloat(userData.base_salary);
+
+    // 💥 Tambahkan validasi password di sini
+    if (!isValidPassword(userData.password)) {
+        showAlert("Password harus minimal 8 karakter dan mengandung huruf kapital.", "error");
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+        authService.logout();
+        return;
+    }
+
+    try {
+        await userService.registerUser(userData, token);
+        showAlert("Karyawan baru berhasil didaftarkan!", "success");
+
+        addEmployeeForm.reset();
+        initializeFormValidation();
+
+        setTimeout(() => {
+            window.location.href = "/src/pages/Admin/manage_employees.html";
+        }, 2000);
+    } catch (error) {
+        console.error("Gagal mendaftarkan karyawan:", error);
+        const errorMessage = error.details?.error || error.message || "Terjadi kesalahan server.";
+        showAlert(errorMessage, "error");
+    }
+});
+
 
 
     const loadDepartments = async () => {
