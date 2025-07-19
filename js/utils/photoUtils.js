@@ -14,7 +14,7 @@ export async function getUserPhotoBlobUrl(userId, userName, size = 48) {
     const initial = userName ? userName.charAt(0).toUpperCase() : '?';
     // Ganti ini dengan path ke default avatar lokal Anda di frontend
     // Pastikan ini adalah PATH yang benar ke file JPG/PNG default di folder assets frontend Anda
-    let photoUrl = `/assets/default-avatar.jpg`; // <--- UBAH DI SINI
+    let photoUrl = `/assets/default-avatar.png`; // <--- UBAH DI SINI
 
     if (!userId) return photoUrl; 
 
