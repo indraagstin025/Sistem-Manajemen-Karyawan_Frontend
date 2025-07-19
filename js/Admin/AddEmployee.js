@@ -1,11 +1,11 @@
 import { userService } from "../Services/UserServices.js";
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
-import { initializeFormValidation, isFormValid } from "../Validations/addEmployeeValidation.js";
+import { initializeFormValidation, isFormValid } from "../Validations/addEmployeeValidation.js"; // Pastikan ini menangani validasi password
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
-import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; // Import fungsi photoUtils
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
@@ -13,19 +13,16 @@ import "toastify-js/src/toastify.css";
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-    feather.replace(); // Memuat ikon Feather di awal
+    feather.replace();
     initializeSidebar();
-    initializeFormValidation();
+    initializeFormValidation(); // Ini akan menginisialisasi validasi form, termasuk password
 
-
-    // Initialize QR Code Manager
     QRCodeManager.initialize({
         toastCallback: (message, type) => {
             showAlert(message, type);
         },
     });
 
-    // Initialize logout functionality
     initializeLogout({
         preLogoutCallback: () => {
             if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {
@@ -41,14 +38,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const passwordInput = document.getElementById("password");
     const togglePasswordButton = document.getElementById("togglePassword");
 
-    // Elemen untuk foto profil admin di header
-    const userAvatarNav = document.getElementById("userAvatar"); // ID elemen img di header
-    const userNameNav = document.getElementById("userNameNav");   // ID elemen span/div untuk nama user di header
+    const userAvatarNav = document.getElementById("userAvatar");
+    const userNameNav = document.getElementById("userNameNav");
 
 
     if (togglePasswordButton && passwordInput) {
         togglePasswordButton.addEventListener("click", () => {
-
             const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
             passwordInput.setAttribute("type", type);
 
@@ -95,28 +90,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const token = localStorage.getItem("token");
             if (!token) {
-                // Jangan langsung redirect di sini, biar loadDepartments atau AddEmployeeForm yang handle
                 return;
             }
             let user = authService.getCurrentUser();
             if (!user || user.role !== "admin") {
-                // Jangan langsung redirect di sini
                 return;
             }
-
-            // Menggunakan getUserPhotoBlobUrl untuk avatar di header
-            const userPhotoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); // Ukuran 40x40
+            const userPhotoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40);
 
             if (userAvatarNav) {
                 userAvatarNav.src = userPhotoUrl;
-                userAvatarNav.alt = user.name || "Admin"; // Fallback text
+                userAvatarNav.alt = user.name || "Admin";
             }
             if (userNameNav) {
-                userNameNav.textContent = user.name || "Admin"; // Fallback text
+                userNameNav.textContent = user.name || "Admin";
             }
         } catch (error) {
             console.error("Error fetching admin profile data for header:", error);
-            // Error di sini tidak fatal untuk fungsi utama halaman, jadi tidak perlu showToast atau logout
         }
     };
 
@@ -140,11 +130,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Panggil fungsi-fungsi inisialisasi
     await loadDepartments();
-    await fetchAdminProfileDataForHeader(); // Panggil fungsi ini saat DOM siap
+    await fetchAdminProfileDataForHeader();
 
+    // HANYA ADA SATU event listener untuk submit form
     addEmployeeForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
+        // Mengandalkan isFormValid() yang seharusnya sudah memvalidasi password
         if (!isFormValid()) {
             showAlert("Harap perbaiki semua kesalahan pada form.", "error");
             return;
@@ -154,6 +146,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const userData = Object.fromEntries(formData.entries());
         userData.role = "karyawan";
         userData.base_salary = parseFloat(userData.base_salary);
+        
         const token = localStorage.getItem("token");
 
         if (!token) {
@@ -173,7 +166,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             }, 2000);
         } catch (error) {
             console.error("Gagal mendaftarkan karyawan:", error);
-            const errorMessage = error.details?.error || error.message || "Terjadi kesalahan server.";
+            // Respons error dari backend Anda kemungkinan adalah models.ValidationErrorResponse
+            // Jika ada array errors, tampilkan pesan pertama atau semua pesan
+            let errorMessage = "Terjadi kesalahan server.";
+            if (error.details && Array.isArray(error.details.errors) && error.details.errors.length > 0) {
+                errorMessage = error.details.errors[0].message; // Ambil pesan dari error validasi pertama
+            } else if (error.details && typeof error.details.error === 'string') {
+                errorMessage = error.details.error; // Jika backend mengembalikan "error": "some message"
+            } else if (error.message) {
+                errorMessage = error.message; // Fallback ke error.message
+            }
             showAlert(errorMessage, "error");
         }
     });
