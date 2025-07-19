@@ -140,6 +140,6 @@ getProfilePhoto: async (userId) => {
   }
 }
 
-  };
+};
 
 
