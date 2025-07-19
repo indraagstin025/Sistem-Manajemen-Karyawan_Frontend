@@ -115,15 +115,15 @@ export const userService = {
 
 
 
-        /**
-     * Mengambil foto profil user (dari GridFS).
-     * @param {string} id - ID user.
-     * @returns {Promise<Blob>} Blob gambar (bisa digunakan untuk URL.createObjectURL).
-     */
 getProfilePhoto: async (userId) => {
   try {
+    const token = localStorage.getItem("token"); // Ambil token secara langsung
+
     const response = await apiClient.get(`/users/${userId}/photo`, {
       responseType: "blob",
+      headers: {
+        Authorization: `Bearer ${token}`, // Set manual di sini
+      },
       validateStatus: (status) => {
         return (status >= 200 && status < 300) || status === 404;
       },
@@ -136,10 +136,10 @@ getProfilePhoto: async (userId) => {
     return response.data;
   } catch (error) {
     console.error(`Gagal memuat foto user ${userId}:`, error);
-    return null; 
+    return null;
   }
 }
-
 };
+
 
 
