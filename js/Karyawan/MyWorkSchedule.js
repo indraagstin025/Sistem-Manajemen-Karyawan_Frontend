@@ -2,123 +2,152 @@ import { Calendar } from "fullcalendar";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import idLocale from "@fullcalendar/core/locales/id";
-
-import WorkScheduleServices from "../Services/WorkScheduleServices.js";
 import Swal from "sweetalert2";
 
+// Import semua service dan komponen yang dibutuhkan
+import WorkScheduleServices from "../Services/WorkScheduleServices.js";
+import { authService } from "../Services/AuthServices.js";
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
+import { initializeLogout } from "../components/logoutHandler.js";
+import { initializeSidebar } from "../components/sidebarHandler.js";
+
 document.addEventListener("DOMContentLoaded", () => {
-  let calendar;
+    const calendarEl = document.getElementById("my-calendar");
+    const userAvatarNav = document.getElementById("userAvatar");
+    let calendar;
 
-  const fetchMySchedules = async () => {
-    try {
-      const response = await WorkScheduleServices.getMyWorkSchedules();
-      const schedules = response.data;
+    // Fungsi untuk memuat foto header sekali di awal
+    const loadHeaderData = async () => {
+        try {
+            const user = authService.getCurrentUser();
+            if (!user) return;
+            const photoUrl = await getUserPhotoBlobUrl(user.id, user.name);
+            if (userAvatarNav) {
+                userAvatarNav.src = photoUrl;
+                userAvatarNav.alt = user.name;
+            }
+        } catch (e) {
+            console.error("Gagal memuat foto header", e);
+        }
+    };
 
-      if (calendar) {
-        calendar.removeAllEvents();
-      }
-
-      const grouped = {};
-      schedules.forEach((s) => {
-        if (!grouped[s.date]) grouped[s.date] = [];
-        grouped[s.date].push(s);
-      });
-
-      const events = Object.entries(grouped).map(([date, items]) => ({
-        id: date,
-        title: "",
-        start: `${date}T${items[0].start_time}`,
-        end: `${date}T${items[0].end_time}`,
-        extendedProps: {
-          items,
+    calendar = new Calendar(calendarEl, {
+        plugins: [dayGridPlugin, timeGridPlugin],
+        initialView: "dayGridMonth",
+        locale: idLocale,
+        headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek",
         },
-        backgroundColor: "#e53e3e",
-        borderColor: "#e53e3e",
-        allDay: false,
-      }));
+        editable: false,
+        selectable: false,
 
-      calendar.addEventSource(events);
-    } catch (error) {
-      console.error("Error fetching my work schedules:", error);
-      Swal.fire("Gagal memuat jadwal kerja", error.response?.data?.error || error.message, "error");
+        // Menggunakan eventSources untuk mengambil jadwal kerja DAN hari libur
+        eventSources: [
+            // Sumber 1: Jadwal Kerja dari endpoint getMyWorkSchedules
+            {
+                events: async (fetchInfo) => {
+                    try {
+                        const response = await WorkScheduleServices.getMyWorkSchedules();
+                        const schedules = response.data || [];
+                        const grouped = {};
+                        schedules.forEach((s) => {
+                            if (!grouped[s.date]) grouped[s.date] = [];
+                            grouped[s.date].push(s);
+                        });
+                        return Object.entries(grouped).map(([date, items]) => ({
+                            id: `schedule-${date}`,
+                            title: `Jadwal Kerja: ${items[0].start_time} - ${items[0].end_time}`, // Title untuk tooltip
+                            start: `${date}T${items[0].start_time}`,
+                            end: `${date}T${items[0].end_time}`,
+                            extendedProps: { items, type: 'schedule' },
+                            display: 'block',
+                            className: 'fc-event-work-schedule' // Class untuk styling titik merah
+                        }));
+                    } catch (error) {
+                        console.error("Error fetching work schedules:", error);
+                        Swal.fire("Gagal memuat jadwal kerja", error.message, "error");
+                        return [];
+                    }
+                }
+            },
+            // Sumber 2: Hari Libur dari endpoint getHolidays (seperti di halaman admin)
+            {
+                events: async (fetchInfo) => {
+                    try {
+                        const year = fetchInfo.start.getFullYear();
+                        const holidays = await WorkScheduleServices.getHolidays(year);
+                        return (holidays || []).map(holiday => ({
+                            id: `holiday-${holiday.Date}`,
+                            title: holiday.Name,
+                            start: holiday.Date,
+                            allDay: true,
+                            display: 'block', // Tampilkan sebagai event biasa
+                            className: 'fc-event-holiday', // Class untuk styling teks merah
+                            extendedProps: { type: 'holiday' }
+                        }));
+                    } catch (error) {
+                        console.error("Error fetching holidays:", error);
+                        return [];
+                    }
+                }
+            }
+        ],
+
+        eventContent: (arg) => {
+            if (arg.event.extendedProps.type === 'schedule') {
+                return { html: `<div class="fc-event-dot"></div>` };
+            }
+            if (arg.event.extendedProps.type === 'holiday') {
+                return { html: `<div class="fc-event-title-holiday">${arg.event.title}</div>` };
+            }
+        },
+
+eventClick: (info) => {
+    const eventType = info.event.extendedProps.type;
+
+    // Jika yang diklik adalah HARI LIBUR
+    if (eventType === 'holiday') {
+        Swal.fire({
+            title: "Informasi Hari Libur",
+            html: `<p style="font-size: 1.1rem;">${info.event.title}</p>`, // Tampilkan nama lengkap hari libur
+            icon: "info",
+            confirmButtonText: "Tutup",
+        });
+        return; // Hentikan eksekusi
     }
-  };
 
-  const calendarEl = document.getElementById("my-calendar");
-  calendar = new Calendar(calendarEl, {
-    plugins: [dayGridPlugin, timeGridPlugin],
-    initialView: "dayGridMonth",
-    locale: idLocale,
-    headerToolbar: {
-      left: "prev,next today",
-      center: "title",
-      right: "dayGridMonth,timeGridWeek,timeGridDay",
-    },
-    editable: false,
-    selectable: false,
+    // Jika yang diklik adalah JADWAL KERJA (logika lama Anda)
+    if (eventType === 'schedule') {
+        const { start, extendedProps } = info.event;
+        const dateStr = start.toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
-    eventContent: () => {
-      return {
-        html: `<div style="width: 10px; height: 10px; border-radius: 50%; background-color: red; margin: auto;"></div>`,
-      };
-    },
-
-    datesSet: () => {
-      fetchMySchedules();
-    },
-
-    // 🟢 Klik titik = tampilkan semua jadwal hari itu
-    eventClick: (info) => {
-      const { start, extendedProps } = info.event;
-      const dateStr = start.toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-
-      // === Bagian ini yang diubah ===
-      let scheduleListHtml = '';
-      if (extendedProps.items && extendedProps.items.length > 0) {
-        scheduleListHtml = extendedProps.items
-          .map(
-            (item, i) => `
+        const scheduleListHtml = extendedProps.items.map((item, i) => `
             <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
                 <p style="margin: 0; font-weight: bold;">Jadwal ${i + 1}:</p>
                 <p style="margin: 5px 0;"><strong>Jam:</strong> ${item.start_time} - ${item.end_time}</p>
                 <p style="margin: 5px 0;"><strong>Catatan:</strong> ${item.note || "Tanpa catatan"}</p>
             </div>
-            `
-          )
-          .join("");
-      } else {
-          scheduleListHtml = "<p>Tidak ada jadwal untuk hari ini.</p>";
-      }
-      // ===========================
+        `).join("");
 
-      Swal.fire({
-        title: "Detail Jadwal Kerja",
-        html: `
-          <div style="text-align: left; max-height: 300px; overflow-y: auto; padding-right: 10px;">
-            <p style="margin-bottom: 15px;"><b>Tanggal:</b> ${dateStr}</p>
-            ${scheduleListHtml}
-          </div>
-        `,
-        icon: "info",
-        confirmButtonText: "Tutup",
-        customClass: {
-          popup: "rounded-lg",
-          confirmButton: "bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded", // Tailwind classes for button
-        },
-        buttonsStyling: false, // Penting agar customClass untuk button berfungsi
-      });
-    },
+        Swal.fire({
+            title: "Detail Jadwal Kerja",
+            html: `<div style="text-align: left; max-height: 300px; overflow-y: auto; padding-right: 10px;"><p style="margin-bottom: 15px;"><b>Tanggal:</b> ${dateStr}</p>${scheduleListHtml}</div>`,
+            icon: "info",
+            confirmButtonText: "Tutup",
+        });
+    }
+},
+        
+        eventMouseEnter: (info) => {
+            info.el.title = info.event.title; // Tooltip akan menampilkan nama libur atau info jadwal
+        }
+    });
 
-    eventDidMount: function (info) {
-      const count = info.event.extendedProps.items?.length || 1;
-      info.el.title = `${count} jadwal pada hari ini`;
-    },
-  });
-
-  calendar.render();
+    // Inisialisasi komponen UI dan render kalender
+    initializeSidebar();
+    initializeLogout();
+    loadHeaderData();
+    calendar.render();
 });

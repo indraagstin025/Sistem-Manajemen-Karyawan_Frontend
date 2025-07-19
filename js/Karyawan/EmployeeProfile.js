@@ -3,11 +3,13 @@ import { authService } from "../Services/AuthServices.js";
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 import { validateChangePasswordForm } from '../Validations/changePasswordValidation.js';
-
+// --- [PERUBAHAN 1] --- Impor fungsi utilitas foto
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     feather.replace(); // Memuat ikon Feather di awal
 
+    // --- Deklarasi Variabel DOM (Tidak ada perubahan) ---
     const profilePhotoPreview = document.getElementById("profilePhotoPreview");
     const photoUploadInput = document.getElementById("photoUpload");
     const nameInput = document.getElementById("name");
@@ -20,15 +22,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const showPasswordCheckbox = document.getElementById("showPasswordCheckbox");
     const logoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
     const cancelProfileEditBtn = document.getElementById("cancelProfileEditBtn");
-
-    // === Variabel baru untuk fitur gaji yang dapat di-toggle ===
     const baseSalaryInput = document.getElementById("base_salary");
     const toggleSalaryVisibilityBtn = document.getElementById("toggleSalaryVisibility");
     const salaryEyeIcon = document.getElementById("salaryEyeIcon");
-    let currentSalaryValue = ""; // Untuk menyimpan nilai gaji sebenarnya
-    // ==========================================================
+    let currentSalaryValue = "";
+    // --- Akhir Deklarasi Variabel DOM ---
 
-    let initialProfileData = {}; // Untuk menyimpan data profil awal yang dimuat
+    let initialProfileData = {};
 
     const showToast = (message, type = "success") => {
         let backgroundColor;
@@ -39,7 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             backgroundColor = "linear-gradient(to right, #3b82f6, #2563eb)";
         }
-
         Toastify({
             text: message,
             duration: 3000,
@@ -69,39 +68,35 @@ document.addEventListener("DOMContentLoaded", () => {
                 emailInput.value = employee.email || "";
                 positionInput.value = employee.position || "";
                 departmentInput.value = employee.department || "";
-
-                // === Penyesuaian untuk Gaji: Simpan nilai asli & tampilkan masked secara default ===
-                currentSalaryValue = employee.base_salary;
-                if (baseSalaryInput) { // Pastikan elemen ada
-                    baseSalaryInput.value = "••••••••••"; // Tampilkan masked secara default
-                    baseSalaryInput.dataset.masked = "true"; // Tandai bahwa sedang masked
-                    salaryEyeIcon.setAttribute("data-feather", "eye"); // Pastikan ikon awal adalah 'eye'
-                    feather.replace(); // Muat ulang ikon untuk memastikan 'eye' terlihat
-                }
-                // =================================================================================
-
                 addressTextarea.value = employee.address || "";
+                currentSalaryValue = employee.base_salary;
 
-                // Simpan data profil awal yang dimuat
+                if (baseSalaryInput) {
+                    baseSalaryInput.value = "••••••••••";
+                    baseSalaryInput.dataset.masked = "true";
+                    salaryEyeIcon.setAttribute("data-feather", "eye");
+                    feather.replace();
+                }
+
                 initialProfileData = {
                     email: employee.email || "",
                     address: employee.address || ""
                 };
 
-                // Perbarui avatar di header jika ada
+                // --- [PERUBAHAN 2] --- Menggunakan photoUtils untuk memuat semua foto secara konsisten
+                const photoUrl = await getUserPhotoBlobUrl(user.id, employee.name);
+                
+                // Terapkan ke foto profil utama
+                if (profilePhotoPreview) {
+                    profilePhotoPreview.src = photoUrl;
+                }
+                
+                // Terapkan juga ke avatar di header
                 const userAvatarHeader = document.getElementById("userAvatar");
                 if (userAvatarHeader) {
-                    userAvatarHeader.src = employee.photo_url || "https://placehold.co/40x40/E2E8F0/4A5568?text=ME";
+                    userAvatarHeader.src = photoUrl;
                 }
-
-                // Muat foto profil utama
-                try {
-                    const blob = await userService.getProfilePhoto(user.id);
-                    const photoUrl = URL.createObjectURL(blob);
-                    profilePhotoPreview.src = photoUrl;
-                } catch {
-                    profilePhotoPreview.src = "https://placehold.co/128x128/E2E8F0/4A5568?text=ME";
-                }
+                // --- Akhir Perubahan 2 ---
             }
         } catch (error) {
             console.error("Error loading profile data:", error);
@@ -112,7 +107,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Fungsi helper untuk format mata uang
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -122,26 +116,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }).format(amount);
     };
 
-    // Event listener untuk form profil
     if (profileForm) {
         profileForm.addEventListener("submit", async (event) => {
             event.preventDefault();
             const userString = localStorage.getItem("user");
-
             try {
                 if (!userString) throw new Error("Sesi tidak valid. Harap login kembali.");
-
                 const user = JSON.parse(userString);
                 const photoFile = photoUploadInput.files[0];
-
                 const updatedData = {};
 
-                // Cek perubahan email
                 if (emailInput.value.trim() !== initialProfileData.email) {
                     updatedData.email = emailInput.value.trim();
                 }
 
-                // Cek perubahan address
                 if (addressTextarea.value.trim() !== initialProfileData.address) {
                     updatedData.address = addressTextarea.value.trim();
                 }
@@ -150,7 +138,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     return showToast("Tidak ada perubahan untuk disimpan.", "info");
                 }
 
-                // Panggil updateUser hanya jika ada data yang diupdate (selain foto)
                 if (Object.keys(updatedData).length > 0) {
                     await userService.updateUser(user.id, updatedData);
                     const currentUserData = authService.getCurrentUser();
@@ -166,20 +153,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         showToast(`Ukuran file maksimal adalah ${MAX_FILE_SIZE_MB}MB.`, "error");
                         return;
                     }
-
-                    const uploadResponse = await userService.uploadProfilePhoto(user.id, photoFile);
-                    const blob = await userService.getProfilePhoto(user.id);
-                    profilePhotoPreview.src = URL.createObjectURL(blob);
-
-                    const currentUserData = authService.getCurrentUser();
-                    if (currentUserData) {
-                        currentUserData.photo_url = uploadResponse.photo_url;
-                        localStorage.setItem('user', JSON.stringify(currentUserData));
-                    }
+                    await userService.uploadProfilePhoto(user.id, photoFile);
+                    // --- [PERUBAHAN 3] --- Logika setelah upload disederhanakan.
+                    // Tidak perlu lagi mengambil ulang blob atau mengupdate localStorage dengan photo_url.
+                    // Fungsi `loadProfileData()` di akhir akan menangani pembaruan UI secara otomatis.
                 }
 
                 showToast("Profil berhasil diupdate!", "success");
-                loadProfileData();
+                await loadProfileData(); // Memuat ulang semua data, termasuk foto yang baru, untuk memastikan konsistensi
             } catch (error) {
                 console.error("Error updating profile:", error);
                 showToast(error.message || "Gagal mengupdate profil.", "error");
@@ -190,34 +171,30 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Event listener untuk tombol batal
     if (cancelProfileEditBtn) {
         cancelProfileEditBtn.addEventListener("click", (event) => {
             event.preventDefault();
             profileForm.reset();
-            loadProfileData();
+            loadProfileData(); // Muat ulang data asli
             showToast("Perubahan dibatalkan.", "info");
         });
     }
 
-    // === Event listener untuk toggle visibilitas gaji ===
     if (toggleSalaryVisibilityBtn) {
         toggleSalaryVisibilityBtn.addEventListener("click", () => {
             if (baseSalaryInput.dataset.masked === "true") {
-                baseSalaryInput.value = formatCurrency(currentSalaryValue); // Tampilkan nilai asli
+                baseSalaryInput.value = formatCurrency(currentSalaryValue);
                 baseSalaryInput.dataset.masked = "false";
-                salaryEyeIcon.setAttribute("data-feather", "eye-off"); // Ganti ikon menjadi eye-off
+                salaryEyeIcon.setAttribute("data-feather", "eye-off");
             } else {
-                baseSalaryInput.value = "••••••••••"; // Sembunyikan nilai
+                baseSalaryInput.value = "••••••••••";
                 baseSalaryInput.dataset.masked = "true";
-                salaryEyeIcon.setAttribute("data-feather", "eye"); // Ganti ikon menjadi eye
+                salaryEyeIcon.setAttribute("data-feather", "eye");
             }
-            feather.replace(); // Memuat ulang ikon Feather untuk memastikan ikon baru muncul
+            feather.replace();
         });
     }
-    // ==================================================
 
-    // Event listener untuk form ganti password
     if (changePasswordForm) {
         changePasswordForm.addEventListener("submit", async (event) => {
             event.preventDefault();
@@ -241,7 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Event listener untuk checkbox tampilkan/sembunyikan password
     if (showPasswordCheckbox) {
         showPasswordCheckbox.addEventListener("change", () => {
             const isChecked = showPasswordCheckbox.checked;
@@ -256,9 +232,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Event listener untuk input foto profil (ketika file dipilih)
     if (photoUploadInput) {
-        photoUploadInput.addEventListener("change", function () {
+        photoUploadInput.addEventListener("change", function() {
             if (this.files && this.files[0]) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -269,7 +244,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Event listeners untuk tombol logout
     logoutButtons.forEach(button => {
         button.addEventListener("click", (event) => {
             event.preventDefault();
@@ -277,6 +251,5 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Panggil saat halaman dimuat
     loadProfileData();
 });
