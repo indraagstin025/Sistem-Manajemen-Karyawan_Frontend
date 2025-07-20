@@ -178,6 +178,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             const fetchedData = await LeaveRequestService.getAllLeaveRequests();
+            console.log("Data mentah dari API:", fetchedData); 
             allLeaveRequestsData = fetchedData || [];
 
             allLeaveRequestsData.sort((a, b) => {
@@ -213,9 +214,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     const handleViewAttachment = async (event) => {
+        console.log("Tombol 'Lihat' diklik!");
         const button = event.currentTarget;
         const fullUrl = button.dataset.url;
         let displayFilename = button.dataset.filename;
+        console.log("URL yang didapat dari data-url:", fullUrl);
 
         attachmentViewerModal.classList.remove("active");
         attachmentViewerModal.classList.add("hidden");
@@ -415,6 +418,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         paginatedItems.forEach((request) => {
+            console.log("Merender request:", request.id, "dengan attachment_url:", request.attachment_url);
             const row = leaveRequestsTableBody.insertRow();
 
             const formattedStartDate = new Date(request.start_date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
