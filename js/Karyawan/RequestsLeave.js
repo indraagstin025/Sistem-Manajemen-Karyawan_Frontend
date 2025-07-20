@@ -82,7 +82,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 case 'rejected': statusClass = 'text-red-600'; statusText = 'Ditolak'; break;
                 default: statusClass = 'text-gray-600'; break;
             }
-            row.innerHTML = `<td class="px-6 py-4 text-sm text-gray-900">${dateDisplay}</td><td class="px-6 py-4 text-sm text-gray-700">${request.request_type || '-'}</td><td class="px-6 py-4 text-sm text-gray-700 max-w-xs overflow-hidden text-ellipsis">${request.reason || '-'}</td><td class="px-6 py-4 text-sm ${statusClass} font-semibold">${statusText}</td><td class="px-6 py-4 text-sm text-gray-700">${request.attachment_url ? `<a href="${request.attachment_url}" target="_blank" class="text-teal-600 hover:underline">Lihat Lampiran</a>` : '-'}</td>`;
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${dateDisplay}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${request.request_type || '-'}</td>
+                <td class="px-6 py-4 text-sm text-gray-700 max-w-xs overflow-hidden text-ellipsis">${request.reason || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass} font-semibold">${statusText}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    ${request.attachment_url ? `<a href="${request.attachment_url}" target="_blank" class="text-teal-600 hover:underline">Lihat Lampiran</a>` : '-'}
+                </td>
+            `;
         });
     };
 
