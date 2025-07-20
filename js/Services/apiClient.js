@@ -31,11 +31,19 @@ apiClient.interceptors.response.use(
       customError.status = error.response.status;
       customError.details = error.response.data.details || error.response.data.errors;
 
-      if (error.response.status === 401 || error.response.status === 403) {
-        console.warn("Unauthorized or Forbidden access, attempting logout.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
+// SESUDAH (REKOMENDASI)
+if (error.response.status === 401) {
+  // Hanya jalankan untuk 401, karena 403 (Forbidden) artinya pengguna dikenali tapi tidak punya hak akses.
+  console.error("Sesi tidak valid atau telah berakhir. Mengarahkan ke halaman login.");
+  
+  // Hapus data sesi
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+
+  // Arahkan ke halaman login secara paksa
+  // Tambahkan parameter query agar bisa menampilkan pesan di halaman login jika perlu
+  window.location.href = '/login?session_expired=true'; 
+}
 
       return Promise.reject(customError);
     } else if (error.request) {
