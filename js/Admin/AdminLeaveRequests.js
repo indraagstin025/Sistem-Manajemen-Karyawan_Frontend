@@ -213,124 +213,137 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     };
 
-    const handleViewAttachment = async (event) => {
-    const button = event.target.closest(".view-attachment-btn"); 
-    
-    // Tambahkan pengaman jika klik tidak mengenai tombol
+const handleViewAttachment = async (event) => {
+    // 1. Menemukan tombol yang diklik dengan .closest()
+    const button = event.target.closest(".view-attachment-btn");
     if (!button) {
-        return; 
+        return;
     }
 
     const fullUrl = button.dataset.url;
-        let displayFilename = button.dataset.filename;
+
+    // 2. Bersihkan dan siapkan modal dengan status "Memuat..."
+    attachmentContent.innerHTML = "";
+    attachmentErrorMessage.classList.add("hidden");
+    attachmentModalTitle.textContent = "Lihat Lampiran: Memuat..."; // Judul awal
+
+    // Tampilkan modal
+    attachmentViewerModal.classList.remove("hidden");
+    setTimeout(() => attachmentViewerModal.classList.add("active"), 10);
+
+    // 3. Validasi awal (URL & Token)
+    if (!fullUrl) {
+        attachmentModalTitle.textContent = "Lihat Lampiran: Gagal";
+        attachmentErrorMessage.textContent = "URL lampiran tidak ditemukan.";
+        attachmentErrorMessage.classList.remove("hidden");
+        showToast("URL lampiran tidak ditemukan.", "error");
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+        attachmentModalTitle.textContent = "Lihat Lampiran: Gagal";
+        attachmentErrorMessage.textContent = "Sesi tidak valid. Harap login ulang.";
+        attachmentErrorMessage.classList.remove("hidden");
+        showToast("Sesi tidak valid. Harap login ulang.", "error");
+        return;
+    }
+
+    try {
+        // 4. Lakukan fetch untuk mengambil file
+        const response = await fetch(fullUrl, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = `Gagal memuat lampiran: ${response.status}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMessage = errorJson.message || errorMessage;
+            } catch (e) {
+                errorMessage = `${errorMessage} - ${errorText.substring(0, 100)}...`;
+            }
+            throw new Error(errorMessage);
+        }
+
+        // --- INILAH BAGIAN UTAMA PENYESUAIAN ---
         
-
-        attachmentViewerModal.classList.remove("active");
-        attachmentViewerModal.classList.add("hidden");
-        attachmentContent.innerHTML = "";
-        attachmentErrorMessage.classList.add("hidden");
-        attachmentModalTitle.textContent = `Lihat Lampiran: ${displayFilename || "Memuat..."}`;
-
-
-        if (!fullUrl) {
-            attachmentErrorMessage.textContent = "URL lampiran tidak ditemukan.";
-            attachmentErrorMessage.classList.remove("hidden");
-            showToast("URL lampiran tidak ditemukan.", "error");
-            return;
+        // 5. Ambil nama file asli dari header
+        let finalFilename = "File Lampiran"; // Nama default
+        const contentDisposition = response.headers.get("Content-Disposition");
+        if (contentDisposition && contentDisposition.includes("filename=")) {
+            const match = contentDisposition.match(/filename="?(.+)"?/);
+            if (match && match[1]) {
+                finalFilename = match[1].replace(/['"]/g, "");
+            }
         }
 
-        const token = localStorage.getItem("token");
-        if (!token) {
-            attachmentErrorMessage.textContent = "Sesi tidak valid. Harap login ulang.";
+        // 6. Update judul modal dengan nama file asli
+        attachmentModalTitle.textContent = `Lihat Lampiran: ${finalFilename}`;
+
+        // --- AKHIR DARI PENYESUAIAN ---
+
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const contentType = response.headers.get("Content-Type") || blob.type;
+
+        // Logika untuk menampilkan gambar/pdf/tombol unduh sudah benar
+        if (contentType.startsWith("image/")) {
+            const img = document.createElement("img");
+            img.src = blobUrl;
+            img.alt = finalFilename; // Gunakan nama file yang sudah benar
+            img.className = "max-w-full max-h-full object-contain";
+            attachmentContent.appendChild(img);
+        } else if (contentType === "application/pdf") {
+            const iframe = document.createElement("iframe");
+            iframe.src = blobUrl;
+            iframe.style.width = "100%";
+            iframe.style.height = "100%";
+            iframe.style.border = "none";
+            iframe.setAttribute("allowfullscreen", "");
+            attachmentContent.appendChild(iframe);
+        } else {
+            attachmentErrorMessage.textContent = `Tipe file '${contentType || "tidak diketahui"}' tidak didukung untuk tampilan langsung. Silakan unduh.`;
             attachmentErrorMessage.classList.remove("hidden");
-            showToast("Sesi tidak valid. Harap login ulang.", "error");
-            return;
-        }
-
-        attachmentViewerModal.classList.remove("hidden");
-        setTimeout(() => attachmentViewerModal.classList.add("active"), 10);
-
-        try {
-            const response = await fetch(fullUrl, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                let errorMessage = `Gagal memuat lampiran: ${response.status}`;
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    errorMessage = errorJson.message || errorMessage;
-                } catch (e) {
-                    errorMessage = `${errorMessage} - ${errorText.substring(0, 100)}...`;
-                }
-                throw new Error(errorMessage);
-            }
-
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-
-            const contentDisposition = response.headers.get("Content-Disposition");
-            if (contentDisposition && contentDisposition.includes("filename=")) {
-                const match = contentDisposition.match(/filename="?(.+)"?/);
-                if (match && match[1]) {
-                    displayFilename = match[1].replace(/['"]/g, "");
-                }
-            }
-            attachmentModalTitle.textContent = `Lihat Lampiran: ${displayFilename || "Tidak Diketahui"}`;
-
-            const contentType = response.headers.get("Content-Type") || blob.type;
-
-            if (contentType.startsWith("image/")) {
-                const img = document.createElement("img");
-                img.src = blobUrl;
-                img.alt = displayFilename;
-                img.className = "max-w-full max-h-full object-contain";
-                attachmentContent.appendChild(img);
-            } else if (contentType === "application/pdf") {
-                const iframe = document.createElement("iframe");
-                iframe.src = blobUrl;
-                iframe.style.width = "100%";
-                iframe.style.height = "100%";
-                iframe.style.border = "none";
-                iframe.setAttribute("allowfullscreen", "");
-                iframe.setAttribute("webkitallowfullscreen", "");
-                iframe.setAttribute("mozallowfullscreen", "");
-                attachmentContent.appendChild(iframe);
-            } else {
-                attachmentErrorMessage.textContent = `Tipe file '${contentType || "tidak diketahui"}' tidak didukung untuk tampilan langsung. Silakan unduh.`;
-                attachmentErrorMessage.classList.remove("hidden");
-
-                const downloadBtn = document.createElement("button");
-                downloadBtn.textContent = "Unduh File";
-                downloadBtn.className = "mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600";
-                downloadBtn.addEventListener("click", () => handleDownloadAttachment({ target: { dataset: { url: fullUrl, filename: displayFilename } } }));
-                attachmentContent.appendChild(downloadBtn);
-            }
-
-            attachmentViewerModal.addEventListener(
-                "transitionend",
-                function handler() {
-                    if (attachmentViewerModal.classList.contains("hidden")) {
-                        URL.revokeObjectURL(blobUrl);
-                        attachmentViewerModal.removeEventListener("transitionend", handler);
+            const downloadBtn = document.createElement("button");
+            downloadBtn.textContent = "Unduh File";
+            downloadBtn.className = "mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600";
+            downloadBtn.addEventListener("click", () => handleDownloadAttachment({
+                target: {
+                    dataset: {
+                        url: fullUrl,
+                        filename: finalFilename // Kirim nama file yang benar
                     }
-                },
-                { once: true }
-            );
-        } catch (error) {
-            console.error("Gagal memuat lampiran untuk tampilan:", error);
-            attachmentErrorMessage.textContent = error.message || "Terjadi kesalahan saat memuat lampiran.";
-            attachmentErrorMessage.classList.remove("hidden");
-            showToast(error.message || "Gagal memuat lampiran.", "error");
-
-            attachmentViewerModal.classList.remove("active");
-            setTimeout(() => attachmentViewerModal.classList.add("hidden"), 300);
+                }
+            }));
+            attachmentContent.appendChild(downloadBtn);
         }
-    };
+
+        // Listener untuk membersihkan blob URL setelah modal ditutup
+        attachmentViewerModal.addEventListener("transitionend", function handler() {
+            if (attachmentViewerModal.classList.contains("hidden")) {
+                URL.revokeObjectURL(blobUrl);
+                attachmentViewerModal.removeEventListener("transitionend", handler);
+            }
+        }, { once: true });
+
+    } catch (error) {
+        attachmentModalTitle.textContent = "Lihat Lampiran: Gagal"; // Update judul jika gagal
+        console.error("Gagal memuat lampiran untuk tampilan:", error);
+        attachmentErrorMessage.textContent = error.message || "Terjadi kesalahan saat memuat lampiran.";
+        attachmentErrorMessage.classList.remove("hidden");
+        showToast(error.message || "Gagal memuat lampiran.", "error");
+
+        // Tutup modal secara otomatis jika fetch gagal
+        attachmentViewerModal.classList.remove("active");
+        setTimeout(() => attachmentViewerModal.classList.add("hidden"), 300);
+    }
+};
 
     const handleDownloadAttachment = async (event) => {
         const button = event.target;
