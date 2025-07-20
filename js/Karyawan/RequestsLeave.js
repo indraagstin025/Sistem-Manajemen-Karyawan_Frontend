@@ -53,46 +53,64 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     
     // --- FUNGSI RENDER UI ---
-    const renderLeaveHistoryTable = (data, page, limit) => {
-        leaveHistoryTableBody.innerHTML = '';
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + limit;
-        const paginatedItems = data.slice(startIndex, endIndex);
+// --- Fungsi untuk merender tabel riwayat pengajuan per halaman ---
+const renderLeaveHistoryTable = (data, page, limit) => {
+    leaveHistoryTableBody.innerHTML = '';
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedItems = data.slice(startIndex, endIndex);
 
-        if (paginatedItems.length === 0 && page === 1) {
-            leaveHistoryTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Tidak ada riwayat pengajuan.</td></tr>`;
-            leaveHistoryMessage.textContent = 'Anda belum memiliki riwayat pengajuan cuti atau sakit.';
-            leaveHistoryMessage.classList.remove('hidden', 'info');
-            paginationControls.classList.add('hidden');
-            return;
+    paginatedItems.forEach(request => {
+        const row = leaveHistoryTableBody.insertRow();
+
+        // --- PERBAIKAN DIMULAI DI SINI ---
+        
+        // 1. Format tanggal mulai
+        const formattedStartDate = new Date(request.start_date + 'T00:00:00').toLocaleDateString('id-ID', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        // 2. Format tanggal selesai. Tampilkan strip '-' jika sama dengan tanggal mulai.
+        const formattedEndDate = request.start_date !== request.end_date
+            ? new Date(request.end_date + 'T00:00:00').toLocaleDateString('id-ID', {
+                year: 'numeric', month: 'long', day: 'numeric'
+            })
+            : '-';
+        
+        // --- Logika status tetap sama ---
+        let statusClass = '';
+        let statusText = request.status;
+        switch (request.status) {
+            case 'pending':
+                statusClass = 'text-yellow-600';
+                statusText = 'Menunggu';
+                break;
+            case 'approved':
+                statusClass = 'text-green-600';
+                statusText = 'Disetujui';
+                break;
+            case 'rejected':
+                statusClass = 'text-red-600';
+                statusText = 'Ditolak';
+                break;
+            default:
+                statusClass = 'text-gray-600';
+                break;
         }
 
-        paginatedItems.forEach(request => {
-            const row = leaveHistoryTableBody.insertRow();
-            let dateDisplay = new Date(request.start_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-            if (request.start_date !== request.end_date) {
-                const endDate = new Date(request.end_date + 'T00:00:00').toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-                dateDisplay = `${dateDisplay} - ${endDate}`;
-            }
-
-            let statusClass = '', statusText = request.status;
-            switch (request.status) {
-                case 'pending': statusClass = 'text-yellow-600'; statusText = 'Menunggu'; break;
-                case 'approved': statusClass = 'text-green-600'; statusText = 'Disetujui'; break;
-                case 'rejected': statusClass = 'text-red-600'; statusText = 'Ditolak'; break;
-                default: statusClass = 'text-gray-600'; break;
-            }
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${dateDisplay}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${request.request_type || '-'}</td>
-                <td class="px-6 py-4 text-sm text-gray-700 max-w-xs overflow-hidden text-ellipsis">${request.reason || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass} font-semibold">${statusText}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    ${request.attachment_url ? `<a href="${request.attachment_url}" target="_blank" class="text-teal-600 hover:underline">Lihat Lampiran</a>` : '-'}
-                </td>
-            `;
-        });
-    };
+        // 3. Render 6 kolom <td> yang sesuai dengan header
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedStartDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${formattedEndDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${request.request_type || '-'}</td>
+            <td class="px-6 py-4 text-sm text-gray-700 max-w-xs overflow-hidden text-ellipsis">${request.reason || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass} font-semibold">${statusText}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                ${request.attachment_url ? `<a href="${request.attachment_url}" target="_blank" class="text-teal-600 hover:underline">Lihat</a>` : '-'}
+            </td>
+        `;
+    });
+};
 
     const updatePaginationControls = (totalItems, page, limit) => {
         const totalPages = Math.ceil(totalItems / limit);
@@ -142,13 +160,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Form Logic
         requestTypeInput?.addEventListener('change', () => {
-            if (requestTypeInput.value === 'Sakit') {
+            const requestType = requestTypeInput.value;
+            
+            if (requestType === 'Sakit') {
                 attachmentSection.classList.remove('hidden');
                 attachmentInput.setAttribute('required', 'required');
-            } else {
+                // Untuk sakit, bisa multi-hari
+                endDateField.classList.remove('hidden');
+                endDateInput.removeAttribute('disabled');
+            } else if (requestType === 'Cuti') {
                 attachmentSection.classList.add('hidden');
                 attachmentInput.removeAttribute('required');
                 attachmentInput.value = '';
+                // Untuk cuti, hanya 1 hari (tanggal mulai = tanggal selesai)
+                endDateField.classList.add('hidden');
+                endDateInput.setAttribute('disabled', 'disabled');
+                // Set tanggal selesai sama dengan tanggal mulai
+                if (startDateInput.value) {
+                    endDateInput.value = startDateInput.value;
+                }
+            } else {
+                // Reset ke default
+                attachmentSection.classList.add('hidden');
+                attachmentInput.removeAttribute('required');
+                attachmentInput.value = '';
+                endDateField.classList.remove('hidden');
+                endDateInput.removeAttribute('disabled');
+            }
+        });
+
+        // Tambahkan event listener untuk startDate agar endDate ikut berubah untuk Cuti
+        startDateInput?.addEventListener('change', () => {
+            if (requestTypeInput.value === 'Cuti') {
+                endDateInput.value = startDateInput.value;
             }
         });
 
@@ -160,14 +204,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const requestType = requestTypeInput.value;
             const startDate = startDateInput.value;
-            const endDate = endDateInput.value;
+            let endDate = endDateInput.value;
+            
+            // Untuk tipe Cuti, pastikan tanggal selesai sama dengan tanggal mulai
+            if (requestType === 'Cuti') {
+                endDate = startDate;
+                endDateInput.value = startDate; // Update UI juga
+            }
+            
             if (new Date(startDate) > new Date(endDate)) {
                 showToast("Tanggal selesai tidak boleh sebelum tanggal mulai.", "error");
                 isSubmitting = false;
                 return;
             }
 
+            // Validasi tambahan
+            if (!requestType || !startDate || !endDate) {
+                showToast("Mohon lengkapi semua field yang diperlukan.", "error");
+                isSubmitting = false;
+                return;
+            }
+
+            console.log('Form submission data:', {
+                requestType,
+                startDate,
+                endDate,
+                reason: reasonInput.value
+            });
+
             const formData = new FormData(leaveRequestForm);
+            // Pastikan endDate di formData juga benar
+            formData.set('end_date', endDate);
+            
             try {
                 const response = await LeaveRequestService.createLeaveRequest(formData);
                 showToast(response.message || "Pengajuan berhasil dikirim!", "success");
