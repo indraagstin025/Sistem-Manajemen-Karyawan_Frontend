@@ -214,11 +214,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     const handleViewAttachment = async (event) => {
-        console.log("Tombol 'Lihat' diklik!");
-        const button = event.currentTarget;
-        const fullUrl = button.dataset.url;
+    const button = event.target.closest(".view-attachment-btn"); 
+    
+    // Tambahkan pengaman jika klik tidak mengenai tombol
+    if (!button) {
+        return; 
+    }
+
+    const fullUrl = button.dataset.url;
         let displayFilename = button.dataset.filename;
-        console.log("URL yang didapat dari data-url:", fullUrl);
+        
 
         attachmentViewerModal.classList.remove("active");
         attachmentViewerModal.classList.add("hidden");
@@ -491,20 +496,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     photoEl.src = photoUrl;
                 }
             });
-        });
-
-        // Event listener harus dipasang ulang setiap kali tabel dirender ulang
-        leaveRequestsTableBody.querySelectorAll(".view-attachment-btn").forEach(button => {
-            button.removeEventListener("click", handleViewAttachment); // Pastikan tidak ada duplikasi listener
-            button.addEventListener("click", handleViewAttachment);
-        });
-        leaveRequestsTableBody.querySelectorAll(".download-btn").forEach(button => {
-            button.removeEventListener("click", handleDownloadAttachment);
-            button.addEventListener("click", handleDownloadAttachment);
-        });
-        leaveRequestsTableBody.querySelectorAll(".action-btn").forEach(button => {
-            button.removeEventListener("click", handleActionButtonClick);
-            button.addEventListener("click", handleActionButtonClick);
         });
     };
 
