@@ -1,36 +1,26 @@
 import axios from "axios";
-import { authService } from './AuthServices.js'; // Perbaiki path import yang benar
 
 const API_BASE_URL = "https://sistem-manajemen-karyawanbackend-production.up.railway.app/api/v1";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
+  withCredentials: true, 
   headers: {},
 });
 
-// Request interceptor untuk menambahkan token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = authService.getToken();
-    console.log('Request interceptor - Token check:', token ? 'Token tersedia' : 'Token TIDAK tersedia');
-    
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('Authorization header berhasil ditambahkan');
     } else {
-      console.warn("Token tidak ditemukan di localStorage. User mungkin belum login atau token expired.");
+      console.warn("Token tidak ditemukan di localStorage.");
     }
-    
     return config;
   },
-  (error) => {
-    console.error('Request interceptor error:', error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor untuk menangani error secara global
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -41,14 +31,10 @@ apiClient.interceptors.response.use(
       customError.status = error.response.status;
       customError.details = error.response.data.details || error.response.data.errors;
 
-      // PERBAIKAN: Hanya lakukan logout otomatis jika status adalah 401 (Unauthorized).
-      // JANGAN logout untuk status 403 (Forbidden), karena itu adalah validation error.
-      if (error.response.status === 401) {
-        console.warn("Unauthorized access (401). Sesi tidak valid, melakukan logout.");
-        authService.logout();
-      } else if (error.response.status === 403) {
-        console.warn("Forbidden access (403). Validation error atau akses ditolak:", errorMessage);
-        // Jangan logout, hanya tampilkan error
+      if (error.response.status === 401 || error.response.status === 403) {
+        console.warn("Unauthorized or Forbidden access, attempting logout.");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
       }
 
       return Promise.reject(customError);
