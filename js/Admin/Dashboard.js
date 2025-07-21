@@ -62,81 +62,107 @@ document.addEventListener("DOMContentLoaded", () => {
         }).showToast();
     };
 
-    const loadUserProfile = async () => {
-        const userAvatarNav = document.getElementById("userAvatar");
-        const adminProfilePhoto = document.getElementById("adminProfilePhoto");
-        const adminName = document.getElementById("adminName");
-        const adminRole = document.getElementById("adminRole");
-        const adminEmail = document.getElementById("adminEmail");
+ const loadUserProfile = async () => {
+    // 1. Mendapatkan Referensi Elemen HTML
+    const userAvatarNav = document.getElementById("userAvatar"); // Elemen <img> di header
+    const adminProfilePhoto = document.getElementById("adminProfilePhoto"); // Elemen <img> di kartu profil
+    const adminName = document.getElementById("adminName"); // Elemen <p> untuk nama
+    const adminRole = document.getElementById("adminRole"); // Elemen <p> untuk peran/role
+    const adminEmail = document.getElementById("adminEmail"); // Elemen <p> untuk email
 
-        try {
-            // Ambil informasi dasar pengguna dari sesi
-            const currentUserSession = authService.getCurrentUser();
-            if (!currentUserSession || !currentUserSession.id) {
-                // Jika tidak ada user di sesi, atur fallback dan mungkin arahkan ke login
-                if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
-                if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
-                if (adminName) adminName.textContent = "Guest";
-                if (adminRole) adminRole.textContent = "N/A";
-                if (adminEmail) adminEmail.textContent = "N/A";
-                // showToast("Sesi tidak valid, silakan login kembali.", "error"); // Opsional
-                // setTimeout(() => authService.logout(), 2000); // Opsional
-                return;
-            }
+    try {
+        // 2. Mendapatkan Sesi Pengguna Saat Ini
+        // authService.getCurrentUser() biasanya mengambil data dasar pengguna dari penyimpanan lokal (misalnya, localStorage)
+        // yang tersimpan saat login. Data ini biasanya hanya berisi ID dan nama dasar.
+        const currentUserSession = authService.getCurrentUser();
+        console.log("DEBUG: currentUserSession dari authService:", currentUserSession); // Untuk debugging
 
-            // Ambil detail profil lengkap dari backend menggunakan userService
-            const adminData = await userService.getUserByID(currentUserSession.id);
-
-            if (adminData) {
-                // Load photo for header avatar
-                // Kita bisa menggunakan nama dari adminData untuk akurasi
-                const photoUrlNav = await getUserPhotoBlobUrl(adminData._id, adminData.name, 40);
-                if (userAvatarNav) {
-                    userAvatarNav.src = photoUrlNav;
-                    userAvatarNav.alt = adminData.name || "Admin";
-                }
-
-                // Load photo and data for the new admin profile card
-                const photoUrlProfileCard = await getUserPhotoBlobUrl(adminData._id, adminData.name, 96);
-                if (adminProfilePhoto) {
-                    adminProfilePhoto.src = photoUrlProfileCard;
-                    adminProfilePhoto.alt = adminData.name || "Admin Photo";
-                }
-                if (adminName) {
-                    adminName.textContent = adminData.name || "Admin";
-                }
-                if (adminRole) {
-                    // Gunakan role dari data user, atau fallback ke "Administrator"
-                    adminRole.textContent = adminData.role || "Administrator"; 
-                }
-                if (adminEmail) {
-                    // Gunakan email dari data user, atau fallback
-                    adminEmail.textContent = adminData.email || "admin@hrsystem.com"; 
-                }
-
-            } else {
-                // Fallback jika adminData tidak ditemukan (meskipun userSession ada)
-                if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
-                if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
-                if (adminName) adminName.textContent = "Guest";
-                if (adminRole) adminRole.textContent = "N/A";
-                if (adminEmail) adminEmail.textContent = "N/A";
-                showToast("Data profil admin tidak ditemukan.", "error");
-            }
-        } catch (error) {
-            console.error("Gagal memuat profil pengguna:", error);
+        // 3. Penanganan Jika Sesi Tidak Valid
+        // Jika tidak ada sesi pengguna atau ID pengguna tidak ditemukan,
+        // fungsi akan langsung menampilkan avatar default dan informasi "Guest".
+        if (!currentUserSession || !currentUserSession.id) {
+            console.warn("DEBUG: Sesi pengguna tidak valid atau tidak ada ID. Menggunakan fallback avatar.");
             if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
             if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
-            if (adminName) adminName.textContent = "Error";
-            if (adminRole) adminRole.textContent = "Error";
-            if (adminEmail) adminEmail.textContent = "Error";
-            showToast("Gagal memuat data profil pengguna.", "error");
-            // Pertimbangkan untuk logout jika error disebabkan oleh autentikasi (misal 401)
-            // if (error.response && error.response.status === 401) {
-            //     setTimeout(() => authService.logout(), 2000);
-            // }
+            if (adminName) adminName.textContent = "Guest";
+            if (adminRole) adminRole.textContent = "N/A";
+            if (adminEmail) adminEmail.textContent = "N/A";
+            return; // Menghentikan eksekusi fungsi
         }
-    };
+
+        // 4. Mengambil Detail Profil Lengkap dari Backend
+        // Ini adalah perubahan utama. Fungsi userService.getUserByID(id)
+        // melakukan panggilan API ke backend untuk mendapatkan data profil lengkap pengguna
+        // berdasarkan ID yang diambil dari sesi. Data ini diharapkan lebih kaya,
+        // mencakup role, email, dan ID yang lebih pasti (_id).
+        const adminData = await userService.getUserByID(currentUserSession.id);
+        console.log("DEBUG: adminData dari userService.getUserByID:", adminData); // Untuk debugging
+
+        // 5. Memproses dan Menampilkan Data Profil
+        if (adminData) {
+            // Menentukan ID dan nama yang akan digunakan untuk mengambil foto.
+            // Digunakan operator OR (||) sebagai fallback jika properti _id tidak ada, akan menggunakan id.
+            const userIdForPhoto = adminData._id || adminData.id;
+            const userNameForPhoto = adminData.name || "Admin";
+
+            console.log("DEBUG: ID pengguna untuk foto:", userIdForPhoto);
+            console.log("DEBUG: Nama pengguna untuk foto:", userNameForPhoto);
+
+            // 5a. Memuat Foto untuk Avatar Navigasi (Ukuran Kecil)
+            // Memanggil getUserPhotoBlobUrl untuk mendapatkan URL gambar (blob URL atau default).
+            const photoUrlNav = await getUserPhotoBlobUrl(userIdForPhoto, userNameForPhoto, 40);
+            console.log("DEBUG: URL Foto Navigasi:", photoUrlNav); // Untuk debugging
+            if (userAvatarNav) {
+                // Menetapkan src img. Jika photoUrlNav kosong, fallback ke default avatar.
+                userAvatarNav.src = photoUrlNav || "/assets/default-avatar.png";
+                userAvatarNav.alt = userNameForPhoto; // Menetapkan alt text untuk aksesibilitas
+            }
+
+            // 5b. Memuat Foto dan Data untuk Kartu Profil Utama (Ukuran Besar)
+            // Proses serupa untuk foto di kartu profil, dengan ukuran yang berbeda (96px).
+            const photoUrlProfileCard = await getUserPhotoBlobUrl(userIdForPhoto, userNameForPhoto, 96);
+            console.log("DEBUG: URL Foto Kartu Profil:", photoUrlProfileCard); // Untuk debugging
+            if (adminProfilePhoto) {
+                adminProfilePhoto.src = photoUrlProfileCard || "/assets/default-avatar.png";
+                adminProfilePhoto.alt = userNameForPhoto + " Photo";
+            }
+
+            // Menetapkan teks untuk nama, peran, dan email.
+            if (adminName) {
+                adminName.textContent = adminData.name || "Admin";
+            }
+            if (adminRole) {
+                adminRole.textContent = adminData.role || "Administrator";
+            }
+            if (adminEmail) {
+                adminEmail.textContent = adminData.email || "admin@hrsystem.com";
+            }
+
+        } else {
+            // 6. Penanganan Jika Data Admin Tidak Ditemukan dari Backend
+            // Ini terjadi jika userService.getUserByID() tidak mengembalikan data,
+            // meskipun currentUserSession.id ada.
+            console.warn("DEBUG: Data profil admin tidak ditemukan dari userService. Menggunakan fallback.");
+            if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
+            if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
+            if (adminName) adminName.textContent = "Guest";
+            if (adminRole) adminRole.textContent = "N/A";
+            if (adminEmail) adminEmail.textContent = "N/A";
+            showToast("Data profil admin tidak ditemukan.", "error");
+        }
+    } catch (error) {
+        // 7. Penanganan Error Umum
+        // Menangkap kesalahan yang terjadi selama proses pengambilan data (misalnya, masalah jaringan).
+        console.error("DEBUG: Gagal memuat profil pengguna:", error);
+        // Mengatur fallback ke avatar dan teks error.
+        if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
+        if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
+        if (adminName) adminName.textContent = "Error";
+        if (adminRole) adminRole.textContent = "Error";
+        if (adminEmail) adminEmail.textContent = "Error";
+        showToast("Gagal memuat data profil pengguna.", "error");
+    }
+};
 
     const loadDashboardData = async () => {
         const totalKaryawanEl = document.getElementById("totalKaryawan");
