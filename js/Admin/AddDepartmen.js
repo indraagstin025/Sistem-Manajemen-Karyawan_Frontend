@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const fetchAdminProfileDataForHeader = async () => {
         try {
             const token = localStorage.getItem("token");
-            if (!token) return; // Don't proceed if no token
+            if (!token) return; 
             
             const user = authService.getCurrentUser();
             if (!user || user.role !== "admin") return; // Only for admin role
