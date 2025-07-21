@@ -75,13 +75,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // authService.getCurrentUser() biasanya mengambil data dasar pengguna dari penyimpanan lokal (misalnya, localStorage)
         // yang tersimpan saat login. Data ini biasanya hanya berisi ID dan nama dasar.
         const currentUserSession = authService.getCurrentUser();
-        console.log("DEBUG: currentUserSession dari authService:", currentUserSession); // Untuk debugging
+
 
         // 3. Penanganan Jika Sesi Tidak Valid
         // Jika tidak ada sesi pengguna atau ID pengguna tidak ditemukan,
         // fungsi akan langsung menampilkan avatar default dan informasi "Guest".
         if (!currentUserSession || !currentUserSession.id) {
-            console.warn("DEBUG: Sesi pengguna tidak valid atau tidak ada ID. Menggunakan fallback avatar.");
+            
             if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
             if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
             if (adminName) adminName.textContent = "Guest";
@@ -96,7 +96,6 @@ document.addEventListener("DOMContentLoaded", () => {
         // berdasarkan ID yang diambil dari sesi. Data ini diharapkan lebih kaya,
         // mencakup role, email, dan ID yang lebih pasti (_id).
         const adminData = await userService.getUserByID(currentUserSession.id);
-        console.log("DEBUG: adminData dari userService.getUserByID:", adminData); // Untuk debugging
 
         // 5. Memproses dan Menampilkan Data Profil
         if (adminData) {
@@ -105,13 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const userIdForPhoto = adminData._id || adminData.id;
             const userNameForPhoto = adminData.name || "Admin";
 
-            console.log("DEBUG: ID pengguna untuk foto:", userIdForPhoto);
-            console.log("DEBUG: Nama pengguna untuk foto:", userNameForPhoto);
-
-            // 5a. Memuat Foto untuk Avatar Navigasi (Ukuran Kecil)
-            // Memanggil getUserPhotoBlobUrl untuk mendapatkan URL gambar (blob URL atau default).
             const photoUrlNav = await getUserPhotoBlobUrl(userIdForPhoto, userNameForPhoto, 40);
-            console.log("DEBUG: URL Foto Navigasi:", photoUrlNav); // Untuk debugging
             if (userAvatarNav) {
                 // Menetapkan src img. Jika photoUrlNav kosong, fallback ke default avatar.
                 userAvatarNav.src = photoUrlNav || "/assets/default-avatar.png";
@@ -121,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 5b. Memuat Foto dan Data untuk Kartu Profil Utama (Ukuran Besar)
             // Proses serupa untuk foto di kartu profil, dengan ukuran yang berbeda (96px).
             const photoUrlProfileCard = await getUserPhotoBlobUrl(userIdForPhoto, userNameForPhoto, 96);
-            console.log("DEBUG: URL Foto Kartu Profil:", photoUrlProfileCard); // Untuk debugging
+  
             if (adminProfilePhoto) {
                 adminProfilePhoto.src = photoUrlProfileCard || "/assets/default-avatar.png";
                 adminProfilePhoto.alt = userNameForPhoto + " Photo";
@@ -142,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 6. Penanganan Jika Data Admin Tidak Ditemukan dari Backend
             // Ini terjadi jika userService.getUserByID() tidak mengembalikan data,
             // meskipun currentUserSession.id ada.
-            console.warn("DEBUG: Data profil admin tidak ditemukan dari userService. Menggunakan fallback.");
+            
             if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
             if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
             if (adminName) adminName.textContent = "Guest";
