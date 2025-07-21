@@ -1,15 +1,13 @@
 import { Calendar } from "fullcalendar";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import idLocale from "@fullcalendar/core/locales/id";
-import Swal from "sweetalert2";
-
-// Import semua service dan komponen yang dibutuhkan
 import WorkScheduleServices from "../Services/WorkScheduleServices.js";
 import { authService } from "../Services/AuthServices.js";
 import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { initializeSidebar } from "../components/sidebarHandler.js";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import idLocale from "@fullcalendar/core/locales/id";
+import Swal from "sweetalert2";
 
 document.addEventListener("DOMContentLoaded", () => {
     const calendarEl = document.getElementById("my-calendar");

@@ -2,12 +2,12 @@ import { userService } from "../Services/UserServices.js";
 import { authService } from "../Services/AuthServices.js";
 import AttendanceService from "../Services/AttendanceServices.js";
 import { LeaveRequestService } from "../Services/LeaveRequestsServices.js";
-import Toastify from "toastify-js";
-import "toastify-js/src/toastify.css";
-import Swal from "sweetalert2";
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
+import Toastify from "toastify-js";
+import "toastify-js/src/toastify.css";
+import Swal from "sweetalert2";
 
 document.addEventListener("DOMContentLoaded", async () => {
   feather.replace();

@@ -3,7 +3,6 @@ import AttendanceService from "../Services/AttendanceServices.js";
 let qrRefreshScheduler;
 let qrCountdownTimer;
 let isGenerating = false;
-
 let showToastCallback;
 
 /**
