@@ -1,13 +1,49 @@
 import { authService, dashboardService } from "../Services/AuthServices.js";
+import { userService } from "../Services/UserServices.js"; // PASTIKAN INI ADA DAN JALURNYA BENAR
 import { QRCodeManager } from "../components/qrCodeHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
-import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; // Import fungsi photoUtils
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 
 import Toastify from 'toastify-js';
 import 'toastify-js/src/toastify.css';
 
 document.addEventListener("DOMContentLoaded", () => {
     feather.replace();
+
+    // Inisialisasi sidebar mobile
+    const sidebarToggle = document.getElementById("sidebarToggle");
+    const mobileSidebar = document.getElementById("mobileSidebar");
+    const mobileSidebarPanel = document.getElementById("mobileSidebarPanel");
+    const closeSidebar = document.getElementById("closeSidebar");
+
+    if (sidebarToggle && mobileSidebar && mobileSidebarPanel && closeSidebar) {
+        sidebarToggle.addEventListener("click", () => {
+            mobileSidebar.classList.remove("hidden");
+            setTimeout(() => {
+                mobileSidebar.classList.add("opacity-100");
+                mobileSidebarPanel.classList.remove("-translate-x-full");
+            }, 10); // Small delay to allow CSS transition
+        });
+
+        closeSidebar.addEventListener("click", () => {
+            mobileSidebarPanel.classList.add("-translate-x-full");
+            mobileSidebar.classList.remove("opacity-100");
+            setTimeout(() => {
+                mobileSidebar.classList.add("hidden");
+            }, 300); // Match transition duration
+        });
+
+        // Close sidebar when clicking outside the panel
+        mobileSidebar.addEventListener("click", (e) => {
+            if (e.target === mobileSidebar) {
+                mobileSidebarPanel.classList.add("-translate-x-full");
+                mobileSidebar.classList.remove("opacity-100");
+                setTimeout(() => {
+                    mobileSidebar.classList.add("hidden");
+                }, 300); // Match transition duration
+            }
+        });
+    }
 
     const showToast = (message, type = "success") => {
         const backgroundColor = {
@@ -28,29 +64,77 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const loadUserProfile = async () => {
         const userAvatarNav = document.getElementById("userAvatar");
-        const userNameNav = document.getElementById("userNameNav"); // Pastikan elemen ini ada di HTML Anda
+        const adminProfilePhoto = document.getElementById("adminProfilePhoto");
+        const adminName = document.getElementById("adminName");
+        const adminRole = document.getElementById("adminRole");
+        const adminEmail = document.getElementById("adminEmail");
+
         try {
-            const user = await authService.getCurrentUser();
-            if (user) {
-                // Gunakan getUserPhotoBlobUrl untuk memuat foto profil admin di header
-                const photoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); // Ukuran 40x40 untuk header
-                if (userAvatarNav) {
-                    userAvatarNav.src = photoUrl;
-                    userAvatarNav.alt = user.name || "Admin"; // Fallback text
-                }
-                if (userNameNav) { // Perbarui juga nama pengguna jika ada elemennya
-                    userNameNav.textContent = user.name || "Admin";
-                }
-            } else {
-                // Fallback jika user tidak ditemukan (mungkin belum login)
+            // Ambil informasi dasar pengguna dari sesi
+            const currentUserSession = authService.getCurrentUser();
+            if (!currentUserSession || !currentUserSession.id) {
+                // Jika tidak ada user di sesi, atur fallback dan mungkin arahkan ke login
                 if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
-                if (userNameNav) userNameNav.textContent = "Guest";
+                if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
+                if (adminName) adminName.textContent = "Guest";
+                if (adminRole) adminRole.textContent = "N/A";
+                if (adminEmail) adminEmail.textContent = "N/A";
+                // showToast("Sesi tidak valid, silakan login kembali.", "error"); // Opsional
+                // setTimeout(() => authService.logout(), 2000); // Opsional
+                return;
+            }
+
+            // Ambil detail profil lengkap dari backend menggunakan userService
+            const adminData = await userService.getUserByID(currentUserSession.id);
+
+            if (adminData) {
+                // Load photo for header avatar
+                // Kita bisa menggunakan nama dari adminData untuk akurasi
+                const photoUrlNav = await getUserPhotoBlobUrl(adminData._id, adminData.name, 40);
+                if (userAvatarNav) {
+                    userAvatarNav.src = photoUrlNav;
+                    userAvatarNav.alt = adminData.name || "Admin";
+                }
+
+                // Load photo and data for the new admin profile card
+                const photoUrlProfileCard = await getUserPhotoBlobUrl(adminData._id, adminData.name, 96);
+                if (adminProfilePhoto) {
+                    adminProfilePhoto.src = photoUrlProfileCard;
+                    adminProfilePhoto.alt = adminData.name || "Admin Photo";
+                }
+                if (adminName) {
+                    adminName.textContent = adminData.name || "Admin";
+                }
+                if (adminRole) {
+                    // Gunakan role dari data user, atau fallback ke "Administrator"
+                    adminRole.textContent = adminData.role || "Administrator"; 
+                }
+                if (adminEmail) {
+                    // Gunakan email dari data user, atau fallback
+                    adminEmail.textContent = adminData.email || "admin@hrsystem.com"; 
+                }
+
+            } else {
+                // Fallback jika adminData tidak ditemukan (meskipun userSession ada)
+                if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
+                if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
+                if (adminName) adminName.textContent = "Guest";
+                if (adminRole) adminRole.textContent = "N/A";
+                if (adminEmail) adminEmail.textContent = "N/A";
+                showToast("Data profil admin tidak ditemukan.", "error");
             }
         } catch (error) {
             console.error("Gagal memuat profil pengguna:", error);
             if (userAvatarNav) userAvatarNav.src = "/assets/default-avatar.png";
-            if (userNameNav) userNameNav.textContent = "Error";
-            showToast("Gagal memuat data profil pengguna.", "error"); // Tampilkan toast jika gagal
+            if (adminProfilePhoto) adminProfilePhoto.src = "/assets/default-avatar.png";
+            if (adminName) adminName.textContent = "Error";
+            if (adminRole) adminRole.textContent = "Error";
+            if (adminEmail) adminEmail.textContent = "Error";
+            showToast("Gagal memuat data profil pengguna.", "error");
+            // Pertimbangkan untuk logout jika error disebabkan oleh autentikasi (misal 401)
+            // if (error.response && error.response.status === 401) {
+            //     setTimeout(() => authService.logout(), 2000);
+            // }
         }
     };
 
@@ -58,35 +142,46 @@ document.addEventListener("DOMContentLoaded", () => {
         const totalKaryawanEl = document.getElementById("totalKaryawan");
         const karyawanAktifEl = document.getElementById("karyawanAktif");
         const totalDepartemenEl = document.getElementById("totalDepartemen");
-        // Tambahkan elemen untuk Karyawan Cuti, Pending Leave Requests, Posisi Baru (jika ada di HTML dashboard)
-        const karyawanCutiEl = document.getElementById("karyawanCuti");
         const pendingLeavesCountEl = document.getElementById("pendingLeavesCount");
-        const posisiBaruEl = document.getElementById("posisiBaru");
-        const latestActivitiesList = document.getElementById("latestActivitiesList"); // Untuk daftar aktivitas terbaru
+        const latestActivitiesList = document.getElementById("latestActivitiesList");
 
         const chartCanvas = document.getElementById("departmentChart");
         try {
             const stats = await dashboardService.getDashboardStats();
 
-            // Update elemen statistik
+            // Update statistik elements
             if (totalKaryawanEl) totalKaryawanEl.innerText = stats.total_karyawan || 0;
             if (karyawanAktifEl) karyawanAktifEl.innerText = stats.karyawan_aktif || 0;
-            if (karyawanCutiEl) karyawanCutiEl.innerText = stats.karyawan_cuti || 0; // Pastikan ID ini ada di HTML
-            if (pendingLeavesCountEl) pendingLeavesCountEl.innerText = stats.pending_leave_requests_count || 0; // Pastikan ID ini ada di HTML
-            if (posisiBaruEl) posisiBaruEl.innerText = stats.posisi_baru || 0; // Pastikan ID ini ada di HTML
             if (totalDepartemenEl) totalDepartemenEl.innerText = stats.total_departemen || 0;
-
+            if (pendingLeavesCountEl) pendingLeavesCountEl.innerText = stats.pending_leave_requests_count || 0;
 
             // Update Aktivitas Terbaru
             if (latestActivitiesList && stats.aktivitas_terbaru) {
-                latestActivitiesList.innerHTML = ''; // Bersihkan daftar yang ada
-                stats.aktivitas_terbaru.forEach(activity => {
-                    const li = document.createElement('li');
-                    li.className = 'flex items-center text-sm text-gray-700 mb-2';
-                    li.innerHTML = `<i data-feather="activity" class="w-4 h-4 mr-2 text-blue-500"></i><span>${activity}</span>`;
-                    latestActivitiesList.appendChild(li);
-                });
-                feather.replace(); // Render ikon Feather yang baru ditambahkan
+                latestActivitiesList.innerHTML = ''; // Clear existing list
+                if (stats.aktivitas_terbaru.length > 0) {
+                    stats.aktivitas_terbaru.forEach(activity => {
+                        const li = document.createElement('li');
+                        li.className = 'flex items-center text-sm text-gray-700 py-2';
+                        li.innerHTML = `<i data-feather="activity" class="w-4 h-4 mr-2 text-blue-500"></i><span>${activity}</span>`;
+                        latestActivitiesList.appendChild(li);
+                    });
+                } else {
+                    latestActivitiesList.innerHTML = `
+                        <li class="flex items-center text-sm text-gray-700 py-2">
+                            <i data-feather="info" class="w-4 h-4 mr-2 text-gray-400"></i>
+                            <span>Belum ada aktivitas terbaru.</span>
+                        </li>
+                    `;
+                }
+                feather.replace(); // Render new Feather icons
+            } else if (latestActivitiesList) { // Fallback if no data or element
+                 latestActivitiesList.innerHTML = `
+                    <li class="flex items-center text-sm text-gray-700 py-2">
+                        <i data-feather="info" class="w-4 h-4 mr-2 text-gray-400"></i>
+                        <span>Belum ada aktivitas terbaru.</span>
+                    </li>
+                `;
+                feather.replace();
             }
 
 
@@ -131,7 +226,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     },
                 });
             } else if (chartCanvas) {
-                // Jika tidak ada data distribusi departemen, tampilkan pesan di canvas
                 const ctx = chartCanvas.getContext('2d');
                 ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
                 ctx.font = '16px Inter';
@@ -150,24 +244,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const userDropdownContainer = document.getElementById("userDropdown");
         const dropdownMenu = document.getElementById("dropdownMenu");
 
-        // Pastikan elemen ditemukan sebelum menambahkan event listener
         if (userDropdownContainer && dropdownMenu) {
             userDropdownContainer.addEventListener("click", (e) => {
-                e.stopPropagation(); // Mencegah event mencapai document click handler
+                e.stopPropagation();
                 dropdownMenu.classList.toggle("active");
-                // Tambahkan timeout untuk memastikan hidden/active berjalan beriringan
                 if (dropdownMenu.classList.contains("active")) {
                     dropdownMenu.classList.remove("hidden");
                 } else {
+                    // Delay adding 'hidden' class to allow transition to complete
                     setTimeout(() => {
                         dropdownMenu.classList.add("hidden");
-                    }, 200); // Sesuaikan dengan durasi transisi CSS
+                    }, 200); 
                 }
             });
 
-            // Menutup dropdown ketika klik di luar area dropdown
             document.addEventListener("click", (event) => {
-                // Pastikan klik tidak di dalam container dropdown atau dropdown menu itu sendiri
                 if (dropdownMenu && !userDropdownContainer.contains(event.target) && !dropdownMenu.contains(event.target)) {
                     dropdownMenu.classList.remove("active");
                     setTimeout(() => {
@@ -176,22 +267,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
         }
-
-        QRCodeManager.initialize({
-            toastCallback: showToast,
+        
+        // Ensure initializeLogout and QRCodeManager.initialize are called after DOM is ready
+        initializeLogout({
+            preLogoutCallback: () => {
+                // Ensure QR modal is closed before logout
+                if (QRCodeManager.close) {
+                    QRCodeManager.close(); 
+                }
+            }
         });
 
-        initializeLogout({
-            preLogoutCallback: QRCodeManager.close,
+        // Initialize QR Code Modal handlers
+        QRCodeManager.initialize({
+            qrModalId: "qrCodeModal",
+            closeModalBtnId: "closeModalBtn",
+            modalQrCodeImageId: "modal-qr-code-image",
+            modalQrPlaceholderId: "modal-qr-placeholder",
+            modalQrExpiresAtId: "modal-qr-expires-at",
+            modalGenerateQrBtnId: "modal-generate-qr-btn",
+            modalCloseQrBtnId: "modal-close-qr-btn",
+            generateQrMenuBtnId: "generate-qr-menu-btn", // desktop sidebar
+            generateQrMenuBtnMobileId: "generate-qr-menu-btn-mobile", // mobile sidebar
+            toastCallback: showToast,
         });
     };
 
     const initializePage = () => {
-        // Panggil setupEventListeners lebih dulu untuk memastikan dropdown berfungsi
-        setupEventListeners();
-        // Kemudian load data
-        loadDashboardData();
-        loadUserProfile();
+        loadUserProfile(); // Load user profile data first
+        loadDashboardData(); // Then load general dashboard stats
+        setupEventListeners(); // Set up all event listeners
     };
 
     initializePage();

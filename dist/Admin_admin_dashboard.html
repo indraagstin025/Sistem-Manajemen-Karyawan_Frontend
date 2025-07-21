@@ -13,15 +13,15 @@
     
     
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="module" crossorigin src="/assets/admin_dashboard-9b04a60b.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/input-41369e4a.js">
+    <script type="module" crossorigin src="/assets/admin_dashboard-75173d1c.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/input-69042067.js">
     <link rel="modulepreload" crossorigin href="/assets/AuthServices-f47c4eb9.js">
+    <link rel="modulepreload" crossorigin href="/assets/photoUtils-240b8068.js">
     <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-f61bdc29.js">
     <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-01879f51.js">
     <link rel="modulepreload" crossorigin href="/assets/logoutHandler-87b1a96c.js">
-    <link rel="modulepreload" crossorigin href="/assets/photoUtils-240b8068.js">
     <link rel="modulepreload" crossorigin href="/assets/toastify-3acd0462.js">
-    <link rel="stylesheet" href="/assets/input-1742bbbe.css">
+    <link rel="stylesheet" href="/assets/input-162f1c21.css">
     <link rel="stylesheet" href="/assets/admin_dashboard-27630df4.css">
     <link rel="stylesheet" href="/assets/toastify-a461d729.css">
   </head>
@@ -73,7 +73,8 @@
             <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
           </div>
           <div class="flex items-center space-x-4">
-            <div class="relative" id="userDropdown"> <img
+            <div class="relative" id="userDropdown"> 
+              <img
                 id="userAvatar"
                 class="h-10 w-10 rounded-full object-cover cursor-pointer border-2 border-gray-200 hover:border-teal-500 transition-colors duration-200"
                 src="/assets/default-avatar.png" alt="User Avatar"
@@ -88,6 +89,21 @@
         </header>
 
         <main class="flex-grow p-6 bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 overflow-y-auto custom-scroll">
+          <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Halo, Admin!</h2>
+            <div class="grid grid-cols-1">
+              <div
+                class="bg-gradient-to-br from-teal-500 to-teal-700 text-white rounded-xl shadow-md p-6 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left transform transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
+              >
+                <img id="adminProfilePhoto" class="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg flex-shrink-0" src="/assets/default-avatar.png" alt="Foto Profil Admin" />
+                <div class="flex-grow">
+                  <p class="text-2xl font-extrabold mb-1" id="adminName">Nama Admin</p>
+                  <p class="text-base opacity-90 mb-0.5" id="adminRole">Administrator</p>
+                  <p class="text-sm opacity-80" id="adminEmail">admin@hrsystem.com</p>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-teal-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
               <div class="bg-teal-100 text-teal-600 p-3 rounded-full">
@@ -116,12 +132,31 @@
                 <p class="text-4xl font-extrabold text-gray-900" id="totalDepartemen">0</p>
               </div>
             </div>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-b-4 border-yellow-500 flex items-center space-x-4 transform hover:scale-[1.02] transition-all">
+                <div class="bg-yellow-100 text-yellow-600 p-3 rounded-full">
+                    <i data-feather="file-text" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Pengajuan Cuti Pending</p>
+                    <p class="text-4xl font-extrabold text-gray-900" id="pendingLeavesCount">0</p>
+                </div>
+            </div>
           </div>
+
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
               <h3 class="font-semibold text-gray-800 mb-4 text-xl">Distribusi Karyawan Berdasarkan Departemen</h3> <div class="h-80">
                 <canvas id="departmentChart"></canvas>
               </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <h3 class="font-semibold text-gray-800 mb-4 text-xl">Aktivitas Terbaru</h3>
+                <ul id="latestActivitiesList" class="divide-y divide-gray-200">
+                    <li class="flex items-center text-sm text-gray-700 py-2">
+                        <i data-feather="info" class="w-4 h-4 mr-2 text-gray-400"></i>
+                        <span>Belum ada aktivitas terbaru.</span>
+                    </li>
+                </ul>
             </div>
           </div>
         </main>
@@ -172,9 +207,8 @@
           <a href="/manage_work_schedules.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Manajemen Jadwal Kerja</span>
           </a>
-          </a>
-            <a href="/admin_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
-            <i data-feather="calendar" class="w-5 h-5 mr-3"></i><span>Profile</span>
+          <a href="/admin_profile.html" class="flex items-center px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
+            <i data-feather="user" class="w-5 h-5 mr-3"></i><span>Profil</span>
           </a>
           <button type="button" id="generate-qr-menu-btn-mobile" class="flex items-center w-full text-left px-4 py-3 mt-3 text-base font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl">
             <i data-feather="square" class="w-5 h-5 mr-3"></i><span>Generate QR Code</span>
@@ -194,7 +228,6 @@
     </div>
 
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-
     
   </body>
 </html>

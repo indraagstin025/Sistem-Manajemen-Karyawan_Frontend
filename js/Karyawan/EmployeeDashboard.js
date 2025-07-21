@@ -7,7 +7,6 @@ import "toastify-js/src/toastify.css";
 import Swal from "sweetalert2";
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
-// --- [PERUBAHAN 1] --- Impor fungsi utilitas foto
 import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
