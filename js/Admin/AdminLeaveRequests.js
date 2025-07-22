@@ -3,12 +3,10 @@ import { authService } from "../Services/AuthServices.js";
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
-import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; // Import fungsi photoUtils
-
+import { getUserPhotoBlobUrl } from "../utils/photoUtils.js"; 
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
 import Swal from 'sweetalert2';
-
 
 const BACKEND_URL = "https://sistem-manajemen-karyawanbackend-production.up.railway.app";
 
@@ -72,8 +70,8 @@ const showLogoutConfirmation = () => {
         text: "Anda akan diarahkan ke halaman login.",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#dc2626', // bg-red-600
-        cancelButtonColor: '#6b7280',  // bg-gray-500
+        confirmButtonColor: '#dc2626', 
+        cancelButtonColor: '#6b7280',  
         confirmButtonText: 'Ya, Keluar',
         cancelButtonText: 'Batal'
     }).then((result) => {
@@ -87,12 +85,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     feather.replace();
     initializeSidebar();
 
-    // Initialize QR Code Manager
+    
     QRCodeManager.initialize({
         toastCallback: showToast,
     });
 
-    // Initialize logout functionality
+    
     initializeLogout({
         preLogoutCallback: () => {
             if (typeof QRCodeManager !== 'undefined' && QRCodeManager.close) {
@@ -105,7 +103,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const leaveRequestsMessage = document.getElementById("leaveRequestsMessage");
     const userAvatarNav = document.getElementById("userAvatar");
     const userNameNav = document.getElementById("userNameNav");
-    const dropdownMenu = document.getElementById("dropdownMenu"); // Pastikan ini ada di HTML Anda
+    const dropdownMenu = document.getElementById("dropdownMenu"); 
     const allLogoutButtons = document.querySelectorAll("#logoutButton, #dropdownLogoutButton, #mobileLogoutButton");
     const paginationControls = document.getElementById("paginationControls");
     const prevPageBtn = document.getElementById("prevPageBtn");
@@ -128,17 +126,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const token = localStorage.getItem("token");
             if (!token) {
-                // Jangan langsung return null, biar loadLeaveRequests yang handle redirect
+                
                 return;
             }
             let user = authService.getCurrentUser();
             if (!user || user.role !== "admin") {
-                // Jangan langsung return null, biar loadLeaveRequests yang handle redirect
+                
                 return;
             }
             
-            // Menggunakan getUserPhotoBlobUrl untuk avatar di header
-            const userPhotoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); // Ukuran 40x40
+            
+            const userPhotoUrl = await getUserPhotoBlobUrl(user.id, user.name, 40); 
 
             if (userAvatarNav) {
                 userAvatarNav.src = userPhotoUrl;
@@ -149,7 +147,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         } catch (error) {
             console.error("Error fetching admin profile data for header:", error);
-            // Error di sini tidak fatal, jadi tidak perlu showToast atau logout
+            
         }
     };
 
@@ -214,7 +212,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
 const handleViewAttachment = async (event) => {
-    // 1. Menemukan tombol yang diklik dengan .closest()
+    
     const button = event.target.closest(".view-attachment-btn");
     if (!button) {
         return;
@@ -222,16 +220,16 @@ const handleViewAttachment = async (event) => {
 
     const fullUrl = button.dataset.url;
 
-    // 2. Bersihkan dan siapkan modal dengan status "Memuat..."
+    
     attachmentContent.innerHTML = "";
     attachmentErrorMessage.classList.add("hidden");
-    attachmentModalTitle.textContent = "Lihat Lampiran: Memuat..."; // Judul awal
+    attachmentModalTitle.textContent = "Lihat Lampiran: Memuat..."; 
 
-    // Tampilkan modal
+    
     attachmentViewerModal.classList.remove("hidden");
     setTimeout(() => attachmentViewerModal.classList.add("active"), 10);
 
-    // 3. Validasi awal (URL & Token)
+    
     if (!fullUrl) {
         attachmentModalTitle.textContent = "Lihat Lampiran: Gagal";
         attachmentErrorMessage.textContent = "URL lampiran tidak ditemukan.";
@@ -250,7 +248,7 @@ const handleViewAttachment = async (event) => {
     }
 
     try {
-        // 4. Lakukan fetch untuk mengambil file
+        
         const response = await fetch(fullUrl, {
             method: "GET",
             headers: {
@@ -270,10 +268,10 @@ const handleViewAttachment = async (event) => {
             throw new Error(errorMessage);
         }
 
-        // --- INILAH BAGIAN UTAMA PENYESUAIAN ---
         
-        // 5. Ambil nama file asli dari header
-        let finalFilename = "File Lampiran"; // Nama default
+        
+        
+        let finalFilename = "File Lampiran"; 
         const contentDisposition = response.headers.get("Content-Disposition");
         if (contentDisposition && contentDisposition.includes("filename=")) {
             const match = contentDisposition.match(/filename="?(.+)"?/);
@@ -282,21 +280,21 @@ const handleViewAttachment = async (event) => {
             }
         }
 
-        // 6. Update judul modal dengan nama file asli
+        
         attachmentModalTitle.textContent = `Lihat Lampiran: ${finalFilename}`;
 
-        // --- AKHIR DARI PENYESUAIAN ---
+        
 
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
 
         const contentType = response.headers.get("Content-Type") || blob.type;
 
-        // Logika untuk menampilkan gambar/pdf/tombol unduh sudah benar
+        
         if (contentType.startsWith("image/")) {
             const img = document.createElement("img");
             img.src = blobUrl;
-            img.alt = finalFilename; // Gunakan nama file yang sudah benar
+            img.alt = finalFilename; 
             img.className = "max-w-full max-h-full object-contain";
             attachmentContent.appendChild(img);
         } else if (contentType === "application/pdf") {
@@ -317,14 +315,14 @@ const handleViewAttachment = async (event) => {
                 target: {
                     dataset: {
                         url: fullUrl,
-                        filename: finalFilename // Kirim nama file yang benar
+                        filename: finalFilename 
                     }
                 }
             }));
             attachmentContent.appendChild(downloadBtn);
         }
 
-        // Listener untuk membersihkan blob URL setelah modal ditutup
+        
         attachmentViewerModal.addEventListener("transitionend", function handler() {
             if (attachmentViewerModal.classList.contains("hidden")) {
                 URL.revokeObjectURL(blobUrl);
@@ -333,13 +331,13 @@ const handleViewAttachment = async (event) => {
         }, { once: true });
 
     } catch (error) {
-        attachmentModalTitle.textContent = "Lihat Lampiran: Gagal"; // Update judul jika gagal
+        attachmentModalTitle.textContent = "Lihat Lampiran: Gagal"; 
         console.error("Gagal memuat lampiran untuk tampilan:", error);
         attachmentErrorMessage.textContent = error.message || "Terjadi kesalahan saat memuat lampiran.";
         attachmentErrorMessage.classList.remove("hidden");
         showToast(error.message || "Gagal memuat lampiran.", "error");
 
-        // Tutup modal secara otomatis jika fetch gagal
+        
         attachmentViewerModal.classList.remove("active");
         setTimeout(() => attachmentViewerModal.classList.add("hidden"), 300);
     }
@@ -461,18 +459,18 @@ const handleViewAttachment = async (event) => {
                 ? `<div class="flex items-center space-x-2">
                             <button class="view-attachment-btn text-teal-600 hover:underline focus:outline-none" data-url="${fileUrl}" data-filename="${fileNameFromUrl}">Lihat</button>
                             <button class="download-btn text-gray-500 hover:text-gray-700" data-url="${fileUrl}" data-filename="${fileNameFromUrl}" title="Unduh Lampiran">
-                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                               <svg xmlns="http:
                             </button>
                         </div>`
                 : "-";
 
-            const employeeName = request.user_name || request.user_email || "Pengguna Tidak Dikenal"; // Pastikan ada nama default
-            const photoElementId = `photo-${request.id}`; // ID unik untuk setiap gambar
+            const employeeName = request.user_name || request.user_email || "Pengguna Tidak Dikenal"; 
+            const photoElementId = `photo-${request.id}`; 
 
             row.innerHTML = `
                 <td>
                     <div class="employee-info flex items-center space-x-3 px-6 py-4 whitespace-nowrap">
-                        <img id="${photoElementId}" class="h-9 w-9 rounded-full object-cover" src="https://placehold.co/36x36/E2E8F0/4A5568?text=ME" alt="${employeeName}">
+                        <img id="${photoElementId}" class="h-9 w-9 rounded-full object-cover" src="https:
                         <div>
                             <div class="text-sm font-medium text-gray-900">${employeeName}</div>
                             <div class="text-sm text-gray-500">${request.user_email || "-"}</div>
@@ -497,12 +495,12 @@ const handleViewAttachment = async (event) => {
                                 <button data-id="${request.id}" data-action="reject" class="action-btn px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition-colors duration-200">Tolak</button>
                             </div>
                             `
-                            : `<span class="text-gray-500 text-xs">Selesai</span>` // Teks lebih kecil untuk status selesai
+                            : `<span class="text-gray-500 text-xs">Selesai</span>` 
                     }
                 </td>
             `;
 
-            // Muat foto profil karyawan secara asinkron
+            
             getUserPhotoBlobUrl(request.user_id, employeeName, 36).then((photoUrl) => {
                 const photoEl = document.getElementById(photoElementId);
                 if (photoEl) {
@@ -586,8 +584,8 @@ const handleViewAttachment = async (event) => {
             button.disabled = true;
             button.textContent = "Memproses...";
             await LeaveRequestService.updateLeaveRequestStatus(requestId, statusToUpdate, note);
-            showToast(`Pengajuan berhasil ${action === "approve" ? "disetujui" : "ditolak"}.`, "success"); // Pesan sukses yang dinamis
-            loadLeaveRequests(); // Muat ulang daftar pengajuan setelah aksi
+            showToast(`Pengajuan berhasil ${action === "approve" ? "disetujui" : "ditolak"}.`, "success"); 
+            loadLeaveRequests(); 
         } catch (error) {
             console.error("Error updating leave request status:", error);
             showToast(error.message || "Gagal memperbarui status pengajuan.", "error");
@@ -619,11 +617,11 @@ const handleViewAttachment = async (event) => {
     }
 
     if (leaveRequestsTableBody) {
-        // Event listener untuk tombol aksi (Setujui/Tolak) yang didelegasikan ke body tabel
-        // Ini memastikan tombol yang baru ditambahkan setelah render ulang tetap berfungsi
+        
+        
         leaveRequestsTableBody.addEventListener("click", (event) => {
             const target = event.target;
-            // Hanya tanggapi klik pada elemen dengan class 'action-btn', 'view-attachment-btn', 'download-btn'
+            
             if (target.classList.contains("action-btn")) {
                 handleActionButtonClick(event);
             } else if (target.classList.contains("view-attachment-btn")) {
@@ -634,26 +632,26 @@ const handleViewAttachment = async (event) => {
         });
     }
 
-    // Dropdown user (pastikan ID dan kelas sesuai dengan HTML Anda)
-    // Jika Anda menggunakan sidebarHandler.js untuk ini, bagian ini bisa dihapus atau disesuaikan.
-    // Jika dropdown tidak berfungsi setelah perubahan, periksa apakah ada konflik atau duplikasi listener.
-    const userDropdownGroup = document.getElementById('userDropdown'); // Menggunakan ID langsung jika itu ID groupnya
-    if (userDropdownGroup && dropdownMenu) { // Pastikan dropdownMenu juga ditemukan
+    
+    
+    
+    const userDropdownGroup = document.getElementById('userDropdown'); 
+    if (userDropdownGroup && dropdownMenu) { 
         userDropdownGroup.addEventListener("click", (event) => {
-            // Cek apakah klik berasal dari dalam dropdown itu sendiri atau tombolnya
+            
             if (!dropdownMenu.contains(event.target) && event.target.closest('#userAvatar')) {
                 dropdownMenu.classList.toggle("hidden");
                 dropdownMenu.classList.toggle("active");
             }
         });
 
-        // Menutup dropdown saat klik di luar
+        
         document.addEventListener("click", (event) => {
             if (dropdownMenu && !userDropdownGroup.contains(event.target) && !dropdownMenu.contains(event.target)) {
                 dropdownMenu.classList.remove("active");
                 setTimeout(() => {
                     dropdownMenu.classList.add("hidden");
-                }, 200); // Sesuaikan dengan durasi transisi CSS
+                }, 200); 
             }
         }, true);
     }
@@ -688,7 +686,7 @@ const handleViewAttachment = async (event) => {
         });
     }
 
-    // Panggil fungsi untuk memuat data saat DOMContentLoaded
+    
     fetchAdminProfileDataForHeader();
     loadLeaveRequests();
 });

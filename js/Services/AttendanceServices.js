@@ -12,8 +12,6 @@ const getUser = () => {
     }
 };
 
-
-
 const AttendanceService = {
     /**
      * @description Generate QR Code for today (Admin only)

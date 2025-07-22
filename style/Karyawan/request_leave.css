@@ -67,3 +67,27 @@
         background-color: #dbeafe; /* blue-100 */
         color: #1e40af; /* blue-800 */
       }
+
+      /* style/input.css atau style/Karyawan/request_leave.css */
+
+/* Basic Modal Backdrop */
+#attachmentViewerModal {
+    /* hidden by default, shown by JS */
+    opacity: 0;
+    pointer-events: none; /* Allows clicks to pass through when hidden */
+}
+#attachmentViewerModal.active {
+    opacity: 1;
+    pointer-events: auto; /* Catches clicks when active */
+}
+
+/* Modal Content */
+#attachmentModalContent {
+    opacity: 0;
+    transform: scale(0.95);
+    /* hidden by default, shown by JS */
+}
+#attachmentModalContent.active {
+    opacity: 1;
+    transform: scale(1);
+}
