@@ -1,15 +1,12 @@
-/* /style/input.css */
-
 body {
   font-family: "Inter", sans-serif;
 }
 
-/* Gaya untuk dropdown */
 .dropdown-menu {
   transition: all 0.2s ease-out;
   opacity: 0;
   transform: scale(0.95);
-  display: none; /* Sembunyikan secara default */
+  display: none;
 }
 
 .dropdown-menu.active {
@@ -18,75 +15,11 @@ body {
   transform: scale(1);
 }
 
-/* Gaya untuk Sidebar Mobile */
 #mobileSidebar {
   transition: opacity 0.3s ease-out;
 }
 #mobileSidebarPanel {
   transition: transform 0.3s ease-out;
-}
-
-/* --- ATURAN MODAL UMUM YANG DIPERBAIKI --- */
-/* Ini adalah kunci untuk memusatkan dan mengelola modal */
-.modal {
-  /* Default: Sembunyikan modal sepenuhnya secara visual */
-  display: none; /* Penting: Menyembunyikan modal secara default */
-  opacity: 0;
-  /* Transform awal untuk efek masuk */
-  transform: scale(0.95);
-
-  /* Properti dasar untuk overlay dan centering */
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.75); /* Latar belakang gelap */
-  z-index: 50; /* Pastikan di atas konten lain */
-
-  /* KUNCI UTAMA: Untuk menengahkan konten modal secara vertikal dan horizontal */
-  display: flex; /* Gunakan flexbox untuk centering */
-  align-items: center; /* Pusat vertikal */
-  justify-content: center; /* Pusat horizontal */
-
-  /* Transisi untuk animasi fade dan scale pada overlay */
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-  /* Tambahkan pointer-events none agar backdrop tidak menghalangi klik ketika tersembunyi */
-  pointer-events: none;
-}
-
-/* Ketika JavaScript menambahkan kelas 'active', modal akan terlihat */
-.modal.active {
-  opacity: 1;
-  transform: scale(1); /* Kembali ke ukuran normal */
-  pointer-events: auto; /* Memungkinkan klik pada backdrop saat aktif */
-}
-
-/* --- ATURAN KONTEN MODAL YANG DIPERBAIKI --- */
-/* Ini adalah div di dalam modal overlay yang menampung isi modal */
-.modal-content {
-  background-color: white;
-  border-radius: 0.75rem; /* rounded-lg dari Tailwind */
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl dari Tailwind */
-  /* Ukuran yang disamakan dengan admin_leave_requests.html */
-  width: 100%;
-  max-width: 6xl; /* Tailwind max-w-6xl = 72rem = 1152px */
-  height: 100%;
-  max-height: 90vh; /* max-h-[90vh] */
-  display: flex;
-  flex-direction: column; /* flex flex-col */
-  position: relative; /* relative */
-
-  /* Animasi masuk/keluar untuk konten modal */
-  opacity: 0;
-  transform: translateY(-20px); /* Efek slide up sedikit */
-  transition: all 0.3s ease-out;
-}
-
-/* Ketika modal overlay aktif, konten modal juga akan ikut aktif */
-.modal.active .modal-content {
-  opacity: 1;
-  transform: translateY(0); /* Kembali ke posisi normal */
 }
 
 /* Stil untuk pesan notifikasi */
@@ -112,10 +45,201 @@ body {
   color: #1e40af; /* blue-800 */
 }
 
-/* --- Catatan Tambahan (tidak perlu ditambahkan ke CSS) --- */
+/* --- ATURAN MODAL UMUM YANG DIPERBAIKI SECARA KESELURUHAN --- */
 /*
-Jika Anda memiliki Tailwind JIT atau sudah mengkonfigurasi Tailwind untuk memproses class utility secara langsung,
-Anda mungkin tidak memerlukan definisi eksplisit untuk `w-full`, `max-w-6xl`, `h-full`, `max-h-[90vh]`, `flex`, `flex-col`, `relative`
-pada `.modal-content` di CSS kustom Anda. Namun, jika Anda tidak yakin atau untuk memastikan konsistensi,
-menulisnya secara eksplisit seperti di atas adalah praktik yang aman.
+    Elemen dengan ID attachmentViewerModal memiliki kelas "modal" di HTML.
+    Ini adalah overlay yang menutupi seluruh layar dan menengahkan konten modal.
 */
+/* /style/input.css */
+
+/* ... (Bagian CSS lainnya yang sudah ada seperti body, dropdown, mobileSidebar, notification) ... */
+
+/* --- ATURAN MODAL UMUM --- */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 50;
+  display: flex; /* Kunci untuk centering */
+  align-items: center; /* Pusat vertikal */
+  justify-content: center; /* Pusat horizontal */
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.modal.active {
+  opacity: 1;
+  transform: scale(1);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* --- ATURAN KONTEN MODAL --- */
+#attachmentModalContent.modal-content {
+  /* Gunakan ID di sini untuk spesifisitas yang lebih tinggi jika kelas 'modal-content' digunakan di tempat lain */
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Ukuran Responsif */
+  width: 90%; /* Ambil 90% lebar di mobile */
+  max-width: 72rem; /* Batasi lebar di desktop (setara 1152px) */
+  height: auto; /* Biarkan tinggi menyesuaikan konten */
+  max-height: 90vh; /* Maksimal 90% tinggi viewport */
+
+  display: flex;
+  flex-direction: column;
+  position: relative;
+
+  /* Animasi */
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.3s ease-out;
+
+  /* Tambahan untuk memastikan konten dapat scroll jika terlalu tinggi */
+  overflow: hidden; /* Sembunyikan overflow di modal-content itu sendiri */
+}
+
+/* Aktifkan konten modal */
+.modal.active #attachmentModalContent.modal-content {
+  /* Gunakan ID di sini */
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.p-4.flex-grow.overflow-auto.flex.items-center.justify-center.bg-gray-100 {
+  min-height: 0;
+  flex-grow: 1;
+  /* Ini tetap oke, karena ini adalah parent dari #attachmentContent */
+}
+
+#attachmentContent {
+  width: 100%;
+  height: 100%;
+  /* Gunakan flex-direction: column jika ingin setiap halaman PDF muncul di bawah yang lain */
+  /* Jika hanya ada satu halaman, atau ingin satu halaman penuh, bisa tetap row */
+  display: flex;
+  flex-direction: column; /* Ubah ke column agar setiap canvas PDF menumpuk vertikal */
+  align-items: center; /* Pusat horizontal untuk setiap kanvas */
+  justify-content: flex-start; /* Mulai konten dari atas (tidak memusatkan vertikal semua halaman bersamaan) */
+  overflow-y: auto; /* Memungkinkan scrolling vertikal untuk halaman PDF */
+  overflow-x: hidden; /* Mencegah scrolling horizontal yang tidak perlu */
+}
+
+#attachmentContent img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: auto;
+  object-fit: contain;
+}
+
+#attachmentContent iframe {
+  /* Ini hanya jika Anda masih menggunakan iframe untuk PDF tertentu, tapi kita pakai canvas sekarang */
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Kunci: Gaya untuk elemen <canvas> PDF.js */
+.pdf-page-canvas {
+  max-width: 100%; /* Pastikan tidak melebihi lebar kontainer */
+  height: auto; /* Jaga rasio aspek */
+  display: block; /* Penting agar margin: auto dan lebar 100% bekerja baik */
+  margin-left: auto; /* Untuk mx-auto */
+  margin-right: auto; /* Untuk mx-auto */
+  flex-shrink: 0; /* Penting! Mencegah kanvas mengecil di bawah ukuran aslinya dalam flex container */
+  /* Remove my-2, border, shadow-sm if you prefer a cleaner look */
+  margin-top: 8px; /* Contoh margin vertikal antar halaman jika ada banyak halaman */
+  margin-bottom: 8px; /* Contoh margin vertikal antar halaman jika ada banyak halaman */
+  border: 1px solid #e2e8f0; /* Border ringan */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Bayangan ringan */
+}
+
+/* --- Perbaikan Aturan .hidden (opsional, jika masih ada konflik) --- */
+#attachmentViewerModal.hidden {
+  display: none !important;
+}
+#mobileSidebar.hidden {
+  display: none !important;
+}
+
+/* Responsive form layout */
+@media (max-width: 768px) {
+  #leaveRequestForm .flex-row {
+    flex-direction: column;
+  }
+
+  #leaveRequestForm .flex-row > div {
+    width: 100%;
+  }
+}
+
+/* --- START: Gaya Responsif Tabel Baru (Pendekatan "Kartu") --- */
+@media (max-width: 768px) { /* Terapkan gaya ini di layar yang lebih kecil dari 768px */
+  .leave-history-table {
+    border-collapse: collapse; /* Pastikan tidak ada border aneh */
+    width: 100%; /* Pastikan tabel mengambil lebar penuh */
+  }
+
+  /* Sembunyikan thead (header tabel) di mobile */
+  .leave-history-table thead {
+    display: none;
+  }
+
+  /* Ubah tampilan setiap baris (tr) menjadi blok */
+  .leave-history-table tbody tr {
+    display: block;
+    margin-bottom: 1rem; /* Spasi antar "kartu" */
+    border: 1px solid #e2e8f0; /* Border untuk kartu */
+    border-radius: 0.5rem; /* Sudut membulat */
+    padding: 0.75rem; /* Padding dalam kartu */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Sedikit bayangan */
+    background-color: #fff; /* Latar belakang putih */
+  }
+
+  /* Ubah tampilan setiap sel (td) menjadi blok */
+  .leave-history-table tbody td {
+    display: block;
+    text-align: left; /* Rata kiri */
+    padding: 0.5rem 0; /* Padding vertikal */
+    border-bottom: 1px dashed #edf2f7; /* Garis pemisah antar item di dalam kartu */
+  }
+
+  /* Hapus border bawah pada td terakhir di setiap baris */
+  .leave-history-table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  /* Buat pseudo-element untuk menampilkan label dari header */
+  .leave-history-table tbody td::before {
+    content: attr(data-label); /* Menggunakan atribut data-label */
+    font-weight: 600; /* Tebal */
+    display: block; /* Agar label di atas nilai */
+    margin-bottom: 0.25rem; /* Spasi antara label dan nilai */
+    color: #4a5568; /* Warna teks label */
+  }
+
+  /* Penyesuaian khusus untuk kolom 'Alasan' dan 'Lampiran' jika perlu */
+  .leave-history-table tbody .table-col-reason {
+    white-space: normal; /* Izinkan wrapping teks */
+  }
+}
+/* --- END: Gaya Responsif Tabel Baru --- */
+
+/* Adjust modal for smaller screens - Pastikan ini diterapkan setelah aturan umum modal */
+@media (max-width: 768px) {
+  #attachmentModalContent.modal-content { /* Gunakan ID untuk spesifisitas */
+    width: 95%; /* Sedikit lebih lebar di mobile */
+    max-width: none; /* Hapus batasan max-width desktop */
+  }
+  .modal-content { /* Ini mungkin tidak perlu jika ID di atas sudah cukup */
+    padding: 1rem;
+  }
+}

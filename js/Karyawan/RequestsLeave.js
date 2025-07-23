@@ -8,6 +8,8 @@ import "toastify-js/src/toastify.css";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
 import Swal from "sweetalert2";
+import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs';
 
 // --- START: Konstanta dan Fungsi Helper Global ---
 const BACKEND_URL = "https://sistem-manajemen-karyawanbackend-production.up.railway.app"; // Pastikan URL ini sesuai dengan backend Anda
@@ -96,7 +98,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const requestTypeInput = document.getElementById("requestType");
   const startDateInput = document.getElementById("startDate");
   const endDateInput = document.getElementById("endDate");
-  const endDateField = document.getElementById("endDateField");
+  // PERBAIKAN: Pastikan ID ini ada di HTML Anda (div pembungkus input endDate)
+  const endDateField = document.getElementById("endDateField"); 
   const reasonInput = document.getElementById("reason");
   const attachmentSection = document.getElementById("attachmentSection");
   const attachmentInput = document.getElementById("attachment");
@@ -115,154 +118,184 @@ document.addEventListener("DOMContentLoaded", () => {
   let isSubmitting = false;
 
   // --- START: Fungsi untuk menangani tampilan lampiran di modal ---
-  const handleViewAttachment = async (event) => {
-    const button = event.target.closest(".view-attachment-btn");
-    if (!button) {
-      return;
-    }
+    const handleViewAttachment = async (event) => {
+        const button = event.target.closest(".view-attachment-btn");
+        if (!button) {
+            return;
+        }
 
-    const fullUrl = button.dataset.url;
+        const fullUrl = button.dataset.url;
 
-    // Bersihkan dan siapkan modal dengan status "Memuat..."
-    attachmentContent.innerHTML = "Memuat lampiran...";
-    attachmentErrorMessage.classList.add("hidden");
-    downloadAttachmentFromModalBtn.classList.add("hidden");
-    attachmentModalTitle.textContent = "Lihat Lampiran: Memuat...";
+        // Bersihkan dan siapkan modal dengan status "Memuat..."
+        attachmentContent.innerHTML = "Memuat lampiran..."; // Tampilkan loading text
+        attachmentErrorMessage.classList.add("hidden");
+        downloadAttachmentFromModalBtn.classList.add("hidden");
+        attachmentModalTitle.textContent = "Lihat Lampiran: Memuat...";
 
-    // Tampilkan modal overlay
-    attachmentViewerModal.classList.remove("hidden");
-    // Beri sedikit waktu untuk transisi CSS agar bekerja (opacity dan transform)
-    setTimeout(() => {
-      attachmentViewerModal.classList.add("active"); // Untuk opacity 1 dan scale 1 overlay
-      // Tambahkan kelas 'active' ke konten modal untuk animasinya
-      if (attachmentModalContent) {
-        // Pastikan elemen ada
-        attachmentModalContent.classList.add("active");
-      }
-    }, 10);
+        // Tampilkan modal overlay
+        attachmentViewerModal.classList.remove("hidden");
+        setTimeout(() => {
+            attachmentViewerModal.classList.add("active");
+            if (attachmentModalContent) {
+                attachmentModalContent.classList.add("active");
+            }
+        }, 10);
 
-    // Validasi awal (URL & Token)
-    if (!fullUrl) {
-      attachmentModalTitle.textContent = "Lihat Lampiran: Gagal";
-      attachmentErrorMessage.textContent = "URL lampiran tidak ditemukan.";
-      attachmentErrorMessage.classList.remove("hidden");
-      showToast("URL lampiran tidak ditemukan.", "error");
-      return;
-    }
+        // Validasi awal (URL & Token)
+        if (!fullUrl) {
+            attachmentModalTitle.textContent = "Lihat Lampiran: Gagal";
+            attachmentErrorMessage.textContent = "URL lampiran tidak ditemukan.";
+            attachmentErrorMessage.classList.remove("hidden");
+            showToast("URL lampiran tidak ditemukan.", "error");
+            return;
+        }
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      attachmentModalTitle.textContent = "Lihat Lampiran: Gagal";
-      attachmentErrorMessage.textContent = "Sesi tidak valid. Harap login ulang.";
-      attachmentErrorMessage.classList.remove("hidden");
-      showToast("Sesi tidak valid. Harap login ulang.", "error");
-      return;
-    }
+        const token = localStorage.getItem("token");
+        if (!token) {
+            attachmentModalTitle.textContent = "Lihat Lampiran: Gagal";
+            attachmentErrorMessage.textContent = "Sesi tidak valid. Harap login ulang.";
+            attachmentErrorMessage.classList.remove("hidden");
+            showToast("Sesi tidak valid. Harap login ulang.", "error");
+            return;
+        }
 
-    try {
-      const response = await fetch(fullUrl, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = `Gagal memuat lampiran: ${response.status}`;
         try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.message || errorMessage;
-        } catch (e) {
-          errorMessage = `${errorMessage} - ${errorText.substring(0, 100)}...`;
+            const response = await fetch(fullUrl, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMessage = `Gagal memuat lampiran: ${response.status}`;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.message || errorMessage;
+                } catch (e) {
+                    errorMessage = `${errorMessage} - ${errorText.substring(0, 100)}...`;
+                }
+                throw new Error(errorMessage);
+            }
+
+            let finalFilename = "File Lampiran";
+            const contentDisposition = response.headers.get("Content-Disposition");
+            if (contentDisposition && contentDisposition.includes("filename=")) {
+                const match = contentDisposition.match(/filename="?(.+)"?/);
+                if (match && match[1]) {
+                    finalFilename = match[1].replace(/['"]/g, "");
+                }
+            } else {
+                const urlParts = fullUrl.split("/");
+                finalFilename = urlParts[urlParts.length - 1].split("?")[0] || "file";
+            }
+            attachmentModalTitle.textContent = `Lihat Lampiran: ${finalFilename}`;
+
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const contentType = response.headers.get("Content-Type") || blob.type;
+
+            attachmentContent.innerHTML = ""; // Clear content here BEFORE rendering anything
+
+            if (contentType.startsWith("image/")) {
+                const img = document.createElement("img");
+                img.src = blobUrl;
+                img.alt = finalFilename;
+                img.className = "max-w-full max-h-full object-contain mx-auto";
+                attachmentContent.appendChild(img);
+                // ... (download button logic) ...
+            } else if (contentType === "application/pdf") {
+                try {
+                    const loadingTask = pdfjsLib.getDocument({ url: blobUrl });
+                    const pdf = await loadingTask.promise;
+                    const numPages = pdf.numPages;
+
+                    // Loop melalui setiap halaman untuk dirender
+                    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                        const page = await pdf.getPage(pageNum);
+                        const viewport = page.getViewport({ scale: 1 });
+
+                        const canvas = document.createElement("canvas");
+                        const canvasContext = canvas.getContext('2d');
+                        // Apply the new combined CSS class
+                        canvas.className = "pdf-page-canvas"; 
+                        attachmentContent.appendChild(canvas);
+
+                        // Calculate scale to fit width
+                        const desiredWidth = attachmentContent.clientWidth;
+                        // Important: Ensure desiredWidth is not 0, otherwise scale will be NaN/Infinity
+                        // Also, consider a slight padding/margin for the canvas within the attachmentContent
+                        const scale = desiredWidth > 0 ? (desiredWidth - 20) / viewport.width : 1; // Subtract 20px for padding if needed
+                        const scaledViewport = page.getViewport({ scale: scale });
+
+                        canvas.height = scaledViewport.height;
+                        canvas.width = scaledViewport.width;
+
+                        const renderContext = {
+                            canvasContext: canvasContext,
+                            viewport: scaledViewport,
+                        };
+                        await page.render(renderContext).promise;
+                    }
+
+                    downloadAttachmentFromModalBtn.classList.remove("hidden");
+                    downloadAttachmentFromModalBtn.onclick = () =>
+                        handleDownloadAttachment({
+                            target: { dataset: { url: fullUrl, filename: finalFilename } },
+                        });
+
+                } catch (pdfError) {
+                    console.error("Error rendering PDF with PDF.js:", pdfError);
+                    attachmentContent.innerHTML = ""; // Bersihkan konten jika gagal render
+                    attachmentErrorMessage.textContent = "Gagal memuat atau merender PDF. " + (pdfError.message || "Pastikan file PDF tidak rusak.");
+                    attachmentErrorMessage.classList.remove("hidden");
+                    downloadAttachmentFromModalBtn.classList.remove("hidden");
+                    downloadAttachmentFromModalBtn.onclick = () =>
+                        handleDownloadAttachment({
+                            target: { dataset: { url: fullUrl, filename: finalFilename } },
+                        });
+                    showToast("Gagal merender PDF: " + (pdfError.message || "File rusak atau tidak valid."), "error");
+                    return; // Hentikan eksekusi selanjutnya jika ada error
+                }
+                // === AKHIR BLOK PDF.JS ===
+            } else {
+                attachmentErrorMessage.textContent = `Tipe file '${contentType || "tidak diketahui"}' tidak didukung untuk tampilan langsung. Silakan unduh.`;
+                attachmentErrorMessage.classList.remove("hidden");
+                downloadAttachmentFromModalBtn.classList.remove("hidden");
+                downloadAttachmentFromModalBtn.onclick = () =>
+                    handleDownloadAttachment({
+                        target: { dataset: { url: fullUrl, filename: finalFilename } },
+                    });
+            }
+
+            // Listener untuk membersihkan blob URL setelah modal ditutup
+            attachmentViewerModal.addEventListener(
+                "transitionend",
+                function handler() {
+                    if (attachmentViewerModal.classList.contains("hidden")) {
+                        URL.revokeObjectURL(blobUrl);
+                        attachmentViewerModal.removeEventListener("transitionend", handler);
+                    }
+                },
+                { once: true }
+            );
+        } catch (error) {
+            attachmentModalTitle.textContent = "Lihat Lampiran: Gagal";
+            console.error("Gagal memuat lampiran untuk tampilan:", error);
+            attachmentContent.innerHTML = "";
+            attachmentErrorMessage.textContent = error.message || "Terjadi kesalahan saat memuat lampiran.";
+            attachmentErrorMessage.classList.remove("hidden");
+            downloadAttachmentFromModalBtn.classList.add("hidden");
+            showToast(error.message || "Gagal memuat lampiran.", "error");
+
+            attachmentViewerModal.classList.remove("active");
+            if (attachmentModalContent) {
+                attachmentModalContent.classList.remove("active");
+            }
+            setTimeout(() => attachmentViewerModal.classList.add("hidden"), 300);
         }
-        throw new Error(errorMessage);
-      }
-
-      let finalFilename = "File Lampiran"; // Nama default
-      const contentDisposition = response.headers.get("Content-Disposition");
-      if (contentDisposition && contentDisposition.includes("filename=")) {
-        const match = contentDisposition.match(/filename="?(.+)"?/);
-        if (match && match[1]) {
-          finalFilename = match[1].replace(/['"]/g, "");
-        }
-      } else {
-        // Jika tidak ada Content-Disposition, coba ambil dari URL atau data-filename
-        const urlParts = fullUrl.split("/");
-        finalFilename = urlParts[urlParts.length - 1].split("?")[0] || "file";
-      }
-      // Update judul modal dengan nama file asli
-      attachmentModalTitle.textContent = `Lihat Lampiran: ${finalFilename}`;
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const contentType = response.headers.get("Content-Type") || blob.type;
-
-      attachmentContent.innerHTML = ""; // Bersihkan "Memuat lampiran..."
-
-      if (contentType.startsWith("image/")) {
-        const img = document.createElement("img");
-        img.src = blobUrl;
-        img.alt = finalFilename;
-        img.className = "max-w-full max-h-full object-contain mx-auto"; // Tambah mx-auto untuk tengah
-        attachmentContent.appendChild(img);
-        downloadAttachmentFromModalBtn.classList.remove("hidden");
-        downloadAttachmentFromModalBtn.onclick = () =>
-          handleDownloadAttachment({
-            target: { dataset: { url: fullUrl, filename: finalFilename } },
-          });
-      } else if (contentType === "application/pdf") {
-        const iframe = document.createElement("iframe");
-        iframe.src = blobUrl;
-        iframe.style.width = "100%";
-        iframe.style.height = "100%";
-        iframe.style.border = "none";
-        iframe.setAttribute("allowfullscreen", "");
-        attachmentContent.appendChild(iframe);
-        downloadAttachmentFromModalBtn.classList.remove("hidden");
-        downloadAttachmentFromModalBtn.onclick = () =>
-          handleDownloadAttachment({
-            target: { dataset: { url: fullUrl, filename: finalFilename } },
-          });
-      } else {
-        attachmentErrorMessage.textContent = `Tipe file '${contentType || "tidak diketahui"}' tidak didukung untuk tampilan langsung. Silakan unduh.`;
-        attachmentErrorMessage.classList.remove("hidden");
-        downloadAttachmentFromModalBtn.classList.remove("hidden"); // Tampilkan tombol unduh
-        downloadAttachmentFromModalBtn.onclick = () =>
-          handleDownloadAttachment({
-            target: { dataset: { url: fullUrl, filename: finalFilename } },
-          });
-      }
-
-      // Listener untuk membersihkan blob URL setelah modal ditutup
-      attachmentViewerModal.addEventListener(
-        "transitionend",
-        function handler() {
-          if (attachmentViewerModal.classList.contains("hidden")) {
-            URL.revokeObjectURL(blobUrl);
-            attachmentViewerModal.removeEventListener("transitionend", handler);
-          }
-        },
-        { once: true }
-      );
-    } catch (error) {
-      attachmentModalTitle.textContent = "Lihat Lampiran: Gagal";
-      console.error("Gagal memuat lampiran untuk tampilan:", error);
-      attachmentContent.innerHTML = ""; // Hapus teks loading
-      attachmentErrorMessage.textContent = error.message || "Terjadi kesalahan saat memuat lampiran.";
-      attachmentErrorMessage.classList.remove("hidden");
-      downloadAttachmentFromModalBtn.classList.add("hidden"); // Sembunyikan tombol unduh jika gagal
-      showToast(error.message || "Gagal memuat lampiran.", "error");
-
-      // Tutup modal secara otomatis jika fetch gagal
-      attachmentViewerModal.classList.remove("active");
-      if (attachmentModalContent) {
-        // Pastikan elemen ada
-        attachmentModalContent.classList.remove("active");
-      }
-      setTimeout(() => attachmentViewerModal.classList.add("hidden"), 300);
-    }
-  };
+    };
 
   const handleDownloadAttachment = async (event) => {
     // Tombol bisa dari tabel atau dari modal
@@ -342,7 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   // --- END: Fungsi untuk menangani tampilan lampiran di modal ---
 
-  // --- START: renderLeaveHistoryTable yang sudah dimodifikasi untuk tombol modal ---
+  // --- START: renderLeaveHistoryTable yang sudah dimodifikasi untuk tombol modal dan data-label ---
   const renderLeaveHistoryTable = (data, page, limit) => {
     const leaveHistoryTableBody = document.getElementById("leaveHistoryTableBody");
     if (!leaveHistoryTableBody) {
@@ -354,6 +387,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const paginatedItems = data.slice(startIndex, endIndex);
+
+    // BARU: Definisi header untuk data-label, urutan harus sesuai dengan kolom tabel
+    const headers = [
+      "Tanggal Mulai",
+      "Tanggal Selesai",
+      "Tipe",
+      "Alasan",
+      "Status",
+      "Lampiran"
+    ];
 
     if (paginatedItems.length === 0) {
       leaveHistoryTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Tidak ada riwayat pengajuan.</td></tr>`;
@@ -407,26 +450,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const attachmentDisplay = fileUrl
         ? `<div class="flex items-center space-x-2">
-                            <button class="view-attachment-btn text-teal-600 hover:underline focus:outline-none" data-url="${fileUrl}" data-filename="${fileNameFromUrl}">Lihat</button>
-                            <button class="download-btn text-gray-500 hover:text-gray-700" data-url="${fileUrl}" data-filename="${fileNameFromUrl}" title="Unduh Lampiran">
-                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-4.5-4.5 3 3m0 0L12 21m-4.5-4.5 3-3m0 0L7.5 12m4.5 4.5V3" /></svg>
-                            </button>
-                        </div>`
+             <button class="view-attachment-btn text-teal-600 hover:underline focus:outline-none" data-url="${fileUrl}" data-filename="${fileNameFromUrl}">Lihat</button>
+             <button class="download-btn text-gray-500 hover:text-gray-700" data-url="${fileUrl}" data-filename="${fileNameFromUrl}" title="Unduh Lampiran">
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-4.5-4.5 3 3m0 0L12 21m-4.5-4.5 3-3m0 0L7.5 12m4.5 4.5V3" /></svg>
+             </button>
+           </div>`
         : "-";
 
+      // PERUBAHAN UTAMA DI SINI: Tambahkan atribut data-label ke setiap <td>
       row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedStartDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${formattedEndDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${request.request_type || "-"}</td>
-                <td class="px-6 py-4 text-sm text-gray-700 max-w-xs overflow-hidden text-ellipsis">${request.reason || "-"}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass} font-semibold">${statusText}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    ${attachmentDisplay}
-                </td>
-            `;
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-label="${headers[0]}">${formattedStartDate}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700" data-label="${headers[1]}">${formattedEndDate}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700" data-label="${headers[2]}">${request.request_type || "-"}</td>
+        <td class="px-6 py-4 text-sm text-gray-700 max-w-xs overflow-hidden text-ellipsis" data-label="${headers[3]}">${request.reason || "-"}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass} font-semibold" data-label="${headers[4]}">${statusText}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700" data-label="${headers[5]}">
+            ${attachmentDisplay}
+        </td>
+      `;
     });
   };
-  // --- END: renderLeaveHistoryTable yang sudah dimodifikasi untuk tombol modal ---
+  // --- END: renderLeaveHistoryTable yang sudah dimodifikasi untuk tombol modal dan data-label ---
 
   const updatePaginationControls = (totalItems, page, limit) => {
     const totalPages = Math.ceil(totalItems / limit);
@@ -479,14 +523,20 @@ document.addEventListener("DOMContentLoaded", () => {
         attachmentSection.classList.remove("hidden");
         attachmentInput.setAttribute("required", "required"); // Lampiran wajib untuk sakit
 
-        endDateField.classList.remove("hidden");
+        // PERBAIKAN: Tambahkan pengecekan null sebelum mengakses classList
+        if (endDateField) { 
+          endDateField.classList.remove("hidden");
+        }
         endDateInput.removeAttribute("disabled");
       } else if (requestType === "Cuti") {
         attachmentSection.classList.add("hidden");
         attachmentInput.removeAttribute("required");
         attachmentInput.value = ""; // Bersihkan nilai file jika berubah tipe
 
-        endDateField.classList.add("hidden");
+        // PERBAIKAN: Tambahkan pengecekan null sebelum mengakses classList
+        if (endDateField) {
+          endDateField.classList.add("hidden");
+        }
         endDateInput.setAttribute("disabled", "disabled");
 
         if (startDateInput.value) {
@@ -497,7 +547,10 @@ document.addEventListener("DOMContentLoaded", () => {
         attachmentSection.classList.add("hidden");
         attachmentInput.removeAttribute("required");
         attachmentInput.value = "";
-        endDateField.classList.remove("hidden");
+        // PERBAIKAN: Tambahkan pengecekan null sebelum mengakses classList
+        if (endDateField) {
+          endDateField.classList.remove("hidden");
+        }
         endDateInput.removeAttribute("disabled");
       }
     });
@@ -662,5 +715,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupEventListeners();
   initializePage();
-  requestTypeInput.dispatchEvent(new Event("change"));
+  // PENTING: Pastikan endDateField ada di HTML sebelum baris ini dipanggil.
+  // Pengecekan `if (endDateField)` sudah ditambahkan di `setupEventListeners`.
+  requestTypeInput.dispatchEvent(new Event("change")); 
 });
