@@ -1,93 +1,121 @@
-      body {
-        font-family: "Inter", sans-serif;
-      }
-      /* Gaya untuk dropdown */
-      .dropdown-menu {
-        transition: all 0.2s ease-out;
-        opacity: 0;
-        transform: scale(0.95);
-        display: none; /* Sembunyikan secara default */
-      }
+/* /style/input.css */
 
-      .dropdown-menu.active {
-        display: block;
-        opacity: 1;
-        transform: scale(1);
-      }
-
-      /* Gaya untuk Sidebar Mobile */
-      #mobileSidebar {
-        transition: opacity 0.3s ease-out;
-      }
-      #mobileSidebarPanel {
-        transition: transform 0.3s ease-out;
-      }
-
-      /* ✨ DIHAPUS: Gaya untuk Modal Change Password ✨ */
-      /* .modal {
-        background-color: rgba(0, 0, 0, 0.6);
-        transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
-        visibility: hidden;
-        opacity: 0;
-      }
-      .modal.active {
-        visibility: visible;
-        opacity: 1;
-        transition: opacity 0.3s ease-out, visibility 0s linear 0s;
-      }
-      .modal-content {
-        transform: translateY(-20px);
-        opacity: 0;
-        transition: all 0.3s ease-out;
-      }
-      .modal.active .modal-content {
-        transform: translateY(0);
-        opacity: 1;
-      } */
-
-      /* Stil untuk pesan notifikasi */
-      .notification {
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-radius: 0.5rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-      .notification.success {
-        background-color: #d1fae5; /* green-100 */
-        color: #065f46; /* green-800 */
-      }
-      .notification.error {
-        background-color: #fee2e2; /* red-100 */
-        color: #991b1b; /* red-800 */
-      }
-      .notification.info {
-        background-color: #dbeafe; /* blue-100 */
-        color: #1e40af; /* blue-800 */
-      }
-
-      /* style/input.css atau style/Karyawan/request_leave.css */
-
-/* Basic Modal Backdrop */
-#attachmentViewerModal {
-    /* hidden by default, shown by JS */
-    opacity: 0;
-    pointer-events: none; /* Allows clicks to pass through when hidden */
-}
-#attachmentViewerModal.active {
-    opacity: 1;
-    pointer-events: auto; /* Catches clicks when active */
+body {
+  font-family: "Inter", sans-serif;
 }
 
-/* Modal Content */
-#attachmentModalContent {
-    opacity: 0;
-    transform: scale(0.95);
-    /* hidden by default, shown by JS */
+/* Gaya untuk dropdown */
+.dropdown-menu {
+  transition: all 0.2s ease-out;
+  opacity: 0;
+  transform: scale(0.95);
+  display: none; /* Sembunyikan secara default */
 }
-#attachmentModalContent.active {
-    opacity: 1;
-    transform: scale(1);
+
+.dropdown-menu.active {
+  display: block;
+  opacity: 1;
+  transform: scale(1);
 }
+
+/* Gaya untuk Sidebar Mobile */
+#mobileSidebar {
+  transition: opacity 0.3s ease-out;
+}
+#mobileSidebarPanel {
+  transition: transform 0.3s ease-out;
+}
+
+/* --- ATURAN MODAL UMUM YANG DIPERBAIKI --- */
+/* Ini adalah kunci untuk memusatkan dan mengelola modal */
+.modal {
+  /* Default: Sembunyikan modal sepenuhnya secara visual */
+  display: none; /* Penting: Menyembunyikan modal secara default */
+  opacity: 0;
+  /* Transform awal untuk efek masuk */
+  transform: scale(0.95);
+
+  /* Properti dasar untuk overlay dan centering */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75); /* Latar belakang gelap */
+  z-index: 50; /* Pastikan di atas konten lain */
+
+  /* KUNCI UTAMA: Untuk menengahkan konten modal secara vertikal dan horizontal */
+  display: flex; /* Gunakan flexbox untuk centering */
+  align-items: center; /* Pusat vertikal */
+  justify-content: center; /* Pusat horizontal */
+
+  /* Transisi untuk animasi fade dan scale pada overlay */
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  /* Tambahkan pointer-events none agar backdrop tidak menghalangi klik ketika tersembunyi */
+  pointer-events: none;
+}
+
+/* Ketika JavaScript menambahkan kelas 'active', modal akan terlihat */
+.modal.active {
+  opacity: 1;
+  transform: scale(1); /* Kembali ke ukuran normal */
+  pointer-events: auto; /* Memungkinkan klik pada backdrop saat aktif */
+}
+
+/* --- ATURAN KONTEN MODAL YANG DIPERBAIKI --- */
+/* Ini adalah div di dalam modal overlay yang menampung isi modal */
+.modal-content {
+  background-color: white;
+  border-radius: 0.75rem; /* rounded-lg dari Tailwind */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl dari Tailwind */
+  /* Ukuran yang disamakan dengan admin_leave_requests.html */
+  width: 100%;
+  max-width: 6xl; /* Tailwind max-w-6xl = 72rem = 1152px */
+  height: 100%;
+  max-height: 90vh; /* max-h-[90vh] */
+  display: flex;
+  flex-direction: column; /* flex flex-col */
+  position: relative; /* relative */
+
+  /* Animasi masuk/keluar untuk konten modal */
+  opacity: 0;
+  transform: translateY(-20px); /* Efek slide up sedikit */
+  transition: all 0.3s ease-out;
+}
+
+/* Ketika modal overlay aktif, konten modal juga akan ikut aktif */
+.modal.active .modal-content {
+  opacity: 1;
+  transform: translateY(0); /* Kembali ke posisi normal */
+}
+
+/* Stil untuk pesan notifikasi */
+.notification {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.notification.success {
+  background-color: #d1fae5; /* green-100 */
+  color: #065f46; /* green-800 */
+}
+.notification.error {
+  background-color: #fee2e2; /* red-100 */
+  color: #991b1b; /* red-800 */
+}
+.notification.info {
+  background-color: #dbeafe; /* blue-100 */
+  color: #1e40af; /* blue-800 */
+}
+
+/* --- Catatan Tambahan (tidak perlu ditambahkan ke CSS) --- */
+/*
+Jika Anda memiliki Tailwind JIT atau sudah mengkonfigurasi Tailwind untuk memproses class utility secara langsung,
+Anda mungkin tidak memerlukan definisi eksplisit untuk `w-full`, `max-w-6xl`, `h-full`, `max-h-[90vh]`, `flex`, `flex-col`, `relative`
+pada `.modal-content` di CSS kustom Anda. Namun, jika Anda tidak yakin atau untuk memastikan konsistensi,
+menulisnya secara eksplisit seperti di atas adalah praktik yang aman.
+*/

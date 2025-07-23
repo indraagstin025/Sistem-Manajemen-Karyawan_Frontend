@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     
     
-    <script type="module" crossorigin src="/assets/request_leave-937d4f27.js"></script>
+    <script type="module" crossorigin src="/assets/request_leave-a1dc622d.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/input-119a5317.js">
     <link rel="modulepreload" crossorigin href="/assets/AuthServices-f47c4eb9.js">
     <link rel="modulepreload" crossorigin href="/assets/LeaveRequestsServices-ddeca199.js">
@@ -18,7 +18,7 @@
     <link rel="modulepreload" crossorigin href="/assets/logoutHandler-87b1a96c.js">
     <link rel="modulepreload" crossorigin href="/assets/photoUtils-240b8068.js">
     <link rel="stylesheet" href="/assets/input-3eed7edf.css">
-    <link rel="stylesheet" href="/assets/request_leave-f41b79a7.css">
+    <link rel="stylesheet" href="/assets/request_leave-de5f3a7b.css">
     <link rel="stylesheet" href="/assets/toastify-a461d729.css">
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800">
@@ -201,25 +201,26 @@
         </div>
     </div>
 
-    <div id="attachmentViewerModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 hidden transition-opacity duration-300 ease-out flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transform scale-95 opacity-0 transition-transform transition-opacity duration-300 ease-out" id="attachmentModalContent">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200">
-                <h3 id="attachmentModalTitle" class="text-lg font-semibold text-gray-800">Lihat Lampiran</h3>
-                <button id="closeAttachmentViewerModalBtn" class="text-gray-500 hover:text-gray-700">
-                    <i data-feather="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            <div class="flex-grow p-4 overflow-auto custom-scroll flex items-center justify-center">
-                <div id="attachmentContent" class="w-full h-full flex items-center justify-center text-gray-600">
-                    Memuat lampiran...
-                </div>
-                <p id="attachmentErrorMessage" class="text-red-600 text-center hidden mt-4">Terjadi kesalahan saat memuat lampiran.</p>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end">
-                <button id="downloadAttachmentFromModalBtn" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 hidden">Unduh File</button>
-            </div>
-        </div>
+<div id="attachmentViewerModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-75 z-50">
+  <div id="attachmentModalContent" class="modal-content bg-white rounded-lg shadow-xl w-full max-w-6xl h-full max-h-[90vh] flex flex-col relative">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 flex-shrink-0">
+      <h3 class="text-lg leading-6 font-medium text-gray-900" id="attachmentModalTitle">Lihat Lampiran</h3>
+      <button type="button" id="closeAttachmentViewerModalBtn" class="text-gray-400 hover:text-gray-500 transition-colors duration-200">
+        <span class="sr-only">Tutup</span>
+        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
+    <div class="p-4 flex-grow overflow-auto flex items-center justify-center bg-gray-100">
+      <div id="attachmentContent" class="w-full h-full"></div>
+      <p id="attachmentErrorMessage" class="text-red-500 text-center hidden"></p>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-200 flex justify-end bg-gray-50 flex-shrink-0">
+      <button id="downloadAttachmentFromModalBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 hidden">Unduh File</button>
+    </div>
+  </div>
+</div>
 
     
 </body>
