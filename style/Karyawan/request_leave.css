@@ -82,84 +82,95 @@ body {
 
 /* --- ATURAN KONTEN MODAL --- */
 #attachmentModalContent.modal-content {
-  /* Gunakan ID di sini untuk spesifisitas yang lebih tinggi jika kelas 'modal-content' digunakan di tempat lain */
-  background-color: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
-  /* Ukuran Responsif */
-  width: 90%; /* Ambil 90% lebar di mobile */
-  max-width: 72rem; /* Batasi lebar di desktop (setara 1152px) */
-  height: auto; /* Biarkan tinggi menyesuaikan konten */
-  max-height: 90vh; /* Maksimal 90% tinggi viewport */
+    /* Ukuran Responsif */
+    width: 90%; /* Ambil 90% lebar di mobile */
+    max-width: 72rem; /* Batasi lebar di desktop (setara 1152px) */
+    height: auto; /* Biarkan tinggi menyesuaikan konten - ini perlu disesuaikan */
+    max-height: 90vh; /* Maksimal 90% tinggi viewport */
 
-  display: flex;
-  flex-direction: column;
-  position: relative;
+    display: flex;
+    flex-direction: column;
+    position: relative;
 
-  /* Animasi */
-  opacity: 0;
-  transform: translateY(-20px);
-  transition: all 0.3s ease-out;
+    /* Animasi */
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease-out;
 
-  /* Tambahan untuk memastikan konten dapat scroll jika terlalu tinggi */
-  overflow: hidden; /* Sembunyikan overflow di modal-content itu sendiri */
+    /* Tambahan untuk memastikan konten dapat scroll jika terlalu tinggi */
+    overflow: hidden; /* Sembunyikan overflow di modal-content itu sendiri */
+
+    /* ----- PERBAIKAN DI SINI ----- */
+    /* Pastikan modal-content bisa mengisi tinggi yang tersedia dengan flex */
+    /* Remove `height: auto` and instead rely on flexbox to stretch */
+    /* height: 100%;  <-- Hapus ini jika ada di file lain atau pastikan tidak konflik */
 }
 
 /* Aktifkan konten modal */
 .modal.active #attachmentModalContent.modal-content {
-  /* Gunakan ID di sini */
-  opacity: 1;
-  transform: translateY(0);
+    opacity: 1;
+    transform: translateY(0);
 }
 
+/* Kontainer untuk attachmentContent - p-4 flex-grow overflow-auto flex items-center justify-center bg-gray-100 */
+/* Kita akan menambahkan beberapa kelas Tailwind langsung ke HTML,
+   tapi jika ingin tetap di CSS, ini aturannya: */
 .p-4.flex-grow.overflow-auto.flex.items-center.justify-center.bg-gray-100 {
-  min-height: 0;
-  flex-grow: 1;
-  /* Ini tetap oke, karena ini adalah parent dari #attachmentContent */
+    min-height: 0; /* Penting untuk flex item di dalam flex container dengan height tertentu */
+    flex-grow: 1;
+    /* Ubah ini untuk menghilangkan `align-items: center` dan `justify-content: center`
+       agar konten PDF (canvas) dimulai dari atas dan scroll */
+    align-items: flex-start; /* Konten dimulai dari atas */
+    justify-content: flex-start; /* Konten dimulai dari kiri */
+    padding: 1rem; /* Padding sudah ada dari `p-4` */
+    overflow-y: auto; /* Tetap pertahankan scroll vertikal */
+    overflow-x: hidden; /* Pastikan tidak ada scroll horizontal di sini */
 }
+
 
 #attachmentContent {
-  width: 100%;
-  height: 100%;
-  /* Gunakan flex-direction: column jika ingin setiap halaman PDF muncul di bawah yang lain */
-  /* Jika hanya ada satu halaman, atau ingin satu halaman penuh, bisa tetap row */
-  display: flex;
-  flex-direction: column; /* Ubah ke column agar setiap canvas PDF menumpuk vertikal */
-  align-items: center; /* Pusat horizontal untuk setiap kanvas */
-  justify-content: flex-start; /* Mulai konten dari atas (tidak memusatkan vertikal semua halaman bersamaan) */
-  overflow-y: auto; /* Memungkinkan scrolling vertikal untuk halaman PDF */
-  overflow-x: hidden; /* Mencegah scrolling horizontal yang tidak perlu */
+    width: 100%;
+    /* Hapus height: 100% di sini karena canvas akan mengontrol tingginya
+       dan kita ingin container ini bisa diskroll jika banyak halaman. */
+    height: auto; /* Biarkan tinggi menyesuaikan konten kanvas */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Tetap pusatkan kanvas secara horizontal */
+    justify-content: flex-start; /* Mulai rendering halaman dari atas */
+    /* overflow-y: auto; <-- Hapus ini, karena parent-nya sudah handle overflow */
+    overflow: visible; /* Biarkan konten 'meluap' jika perlu dan ditangani oleh parent */
 }
 
 #attachmentContent img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  margin: auto;
-  object-fit: contain;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: auto;
+    object-fit: contain;
 }
 
 #attachmentContent iframe {
-  /* Ini hanya jika Anda masih menggunakan iframe untuk PDF tertentu, tapi kita pakai canvas sekarang */
-  width: 100%;
-  height: 100%;
-  border: none;
+    width: 100%;
+    height: 100%;
+    border: none;
 }
 
 /* Kunci: Gaya untuk elemen <canvas> PDF.js */
 .pdf-page-canvas {
-  max-width: 100%; /* Pastikan tidak melebihi lebar kontainer */
-  height: auto; /* Jaga rasio aspek */
-  display: block; /* Penting agar margin: auto dan lebar 100% bekerja baik */
-  margin-left: auto; /* Untuk mx-auto */
-  margin-right: auto; /* Untuk mx-auto */
-  flex-shrink: 0; /* Penting! Mencegah kanvas mengecil di bawah ukuran aslinya dalam flex container */
-  /* Remove my-2, border, shadow-sm if you prefer a cleaner look */
-  margin-top: 8px; /* Contoh margin vertikal antar halaman jika ada banyak halaman */
-  margin-bottom: 8px; /* Contoh margin vertikal antar halaman jika ada banyak halaman */
-  border: 1px solid #e2e8f0; /* Border ringan */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Bayangan ringan */
+    max-width: 100%; /* Pastikan tidak melebihi lebar kontainer */
+    height: auto; /* Jaga rasio aspek - ini sangat penting */
+    display: block; /* Penting agar margin: auto dan lebar 100% bekerja baik */
+    margin-left: auto; /* Untuk mx-auto */
+    margin-right: auto; /* Untuk mx-auto */
+    flex-shrink: 0; /* Mencegah kanvas mengecil di bawah ukuran aslinya dalam flex container */
+    margin-top: 8px; /* Contoh margin vertikal antar halaman jika ada banyak halaman */
+    margin-bottom: 8px; /* Contoh margin vertikal antar halaman jika ada banyak halaman */
+    border: 1px solid #e2e8f0; /* Border ringan */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Bayangan ringan */
 }
 
 /* --- Perbaikan Aturan .hidden (opsional, jika masih ada konflik) --- */
@@ -233,13 +244,46 @@ body {
 }
 /* --- END: Gaya Responsif Tabel Baru --- */
 
-/* Adjust modal for smaller screens - Pastikan ini diterapkan setelah aturan umum modal */
+
 @media (max-width: 768px) {
-  #attachmentModalContent.modal-content { /* Gunakan ID untuk spesifisitas */
-    width: 95%; /* Sedikit lebih lebar di mobile */
-    max-width: none; /* Hapus batasan max-width desktop */
-  }
-  .modal-content { /* Ini mungkin tidak perlu jika ID di atas sudah cukup */
-    padding: 1rem;
-  }
+    #attachmentModalContent.modal-content {
+        width: 95%; /* Sedikit lebih lebar di mobile */
+        max-width: none; /* Hapus batasan max-width desktop */
+        /* ----- PERBAIKAN DI SINI ----- */
+        height: 95%; /* Berikan modal tinggi yang lebih besar di mobile */
+        max-height: 95vh; /* Sesuaikan maksimal tinggi viewport */
+        /* Tambahkan padding agar ada ruang di tepi modal */
+        padding: 0; /* Pastikan padding di sini 0, kita akan atur di elemen dalam */
+    }
+
+    /* Ini adalah div parent dari #attachmentContent */
+    .p-4.flex-grow.overflow-y-auto.bg-gray-100.flex.flex-col.items-center {
+        /* Sesuaikan padding jika perlu di mobile agar tidak terlalu mepet */
+        padding: 0.5rem; /* Kurangi padding di mobile jika perlu, dari p-4 */
+        /* Penting: Pastikan ini mengisi sisa ruang yang tersedia */
+        flex-grow: 1;
+        /* Tambahkan min-height agar selalu ada ruang vertikal */
+        min-height: 1px; /* Nilai kecil untuk flex item agar bisa tumbuh */
+        /* Pastikan overflow-y tetap aktif di sini */
+        overflow-y: auto;
+    }
+
+    #attachmentContent {
+        width: 100%;
+        /* Hapus height: auto; di sini jika sudah ada, biarkan content flex yang mengelola */
+        /* height: auto; */ /* Biarkan flex-grow dan content mengelola tinggi */
+        /* Pastikan flex-shrink: 0 ada jika ada konflik */
+        flex-shrink: 0; /* Mencegah konten mengecil di bawah ukuran aslinya */
+        flex-grow: 1; /* Biarkan attachmentContent tumbuh untuk mengisi ruang */
+    }
+
+    .pdf-page-canvas {
+        /* Di mobile, pastikan canvas tetap menyesuaikan lebar */
+        max-width: 100%;
+        height: auto; /* Jaga rasio aspek */
+        margin-top: 4px; /* Kurangi margin antar halaman jika perlu */
+        margin-bottom: 4px; /* Kurangi margin antar halaman jika perlu */
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
 }
