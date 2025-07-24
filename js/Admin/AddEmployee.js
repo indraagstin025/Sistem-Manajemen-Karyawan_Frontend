@@ -136,7 +136,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const formData = new FormData(addEmployeeForm);
     const userData = Object.fromEntries(formData.entries());
     userData.role = "karyawan";
-    userData.base_salary = parseFloat(userData.base_salary);
+
+    let rawSalaryInput = document.getElementById("base_salary").value;
+
+    let cleanedSalaryString = rawSalaryInput.replace(/\D/g, '');
+    userData.base_salary = parseFloat(cleanedSalaryString);
 
     const token = localStorage.getItem("token");
 
