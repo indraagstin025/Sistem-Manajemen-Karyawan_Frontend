@@ -146,33 +146,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     html5QrCodeFullInstance = null;
   }
 
-  async function onScanSuccess(decodedText) {
-    console.log(`INFO: QR Code terdeteksi, data: ${decodedText}. Memulai proses absensi.`);
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser || !currentUser.id) {
-      showSweetAlert("Error Autentikasi", "Sesi pengguna tidak valid. Silakan login kembali.", "error");
-      isProcessingScan = false;
-      return;
-    }
-    try {
-      const response = await AttendanceService.scanQR(decodedText, currentUser.id);
-      Swal.fire({
-        title: "Absensi Berhasil!",
-        text: response.message,
-        icon: "success",
-        confirmButtonText: "Selesai",
-      });
-      loadMyTodayAttendance();
-    } catch (error) {
-      console.error("ERROR: Gagal saat memproses absensi di server:", error);
-      const message = error?.response?.data?.error || error.message || "Terjadi kesalahan saat menghubungi server.";
-      const icon = error.response?.status === 409 ? "info" : "error";
-      const title = icon === "info" ? "Info Absensi" : "Absensi Gagal!";
-      showSweetAlert(title, message, icon);
-    } finally {
-      isProcessingScan = false;
-    }
+async function onScanSuccess(decodedText) {
+  console.log(`INFO: QR Code terdeteksi, data: ${decodedText}. Memulai proses absensi.`);
+  const currentUser = authService.getCurrentUser();
+  if (!currentUser || !currentUser.id) {
+    showSweetAlert("Error Autentikasi", "Sesi pengguna tidak valid. Silakan login kembali.", "error");
+    isProcessingScan = false;
+    return;
   }
+  try {
+    console.log("DEBUG: Memulai panggilan AttendanceService.scanQR...");
+    const response = await AttendanceService.scanQR(decodedText, currentUser.id);
+    console.log("DEBUG: AttendanceService.scanQR berhasil. Respons:", response);
+    Swal.fire({
+      title: "Absensi Berhasil!",
+      text: response.message,
+      icon: "success",
+      confirmButtonText: "Selesai",
+    });
+    console.log("DEBUG: Swal.fire untuk sukses dipanggil.");
+    loadMyTodayAttendance();
+  } catch (error) {
+    console.error("DEBUG: AttendanceService.scanQR GAGAL. Error:", error);
+    const message = error?.response?.data?.error || error.message || "Terjadi kesalahan saat menghubungi server.";
+    const icon = error.response?.status === 409 ? "info" : "error";
+    const title = icon === "info" ? "Info Absensi" : "Absensi Gagal!";
+    showSweetAlert(title, message, icon);
+    console.log("DEBUG: showSweetAlert untuk error dipanggil.");
+  } finally {
+    isProcessingScan = false;
+    console.log("DEBUG: isProcessingScan diatur ke false.");
+  }
+}
 
   function onScanFailure(error) {
     // console.error("Scanner error:", error);
