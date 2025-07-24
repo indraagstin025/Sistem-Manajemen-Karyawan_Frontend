@@ -12,8 +12,8 @@ function updateSubmitButton() {
   if (!submitButton) return;
 
   const allValid = Object.values(validationState).every((valid) => valid);
-  submitButton.disabled = !allValid;
 
+  // Hapus logika yang menonaktifkan tombol
   if (!allValid) {
     submitButton.classList.add("bg-gray-400", "cursor-not-allowed");
     submitButton.classList.remove("bg-teal-600", "hover:bg-teal-700");
@@ -30,6 +30,15 @@ function validateEmail(email) {
 
 function validateName(name) {
   return name.trim().length >= 2 && /^[a-zA-Z\s]+$/.test(name.trim());
+}
+
+function validatePassword(password) {
+  const minLength = 8;
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+
+  return password.length >= minLength && hasUppercase && hasLowercase && hasNumber;
 }
 
 /**
@@ -72,9 +81,9 @@ export function initializeFormValidation() {
 
   passwordInput?.addEventListener("input", function () {
     const errorDiv = document.getElementById("passwordError");
-    if (this.value.length < 6) {
+    if (!validatePassword(this.value)) {
       validationState.password = false;
-      errorDiv.textContent = "Password minimal 8 karakter dan harus menggunakan Campuran Huruf Besar.";
+      errorDiv.textContent = "Password harus minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka.";
       errorDiv.classList.remove("hidden");
     } else {
       validationState.password = true;
@@ -133,4 +142,20 @@ export function initializeFormValidation() {
  */
 export function isFormValid() {
   return Object.values(validationState).every((valid) => valid);
+}
+
+/**
+ * Fungsi ini diekspor untuk mendapatkan pesan error dari setiap field yang tidak valid.
+ * Pesan error ini dapat ditampilkan di UI sesuai kebutuhan.
+ * @returns {string[]} - Array yang berisi pesan-pesan error.
+ */
+export function getValidationErrors() {
+  const errors = [];
+  if (!validationState.name) errors.push("Nama harus minimal 2 karakter dan hanya huruf.");
+  if (!validationState.email) errors.push("Format email tidak valid.");
+  if (!validationState.password) errors.push("Password harus minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka.");
+  if (!validationState.position) errors.push("Posisi wajib diisi.");
+  if (!validationState.department) errors.push("Departemen wajib dipilih.");
+  if (!validationState.salary) errors.push("Gaji harus angka positif.");
+  return errors;
 }

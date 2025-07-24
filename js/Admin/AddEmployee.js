@@ -1,7 +1,7 @@
 import { userService } from "../Services/UserServices.js";
 import { departmentService } from "../Services/DepartemenServices.js";
 import { authService } from "../Services/AuthServices.js";
-import { initializeFormValidation, isFormValid } from "../Validations/addEmployeeValidation.js";
+import { initializeFormValidation, isFormValid, getValidationErrors } from "../Validations/addEmployeeValidation.js";
 import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
@@ -127,8 +127,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   addEmployeeForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    if (!isFormValid()) {
-      showAlert("Harap perbaiki semua kesalahan pada form.", "error");
+    const errorMessages = getValidationErrors();
+    if (errorMessages.length > 0) {
+      showAlert(errorMessages.join("<br>"), "error");
       return;
     }
 
