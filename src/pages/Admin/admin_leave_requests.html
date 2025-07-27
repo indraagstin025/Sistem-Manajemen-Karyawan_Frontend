@@ -82,19 +82,15 @@
 
 <div class="table-wrapper">
   <table class="leave-table">
-    <thead>
-      <tr>
-        <th style="min-width:180px">Karyawan</th>
-        <th>Tipe</th>
-        <th>Tanggal Mulai</th>
-        <th>Tanggal Selesai</th>
-        <th style="min-width:100px">Alasan</th>
-        <th>Lampiran</th>
-        <th>Status</th>
-        <th>Catatan Admin</th>
-        <th style="min-width:120px">Aksi</th>
-      </tr>
-    </thead>
+<thead>
+  <tr>
+    <th style="min-width: 250px;">Karyawan</th>
+    <th>Tipe</th>
+    <th>Tanggal</th>
+    <th>Status</th>
+    <th style="min-width: 200px;">Aksi</th>
+  </tr>
+</thead>
     <tbody id="leaveRequestsTableBody">
       <!-- JS akan isi di sini -->
     </tbody>
@@ -153,7 +149,7 @@
       </div>
     </div>
 
-    <div id="attachmentViewerModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-75 z-50">
+<div id="attachmentViewerModal" class="modal hidden fixed inset-0 bg-gray-600 bg-opacity-75 z-50 flex items-center justify-center">
       <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-6xl h-full max-h-[90vh] flex flex-col relative">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 flex-shrink-0">
           <h3 class="text-lg leading-6 font-medium text-gray-900" id="attachmentModalTitle">Lihat Lampiran</h3>

@@ -12,8 +12,8 @@
     
 
 
-    <script type="module" crossorigin src="/assets/admin_leave_requests-d8f08edf.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/input-2ed11044.js">
+    <script type="module" crossorigin src="/assets/admin_leave_requests-4bd10469.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/input-d134dd88.js">
     <link rel="modulepreload" crossorigin href="/assets/AuthServices-f47c4eb9.js">
     <link rel="modulepreload" crossorigin href="/assets/LeaveRequestsServices-ddeca199.js">
     <link rel="modulepreload" crossorigin href="/assets/sidebarHandler-d6522c99.js">
@@ -22,8 +22,8 @@
     <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-01879f51.js">
     <link rel="modulepreload" crossorigin href="/assets/photoUtils-240b8068.js">
     <link rel="modulepreload" crossorigin href="/assets/toastify-3acd0462.js">
-    <link rel="stylesheet" href="/assets/input-4a1b1493.css">
-    <link rel="stylesheet" href="/assets/admin_leave_requests-b31b673e.css">
+    <link rel="stylesheet" href="/assets/input-2c836554.css">
+    <link rel="stylesheet" href="/assets/admin_leave_requests-900155c0.css">
     <link rel="stylesheet" href="/assets/toastify-a461d729.css">
   </head>
   <body class="bg-gradient-to-br from-blue-50 via-teal-50 to-purple-50 text-gray-800 flex min-h-screen">
@@ -95,19 +95,15 @@
 
 <div class="table-wrapper">
   <table class="leave-table">
-    <thead>
-      <tr>
-        <th style="min-width:180px">Karyawan</th>
-        <th>Tipe</th>
-        <th>Tanggal Mulai</th>
-        <th>Tanggal Selesai</th>
-        <th style="min-width:100px">Alasan</th>
-        <th>Lampiran</th>
-        <th>Status</th>
-        <th>Catatan Admin</th>
-        <th style="min-width:120px">Aksi</th>
-      </tr>
-    </thead>
+<thead>
+  <tr>
+    <th style="min-width: 250px;">Karyawan</th>
+    <th>Tipe</th>
+    <th>Tanggal</th>
+    <th>Status</th>
+    <th style="min-width: 200px;">Aksi</th>
+  </tr>
+</thead>
     <tbody id="leaveRequestsTableBody">
       <!-- JS akan isi di sini -->
     </tbody>
@@ -166,7 +162,7 @@
       </div>
     </div>
 
-    <div id="attachmentViewerModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-75 z-50">
+<div id="attachmentViewerModal" class="modal hidden fixed inset-0 bg-gray-600 bg-opacity-75 z-50 flex items-center justify-center">
       <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-6xl h-full max-h-[90vh] flex flex-col relative">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 flex-shrink-0">
           <h3 class="text-lg leading-6 font-medium text-gray-900" id="attachmentModalTitle">Lihat Lampiran</h3>

@@ -418,97 +418,137 @@ const handleViewAttachment = async (event) => {
         }
     };
 
-    const renderLeaveRequestsTable = (data, page, limit) => {
-        const leaveRequestsTableBody = document.getElementById('leaveRequestsTableBody');
-        if (!leaveRequestsTableBody) {
-            return;
+const renderLeaveRequestsTable = (data, page, limit) => {
+    const leaveRequestsTableBody = document.getElementById('leaveRequestsTableBody');
+    if (!leaveRequestsTableBody) {
+        return;
+    }
+
+    leaveRequestsTableBody.innerHTML = ""; // Kosongkan tabel sebelum mengisi
+    const startIndex = (page - 1) * limit;
+    const paginatedItems = data.slice(startIndex, startIndex + limit);
+
+if (paginatedItems.length === 0) {
+    // Tentukan colspan sesuai jumlah kolom di thead (5 kolom utama)
+    leaveRequestsTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Tidak ada data pengajuan.</td></tr>`;
+    return;
+}
+
+    paginatedItems.forEach((request) => {
+        // --- 1. Siapkan semua variabel data ---
+        const formattedStartDate = new Date(request.start_date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long" });
+        const formattedEndDate = new Date(request.end_date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+        const dateRange = formattedStartDate === formattedEndDate.split(' ')[0] + ' ' + formattedEndDate.split(' ')[1] ? formattedEndDate : `${formattedStartDate} - ${formattedEndDate}`;
+
+        let statusClass = "pending";
+        let statusText = "Menunggu";
+        if (request.status === "approved") {
+            statusClass = "approved";
+            statusText = "Disetujui";
+        } else if (request.status === "rejected") {
+            statusClass = "rejected";
+            statusText = "Ditolak";
         }
+        const statusHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
 
-        leaveRequestsTableBody.innerHTML = "";
-        const startIndex = (page - 1) * limit;
-        const paginatedItems = data.slice(startIndex, startIndex + limit);
+        const fileUrl = createFullUrl(request.attachment_url);
+        const fileNameFromUrl = request.attachment_url ? request.attachment_url.split("/").pop().split("?")[0] : "";
+        const attachmentHTML = fileUrl
+            ? `<div class="flex items-center space-x-2">
+                   <button class="view-attachment-btn text-teal-600 hover:underline focus:outline-none" data-url="${fileUrl}" data-filename="${fileNameFromUrl}">Lihat</button>
+                   <button class="download-btn text-gray-500 hover:text-gray-700" data-url="${fileUrl}" data-filename="${fileNameFromUrl}" title="Unduh Lampiran">
+                       <i data-feather="download" class="w-4 h-4"></i>
+                   </button>
+               </div>`
+            : "-";
+            
+        const actionButtonsHTML = request.status === "pending"
+            ? `<div class="action-buttons flex space-x-2 justify-end">
+                   <button data-id="${request.id}" data-action="approve" class="action-btn px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-md transition-colors duration-200">Setujui</button>
+                   <button data-id="${request.id}" data-action="reject" class="action-btn px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition-colors duration-200">Tolak</button>
+               </div>`
+            : `<span class="text-gray-500 text-xs">Selesai</span>`;
 
-        if (paginatedItems.length === 0) {
-            leaveRequestsTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-10 text-gray-500">Tidak ada data pengajuan.</td></tr>`;
-            return;
-        }
+        const employeeName = request.user_name || request.user_email || "Pengguna Tidak Dikenal";
+        const photoElementId = `photo-${request.id}`;
 
-        paginatedItems.forEach((request) => {
-            console.log("Merender request:", request.id, "dengan attachment_url:", request.attachment_url);
-            const row = leaveRequestsTableBody.insertRow();
-
-            const formattedStartDate = new Date(request.start_date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-            const formattedEndDate = new Date(request.end_date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-
-            let statusClass = "pending";
-            let statusText = "Menunggu";
-            if (request.status === "approved") {
-                statusClass = "approved";
-                statusText = "Disetujui";
-            } else if (request.status === "rejected") {
-                statusClass = "rejected";
-                statusText = "Ditolak";
-            } else if (request.status === "completed") {
-                statusClass = "completed";
-                statusText = "Selesai";
-            }
-
-            const fileUrl = createFullUrl(request.attachment_url);
-            const fileNameFromUrl = request.attachment_url ? request.attachment_url.split("/").pop().split("?")[0] : "";
-            const attachmentLink = fileUrl
-                ? `<div class="flex items-center space-x-2">
-                            <button class="view-attachment-btn text-teal-600 hover:underline focus:outline-none" data-url="${fileUrl}" data-filename="${fileNameFromUrl}">Lihat</button>
-                            <button class="download-btn text-gray-500 hover:text-gray-700" data-url="${fileUrl}" data-filename="${fileNameFromUrl}" title="Unduh Lampiran">
-                               <svg xmlns="http:
-                            </button>
-                        </div>`
-                : "-";
-
-            const employeeName = request.user_name || request.user_email || "Pengguna Tidak Dikenal"; 
-            const photoElementId = `photo-${request.id}`; 
-
-            row.innerHTML = `
-                <td>
-                    <div class="employee-info flex items-center space-x-3 px-6 py-4 whitespace-nowrap">
-                        <img id="${photoElementId}" class="h-9 w-9 rounded-full object-cover" src="https:
+        // --- 2. Buat HTML untuk main row dan detail row ---
+        const tableRowsHTML = `
+            <tr class="main-row">
+                <td data-label="Karyawan">
+                    <div class="employee-info">
+                        <img id="${photoElementId}" class="h-9 w-9 rounded-full object-cover" src="https://placehold.co/36x36/E2E8F0/4A5568?text=AV" alt="Avatar">
                         <div>
                             <div class="text-sm font-medium text-gray-900">${employeeName}</div>
-                            <div class="text-sm text-gray-500">${request.user_email || "-"}</div>
+                            <div class="text-sm text-gray-500 email">${request.user_email || "-"}</div>
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${request.request_type || "-"}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formattedStartDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formattedEndDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs overflow-hidden text-ellipsis" title="${request.reason || ""}">${request.reason || "-"}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm">${attachmentLink}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
-                    <span class="status-badge ${statusClass}">${statusText}</span>
+                <td data-label="Tipe">${request.request_type || "-"}</td>
+                <td data-label="Tanggal">${dateRange}</td>
+                <td data-label="Status">${statusHTML}</td>
+                <td data-label="Aksi">
+                    <div class="action-buttons-wrapper">
+                        ${actionButtonsHTML}
+                        <button class="toggle-details-btn" title="Lihat Detail">
+                           <i data-feather="chevron-down" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs overflow-hidden text-ellipsis" title="${request.note || ""}">${request.note || "-"}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    ${
-                        request.status === "pending"
-                            ? `
-                            <div class="action-buttons flex space-x-2 justify-end">
-                                <button data-id="${request.id}" data-action="approve" class="action-btn px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-md transition-colors duration-200">Setujui</button>
-                                <button data-id="${request.id}" data-action="reject" class="action-btn px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md transition-colors duration-200">Tolak</button>
-                            </div>
-                            `
-                            : `<span class="text-gray-500 text-xs">Selesai</span>` 
-                    }
+            </tr>
+            <tr class="detail-row hidden">
+                <td colspan="5">
+                    <div class="details-content">
+                        <div><strong>Alasan:</strong><p>${request.reason || "-"}</p></div>
+                        <div><strong>Lampiran:</strong><p>${attachmentHTML}</p></div>
+                        <div><strong>Catatan Admin:</strong><p>${request.note || "-"}</p></div>
+                    </div>
                 </td>
-            `;
+            </tr>
+        `;
 
-            
-            getUserPhotoBlobUrl(request.user_id, employeeName, 36).then((photoUrl) => {
-                const photoEl = document.getElementById(photoElementId);
-                if (photoEl) {
-                    photoEl.src = photoUrl;
-                }
-            });
+        // --- 3. Masukkan HTML ke dalam tabel ---
+        leaveRequestsTableBody.insertAdjacentHTML('beforeend', tableRowsHTML);
+
+        // --- 4. Ambil foto pengguna secara asinkron ---
+        getUserPhotoBlobUrl(request.user_id, employeeName, 36).then((photoUrl) => {
+            const photoEl = document.getElementById(photoElementId);
+            if (photoEl) {
+                photoEl.src = photoUrl;
+            }
         });
-    };
+    });
+    
+    // --- 5. Render semua ikon Feather baru setelah loop selesai ---
+    feather.replace();
+};
+
+// TARUH KODE INI DI JS ANDA
+// Pastikan ia berjalan setelah tabel terisi data
+
+function setupToggleListeners() {
+    const tableBody = document.getElementById('leaveRequestsTableBody');
+
+    tableBody.addEventListener('click', function(event) {
+        // Cari tombol yang di-klik atau parent-nya yang merupakan tombol toggle
+        const toggleButton = event.target.closest('.toggle-details-btn');
+        
+        if (toggleButton) {
+            const mainRow = toggleButton.closest('.main-row');
+            const detailRow = mainRow.nextElementSibling;
+
+            if (mainRow && detailRow && detailRow.classList.contains('detail-row')) {
+                // Toggle class 'hidden' pada baris detail
+                detailRow.classList.toggle('hidden');
+                // Toggle class 'is-expanded' pada baris utama untuk animasi tombol
+                mainRow.classList.toggle('is-expanded');
+            }
+        }
+    });
+}
+
+// Panggil fungsi ini setelah Anda selesai memuat data ke tabel
+setupToggleListeners();
 
 
     const updatePaginationControls = (totalItems, currentPage, itemsPerPage) => {

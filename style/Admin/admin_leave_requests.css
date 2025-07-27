@@ -1,176 +1,192 @@
-/* /style/input.css */
+/* =========================================== */
+/* ==   CSS UNTUK TABEL HYBRID (VERSI FINAL)  == */
+/* =========================================== */
 
-/* --- Aturan untuk Modal (Pastikan ada di bagian paling akhir file input.css Anda) --- */
-
-.modal {
-  /* Default: Sembunyikan modal sepenuhnya secara visual */
-  display: none; /* Penting! Ini menyembunyikan modal secara default saat halaman dimuat */
-  opacity: 0;    /* Mulai dengan transparan */
-  transform: scale(0.95); /* Sedikit kecil untuk efek zoom in */
-
-  /* Properti dasar untuk overlay dan centering */
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.75); /* Latar belakang gelap */
-  z-index: 50; /* Pastikan di atas konten lain */
-
-  /* Untuk menengahkan konten modal - ini akan aktif saat display berubah */
-  align-items: center;
-  justify-content: center;
-
-  /* Transisi untuk animasi */
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-}
-
-/*
-   Ketika JavaScript menambahkan kelas 'active', modal akan terlihat.
-   Perhatikan bahwa 'display: flex;' di sini akan menimpa 'display: none;'
-   saat kelas 'active' ditambahkan.
-*/
-.modal.active {
-  display: flex; /* Tampilkan modal sebagai flexbox */
-  opacity: 1;    /* Jadikan sepenuhnya terlihat */
-  transform: scale(1); /* Kembali ke ukuran normal */
-}
-
-/* --- Perbaikan Aturan .hidden --- */
-/*
-   Hapus aturan .hidden { display: none !important; } secara global
-   dari file input.css Anda. Biarkan Tailwind CSS yang mengelola kelas `hidden`.
-
-   Jika Anda masih merasa perlu aturan `!important` untuk `hidden`,
-   coba targetkan secara spesifik modal yang tersembunyi:
-*/
-#attachmentViewerModal.hidden {
-    display: none !important;
-}
-
-/* Jika Anda memiliki mobileSidebar yang juga menggunakan kelas hidden dan opacity-0/100,
-   dan ia juga bermasalah, Anda mungkin perlu aturan spesifik juga: */
-#mobileSidebar.hidden {
-    display: none !important;
-}
-
-
-/* --- CSS Lainnya yang Sudah Anda Berikan (Pastikan ini juga ada) --- */
-
+/* --- Style Dasar Tabel (Desktop) --- */
 .table-wrapper {
-  overflow-x: auto;
   width: 100%;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
+  overflow-x: auto;
 }
 
 .leave-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: auto;
-  min-width: 900px;
 }
 
-.leave-table th,
-.leave-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  vertical-align: middle;
-  font-size: 0.8125rem;
-  text-align: left;
-}
-
-.leave-table th {
+.leave-table thead th {
   background-color: #f8fafc;
   font-weight: 600;
   font-size: 0.75rem;
   color: #4a5568;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-align: center;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 2px solid #e2e8f0;
 }
 
-.employee-info {
+.leave-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  font-size: 0.875rem;
+}
+
+.main-row {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s ease;
+}
+
+.main-row:not(.is-expanded):hover {
+  background-color: #f8fafc;
+}
+
+/* === PERBAIKAN UTAMA DIMULAI DI SINI === */
+
+/* 1. Saat baris utama dibuka, hilangkan border bawahnya agar menyatu */
+.main-row.is-expanded {
+  background-color: #f8fafc; /* Beri sedikit warna latar */
+  border-bottom-color: transparent;
+}
+
+/* 2. Style untuk baris detail agar terlihat seperti panel terintegrasi */
+.detail-row td {
+  padding: 0;
+  background-color: #f8fafc; /* Samakan warna latar dengan baris utama yang terbuka */
+  border-bottom: 1px solid #e2e8f0; /* Border bawah untuk memisahkan dengan baris selanjutnya */
+}
+
+/* 3. Perbaiki layout konten di dalam panel detail */
+.details-content {
+  padding: 1rem 1.5rem 1.5rem 1.5rem; /* Tambah padding bawah */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.25rem; /* Beri jarak lebih antar item */
+}
+
+.details-content > div {
+  font-size: 0.875rem;
+}
+
+.details-content strong {
+  color: #4a5568;
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.details-content p {
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+/* --- Style Tombol Aksi & Toggle (Desktop) --- */
+.action-buttons-wrapper {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.profile-thumb {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.status-badge {
+.toggle-details-btn {
   display: inline-flex;
   align-items: center;
-  padding: 4px 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #cbd5e1;
   border-radius: 9999px;
+  background-color: white;
+  color: #4a5568;
+  transition: all 0.2s ease;
+}
+.toggle-details-btn:hover {
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+}
+.main-row.is-expanded .toggle-details-btn {
+  transform: rotate(180deg);
+  background-color: #e0f2f1;
+  border-color: #14b8a6;
+  color: #0d9488;
 }
 
-.status-badge.pending {
-  background-color: #fef9c3;
-  color: #a16207;
-}
-.status-badge.approved {
-  background-color: #dcfce7;
-  color: #166534;
-}
-.status-badge.rejected {
-  background-color: #fee2e2;
-  color: #991b1b;
-}
+/* === AKHIR DARI PERBAIKAN === */
 
-.action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 
+/* --- Mobile View (Tidak Ada Perubahan) --- */
 @media (max-width: 768px) {
-  .employee-info .email {
+  .table-wrapper {
+    overflow-x: hidden;
+  }
+  .leave-table thead {
+    display: none;
+  }
+  .main-row, .detail-row, .detail-row.hidden {
+    display: block;
+  }
+  .main-row {
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+  }
+  .main-row:hover, .main-row.is-expanded {
+    background-color: #ffffff;
+  }
+  .detail-row {
+    display: none;
+  }
+  .main-row td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+  }
+  .main-row td:last-child {
+    border-bottom: none;
+  }
+  .main-row td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #4a5568;
+    text-align: left;
+    margin-right: 1rem;
+  }
+  .toggle-details-btn {
     display: none;
   }
 }
 
-/* Gaya untuk QR Modal */
-.qr-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease-out, visibility 0s linear 0.3s;
+/* --- [STYLING BARU] Kustomisasi Tampilan List Mobile --- */
+
+@media (max-width: 768px) {
+    #my-calendar {
+        height: auto !important; /* Biarkan tinggi kalender menyesuaikan konten */
+    }
+
+    .fc-list-event-title {
+        font-weight: 500;
+        color: #374151; /* Gray-700 */
+    }
+
+    .fc-list-day-text, .fc-list-day-side-text {
+        font-weight: 700;
+        font-size: 1.1em;
+        color: #0d9488; /* Teal-600 */
+    }
+    
+    .fc-list-event.fc-event-holiday .fc-list-event-title {
+        color: #ef4444; /* Warna merah untuk hari libur */
+    }
 }
-.qr-modal-overlay.active {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.3s ease-out, visibility 0s linear 0s;
+
+/* Styling untuk menyembunyikan placeholder di tampilan grid */
+.fc-daygrid-day .fc-event-placeholder {
+    display: none;
 }
-.qr-modal-content {
-  background-color: white;
-  padding: 2rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  transform: translateY(-20px);
-  opacity: 0;
-  transition: all 0.3s ease-out;
-  max-width: 400px;
-  width: 90%;
-}
-.qr-modal-overlay.active .qr-modal-content {
-  transform: translateY(0);
-  opacity: 1;
+
+/* Styling agar placeholder tidak terlihat aneh di tampilan list */
+.fc-list-event.fc-event-placeholder {
+    display: none; /* Sembunyikan event placeholder dari list */
 }
