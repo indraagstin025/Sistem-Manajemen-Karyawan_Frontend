@@ -67,18 +67,18 @@ const WorkScheduleServices = {
     },
 
 
-    getMyWorkSchedules: async () => {
+// ---------------- Kode Baru (Sudah Benar) -----------------
+getMyWorkSchedules: async (startDate, endDate) => {
     try {
-        const today = new Date();
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
+        // Buat objek filter dari parameter yang diterima
         const filters = {
-            start_date: startOfMonth.toISOString().split("T")[0],
-            end_date: endOfMonth.toISOString().split("T")[0]
+            start_date: startDate,
+            end_date: endDate
         };
 
-        const response = await apiClient.get(`/work-schedules?${new URLSearchParams(filters).toString()}`);
+        // Buat query string dan panggil API
+        const queryString = new URLSearchParams(filters).toString();
+        const response = await apiClient.get(`/work-schedules?${queryString}`);
         return response.data;
     } catch (error) {
         throw error;

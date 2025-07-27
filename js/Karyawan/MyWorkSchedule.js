@@ -15,6 +15,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const userAvatarNav = document.getElementById("userAvatar");
     let calendar;
 
+    // Helper function untuk format tanggal YYYY-MM-DD
+    const formatDate = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    };
+
     // Fungsi untuk memuat foto header sekali di awal
     const loadHeaderData = async () => {
         try {
@@ -42,25 +55,26 @@ document.addEventListener("DOMContentLoaded", () => {
         right: 'today'
     };
 
-    // Inisialisasi kalender dengan opsi berdasarkan lebar layar saat ini
+    // Inisialisasi kalender
     calendar = new Calendar(calendarEl, {
         plugins: [dayGridPlugin, timeGridPlugin, listPlugin],
         locale: idLocale,
-        
-        // Pilih view dan header secara dinamis saat pertama kali dimuat
         initialView: window.innerWidth < 768 ? 'listMonth' : 'dayGridMonth',
         headerToolbar: window.innerWidth < 768 ? mobileHeader : desktopHeader,
-        
-        // Atur tinggi agar fleksibel
-        height: 'auto', 
-        
+        height: 'auto',
         editable: false,
         selectable: false,
         eventSources: [
             { // Sumber 1: Jadwal Kerja
                 events: async (fetchInfo) => {
                     try {
-                        const response = await WorkScheduleServices.getMyWorkSchedules();
+                        // Ambil tanggal mulai dan selesai dari kalender
+                        const startDate = formatDate(fetchInfo.start);
+                        const endDate = formatDate(fetchInfo.end);
+
+                        // Kirim rentang tanggal ke service
+                        const response = await WorkScheduleServices.getMyWorkSchedules(startDate, endDate);
+                        
                         const schedules = response.data || [];
                         const grouped = {};
                         schedules.forEach((s) => {
@@ -106,15 +120,12 @@ document.addEventListener("DOMContentLoaded", () => {
         ],
         eventContent: (arg) => {
             if (arg.event.extendedProps.type === 'schedule') {
-                // Di list view, tampilkan judulnya agar informatif
                 if (arg.view.type.startsWith('list')) {
                     return { html: `<div class="fc-list-event-title">${arg.event.title}</div>` };
                 }
-                // Di grid view, tampilkan titik
                 return { html: `<div class="fc-event-dot"></div>` };
             }
             if (arg.event.extendedProps.type === 'holiday') {
-                // Di grid atau list, hari libur selalu tampilkan teks
                 return { html: `<div class="fc-event-title-holiday">${arg.event.title}</div>` };
             }
         },
@@ -156,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Tambahkan listener untuk mengubah tampilan saat ukuran window berubah
+    // Listener untuk mengubah tampilan saat ukuran window berubah
     window.addEventListener('resize', () => {
         if (window.innerWidth < 768) {
             calendar.changeView('listMonth');
@@ -167,7 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Inisialisasi komponen UI dan render kalender
+    // Inisialisasi dan render kalender
     initializeSidebar();
     initializeLogout();
     loadHeaderData();

@@ -158,35 +158,3 @@
   }
 }
 
-/* --- [STYLING BARU] Kustomisasi Tampilan List Mobile --- */
-
-@media (max-width: 768px) {
-    #my-calendar {
-        height: auto !important; /* Biarkan tinggi kalender menyesuaikan konten */
-    }
-
-    .fc-list-event-title {
-        font-weight: 500;
-        color: #374151; /* Gray-700 */
-    }
-
-    .fc-list-day-text, .fc-list-day-side-text {
-        font-weight: 700;
-        font-size: 1.1em;
-        color: #0d9488; /* Teal-600 */
-    }
-    
-    .fc-list-event.fc-event-holiday .fc-list-event-title {
-        color: #ef4444; /* Warna merah untuk hari libur */
-    }
-}
-
-/* Styling untuk menyembunyikan placeholder di tampilan grid */
-.fc-daygrid-day .fc-event-placeholder {
-    display: none;
-}
-
-/* Styling agar placeholder tidak terlihat aneh di tampilan list */
-.fc-list-event.fc-event-placeholder {
-    display: none; /* Sembunyikan event placeholder dari list */
-}
