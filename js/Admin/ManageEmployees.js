@@ -5,6 +5,7 @@ import { initializeSidebar } from "../components/sidebarHandler.js";
 import { initializeLogout } from "../components/logoutHandler.js";
 import { QRCodeManager } from "../components/qrCodeHandler.js";
 import { getUserPhotoBlobUrl } from "../utils/photoUtils.js";
+import { formatRupiah, parseRupiah } from "../Validations/addEmployeeValidation.js";
 import Swal from "sweetalert2";
 import Toastify from "toastify-js";
 import "toastify-js/src/toastify.css";
@@ -245,8 +246,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         editEmail.value = employee.email;
         editPosition.value = employee.position || "";
         editDepartment.value = employee.department || "";
-        editBaseSalary.value = employee.base_salary || 0;
         editAddress.value = employee.address || "";
+
+        editBaseSalary.value = formatRupiah(employee.base_salary || 0);
 
         editEmployeeModal.classList.remove("hidden");
         setTimeout(() => editEmployeeModal.classList.add("active"), 10);
@@ -287,20 +289,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       editErrorMessageDiv.classList.add("hidden");
       editSuccessMessageDiv.classList.add("hidden");
 
-      const employeeId = editEmployeeId.value;
       const formData = new FormData(editEmployeeForm);
       const updatedData = {};
       for (const [key, value] of formData.entries()) {
         updatedData[key] = value;
       }
 
-      delete updatedData.id;
+      updatedData.base_salary = parseRupiah(updatedData.base_salary);
 
-      updatedData.base_salary = parseFloat(updatedData.base_salary);
       if (isNaN(updatedData.base_salary)) {
         showSweetAlert("Invalid Input", "Base salary must be a valid number.", "error", true);
         return;
       }
+
+      const employeeId = updatedData.id;
+      delete updatedData.id;
 
       const dataToUpdate = {
         name: updatedData.name,
@@ -312,9 +315,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
 
       try {
-        const response = await userService.updateUser(employeeId, dataToUpdate);
-        console.log("Employee successfully updated:", response);
-
+        await userService.updateUser(employeeId, dataToUpdate);
         showSweetAlert("Success!", "Employee successfully updated!", "success", false, 1500);
 
         setTimeout(() => {

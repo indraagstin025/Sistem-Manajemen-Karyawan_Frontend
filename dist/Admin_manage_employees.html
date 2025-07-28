@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
      
     
-  <script type="module" crossorigin src="/assets/manage_employees-bf7f1df2.js"></script>
+  <script type="module" crossorigin src="/assets/manage_employees-f443744c.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/input-d134dd88.js">
   <link rel="modulepreload" crossorigin href="/assets/AuthServices-f47c4eb9.js">
   <link rel="modulepreload" crossorigin href="/assets/photoUtils-240b8068.js">
@@ -19,6 +19,7 @@
   <link rel="modulepreload" crossorigin href="/assets/logoutHandler-87b1a96c.js">
   <link rel="modulepreload" crossorigin href="/assets/AttendanceServices-f61bdc29.js">
   <link rel="modulepreload" crossorigin href="/assets/qrCodeHandler-01879f51.js">
+  <link rel="modulepreload" crossorigin href="/assets/addEmployeeValidation-0c6de838.js">
   <link rel="modulepreload" crossorigin href="/assets/toastify-3acd0462.js">
   <link rel="stylesheet" href="/assets/input-2c836554.css">
   <link rel="stylesheet" href="/assets/manage_employees-78b0d727.css">
@@ -172,11 +173,12 @@
                         <option value="">Pilih Departemen</option>
                         </select>
                 </div>
-                <div>
-                    <label for="editBaseSalary" class="block text-sm font-medium text-gray-700">Gaji Pokok</label>
-                    <input type="number" id="editBaseSalary" name="base_salary" required
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm py-2 px-3 focus:border-teal-500 focus:ring-teal-500 sm:text-sm">
-                </div>
+<div>
+    <label for="editBaseSalary" class="block text-sm font-medium text-gray-700">Gaji Pokok</label>
+    <input type="text" inputmode="numeric" id="editBaseSalary" name="base_salary" required class="..." />
+    <div id="salaryError" class="text-red-600 text-sm mt-1 hidden"></div>
+    <p class="text-gray-500 text-xs mt-1">Angka akan diformat secara otomatis.</p> 
+</div>
                 <div>
                     <label for="editAddress" class="block text-sm font-medium text-gray-700">Alamat</label>
                     <textarea id="editAddress" name="address" rows="3"

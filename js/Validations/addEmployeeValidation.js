@@ -12,7 +12,7 @@ let validationState = {
  * @param {number|string} angka - Angka yang akan diformat.
  * @returns {string} - Angka yang diformat sebagai string.
  */
-function formatRupiah(angka) {
+export function formatRupiah(angka) {
   let num = typeof angka === "string" ? parseFloat(angka.replace(/\D/g, "")) : angka;
 
   if (isNaN(num)) return "";
@@ -28,7 +28,7 @@ function formatRupiah(angka) {
  * @param {string} rupiahString - String yang akan dibersihkan.
  * @returns {number} - Angka murni (float).
  */
-function parseRupiah(rupiahString) {
+  export function parseRupiah(rupiahString) {
   const cleanedString = rupiahString.replace(/\D/g, "");
   return parseFloat(cleanedString);
 }
